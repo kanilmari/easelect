@@ -1,0 +1,143 @@
+/* tables.css */
+
+/* Taulukon tyylit */
+/* #tabs_container { */
+    /* padding: 20px; */
+    /* overflow: auto; */
+    /* height: 100vh; */
+    /* margin-right: 270px; */
+/* } */
+
+table {
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 2px solid rgba(0,0,0,0.7);
+    padding: 8px;
+    text-align: left;
+    max-width: 500px;
+}
+
+td {
+    
+    min-width: 50px;
+    /* max-width: 300px; */
+    /* overflow-x: hidden; */
+}
+
+th {
+    background-color: var(--table_border_color);
+}
+
+
+
+/* Vierasavainten taulukko */
+#foreign_keys_container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#foreign_keys_container th,
+#foreign_keys_container td {
+    border: 1px solid var(--border_color);
+    padding: 8px;
+    text-align: left;
+}
+
+
+
+.selected {
+    background-color: rgba(255, 0, 0, 0.2);
+}
+
+
+input[type="checkbox"], input[type="radio"] {
+    width: 14px;
+    height: 14px;
+}
+
+/* styles.css */
+
+/* Style the table for better appearance */
+#foreign_keys_table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#foreign_keys_table th, #foreign_keys_table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left; /* Default alignment */
+}
+
+/* Center the content in select-cell */
+.select-cell {
+    text-align: center;
+    vertical-align: middle; /* Vertically center the content */
+    width: 50px; /* Adjust width as needed */
+}
+
+/* Optional: Center the radio button itself */
+.select-cell input[type="radio"] {
+    margin: 0 auto;
+    display: block;
+}
+
+/* Style the delete button */
+#foreign_keys_table + button {
+    margin-top: 10px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.float_right {
+    float: right;
+}
+
+
+
+
+
+/* Set fixed table layout */
+
+/* table th, table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+} */
+
+.selected_for_editing {
+    outline: 2px solid skyblue;
+}
+
+.editing {
+    background-color: rgba(128, 128, 0, 0.5);
+    padding: 0;
+}
+
+.editing input {
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    background: none;
+    box-sizing: border-box;
+    font-size: inherit;
+    font-family: inherit;
+}

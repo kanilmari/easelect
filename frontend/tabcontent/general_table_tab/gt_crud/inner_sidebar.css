@@ -1,0 +1,51 @@
+/* base.css tai oma CSS-tiedosto */
+.toolbar {
+    /* position:absolute; */
+    /* left: var(--navbar_width); */
+    /* top: 0; */
+    /* width: 200px; */
+    display: grid;
+    grid-template-columns: auto;
+    padding: 10px;
+    /* gap: 20px; */
+    align-content: start;
+    /* height: 100vh; */
+    border-right: 1px solid var(--border_color);
+}
+
+
+
+
+
+
+
+/* Esimerkkinä .custom-dropdown-luokka */
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-dropdown button.view-mode-button {
+    cursor: pointer;
+    /* tms. */
+}
+
+.custom-dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 120px;
+    background-color: var(--bg_color);
+    border: 1px solid var(--border_color);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    z-index: 9999;
+}
+
+.custom-dropdown-content .dropdown-item {
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.custom-dropdown-content .dropdown-item:hover {
+    background-color: var(--button_hover_bg_color);
+    color: var(--button_hover_text_color);
+}

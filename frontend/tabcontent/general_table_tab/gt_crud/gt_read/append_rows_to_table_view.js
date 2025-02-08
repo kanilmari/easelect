@@ -1,0 +1,36 @@
+// append_rows_to_table_view.js
+
+import { selectCell } from '../table_content_utils.js';
+import { editCell } from '../gt_update/edit_cell.js';
+import { handleKeyDown } from '../add_listeners_to_table_cells.js';
+import { createDataCell, createCheckboxCell } from '../create_table_structure_and_data.js';
+
+export function appendDataToTable(table, newData, columns, dataTypes) {
+    const tbody = table.querySelector('tbody');
+    const existingRows = tbody.rows.length;
+    newData.forEach((item, index) => {
+        const row = document.createElement('tr');
+        const checkbox_td = createCheckboxCell(row, table.id.replace('_table', ''));
+        row.appendChild(checkbox_td);
+
+        columns.forEach((column, colIndex) => {
+            const td = createDataCell(item, column, columns, existingRows + index, colIndex);
+            row.appendChild(td);
+        });
+
+        tbody.appendChild(row);
+    });
+
+    const cells = tbody.querySelectorAll('td:not(:first-child)');
+    cells.forEach(cell => {
+        cell.addEventListener('click', (e) => {
+            selectCell(e.target);
+        });
+        cell.addEventListener('dblclick', (e) => {
+            editCell(e.target, columns, newData, dataTypes, table.id.replace('_table', ''));
+        });
+        cell.addEventListener('keydown', (event) => {
+            handleKeyDown(event, cell, columns, newData, dataTypes, table.id.replace('_table', ''));
+        });
+    });
+}
