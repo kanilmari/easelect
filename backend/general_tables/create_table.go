@@ -2,10 +2,10 @@
 package general_tables
 
 import (
+	"easelect/backend"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"rapsa/backend"
 	"regexp"
 	"strings"
 )

@@ -3,15 +3,15 @@ package gt_read
 
 import (
 	"database/sql"
+	"easelect/backend"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
-	"rapsa/backend"
 
-	"rapsa/backend/general_tables/models"
-	"rapsa/backend/general_tables/utils"
+	"easelect/backend/general_tables/models"
+	"easelect/backend/general_tables/utils"
 	"sort"
 	"strconv"
 	"strings"

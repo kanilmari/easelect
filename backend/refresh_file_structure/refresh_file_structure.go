@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"rapsa/backend"
+	"easelect/backend"
 
 	pgvector "github.com/pgvector/pgvector-go"
 	"github.com/sashabaranov/go-openai"
@@ -733,7 +733,7 @@ func tidyFmt(format string, args ...interface{}) string {
 // 	"path/filepath"
 // 	"strings"
 
-// 	"rapsa/backend"
+// 	"easelect/backend"
 // )
 
 // var base_path string

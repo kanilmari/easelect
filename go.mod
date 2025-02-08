@@ -1,4 +1,4 @@
-module rapsa
+module easelect
 
 go 1.23.0
 

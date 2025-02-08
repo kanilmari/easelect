@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"rapsa/backend"
+	"easelect/backend"
 
 	pgvector "github.com/pgvector/pgvector-go"
 	"github.com/sashabaranov/go-openai"

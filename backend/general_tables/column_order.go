@@ -4,10 +4,10 @@ package general_tables
 
 import (
 	"database/sql"
+	"easelect/backend"
 	"encoding/json"
 	"log"
 	"net/http"
-	"rapsa/backend"
 	"strings"
 )
 

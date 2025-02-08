@@ -3,11 +3,11 @@ package gt_crud
 
 import (
 	"database/sql"
+	"easelect/backend"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"rapsa/backend"
 	"strings"
 )
 

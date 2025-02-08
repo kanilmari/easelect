@@ -3,14 +3,14 @@ package gt_create
 
 import (
 	"database/sql"
+	"easelect/backend"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"rapsa/backend"
 
-	"rapsa/backend/general_tables/gt_crud/gt_read"
-	"rapsa/backend/general_tables/models"
+	"easelect/backend/general_tables/gt_crud/gt_read"
+	"easelect/backend/general_tables/models"
 
 	"sort"
 	"strings"

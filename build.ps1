@@ -1,2 +1,3 @@
-go build -o rapsa.exe
-.\rapsa.exe
+go mod tidy
+go build -o easelect.exe
+.\easelect.exe

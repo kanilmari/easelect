@@ -2,11 +2,11 @@
 package general_tables
 
 import (
+	"easelect/backend"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"rapsa/backend"
 
 	"github.com/lib/pq"
 )

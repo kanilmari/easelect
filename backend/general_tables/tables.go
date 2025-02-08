@@ -3,13 +3,13 @@ package general_tables
 
 import (
 	"database/sql"
+	"easelect/backend"
+	"easelect/backend/general_tables/gt_crud"
+	"easelect/backend/general_tables/models"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"rapsa/backend"
-	"rapsa/backend/general_tables/gt_crud"
-	"rapsa/backend/general_tables/models"
 
 	_ "github.com/lib/pq"
 )

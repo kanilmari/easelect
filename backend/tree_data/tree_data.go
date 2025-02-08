@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"rapsa/backend"
+	"easelect/backend"
 )
 
 // TreeNode edustaa puun solmua. db_id on varsinainen numeroinen ID tietokannassa,

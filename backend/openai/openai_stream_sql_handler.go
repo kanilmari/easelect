@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"rapsa/backend"
+	"easelect/backend"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -616,7 +616,7 @@ func fetch_columns_string_for_table(db *sql.DB, table_name string) (string, erro
 // 	"strings"
 // 	"time"
 
-// 	"rapsa/backend"
+// 	"easelect/backend"
 
 // 	"github.com/sashabaranov/go-openai"
 // )

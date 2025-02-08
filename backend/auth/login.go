@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"rapsa/backend"
+	"easelect/backend"
 
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"

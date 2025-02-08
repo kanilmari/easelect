@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"rapsa/backend"
+	"easelect/backend"
 )
 
 // HandleUpdateFolder käsittelee POST /api/update-folder

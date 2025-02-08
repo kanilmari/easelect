@@ -2,9 +2,9 @@
 package gt_read
 
 import (
+	"easelect/backend"
+	"easelect/backend/general_tables/models"
 	"fmt"
-	"rapsa/backend"
-	"rapsa/backend/general_tables/models"
 )
 
 // Päivitetty GetColumnsMapForTable-funktio

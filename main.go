@@ -10,15 +10,15 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"rapsa/backend"
-	"rapsa/backend/auth" // TÄRKEÄ: viittaus auth-pakettiin
-	"rapsa/backend/general_tables"
-	"rapsa/backend/router"
-	"rapsa/backend/sessions"
+	"easelect/backend"
+	"easelect/backend/auth"
+	"easelect/backend/general_tables"
+	"easelect/backend/router"
+	"easelect/backend/sessions"
 )
 
 func main() {
-	// 1) Ladataan .env (valinnaista)
+	// 1) Ladataan .env
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Ei .env-tiedostoa: %v", err)
 	}
@@ -33,7 +33,7 @@ func main() {
 	}
 	defer backend.CloseDB()
 
-	// 4) Päivitetään esim. OID-arvot (jos käytössä)
+	// 4) Päivitetään esim. OID-arvot
 	err = general_tables.UpdateOidsAndTableNames()
 	if err != nil {
 		log.Fatalf("OID-päivitysvirhe: %v", err)

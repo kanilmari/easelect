@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"rapsa/backend"          // Tarvitsemme vain Db
-	"rapsa/backend/sessions" // Sessioiden Store
+	"easelect/backend"          // Tarvitsemme vain Db
+	"easelect/backend/sessions" // Sessioiden Store
 )
 
 // WithUserLogging kirjaa lokiin perustietoja HTTP-pyynnöistä.

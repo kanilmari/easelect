@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"rapsa/backend"
+	"easelect/backend"
 
 	"github.com/lib/pq"
 )

@@ -3,12 +3,12 @@ package gt_create
 
 import (
 	"database/sql"
+	"easelect/backend"
+	gt_triggers "easelect/backend/general_tables/triggers"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"rapsa/backend"
-	gt_triggers "rapsa/backend/general_tables/triggers"
 	"strconv"
 	"strings"
 

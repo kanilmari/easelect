@@ -2,11 +2,11 @@
 package gt_triggers
 
 import (
+	"easelect/backend"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"rapsa/backend"
 	"strconv"
 	"strings"
 
