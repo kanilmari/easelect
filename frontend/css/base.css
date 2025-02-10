@@ -161,6 +161,7 @@ textarea {
     background-color: var(--input_bg_color);
     color: var(--text_color);
     font-size: 1rem;
+    width: 100%;
 }
 
 .auto_resize_textarea {

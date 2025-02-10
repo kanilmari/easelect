@@ -138,8 +138,8 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 		offset_value,
 	)
 
-	log.Printf("[DEBUG] final SQL: %s", query)
-	log.Printf("[DEBUG] query_args: %v", query_args)
+	// log.Printf("[DEBUG] final SQL: %s", query)
+	// log.Printf("[DEBUG] query_args: %v", query_args)
 
 	rows_result, err := backend.Db.Query(query, query_args...)
 	if err != nil {

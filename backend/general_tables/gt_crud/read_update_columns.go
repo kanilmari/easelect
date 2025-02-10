@@ -81,19 +81,7 @@ func UpdateColumnMetadata() error {
 	// Iteroi jokainen taulu
 	for _, table := range tables {
 
-		// Hae saraketiedot. Liitetään pg_type- taulu, jotta saadaan sarakkeen tietotyyppi (typname).
-		// columnsQuery := fmt.Sprintf(`
-		//     SELECT a.attnum,
-		//            a.attname,
-		//            t.typname AS data_type
-		//     FROM pg_attribute a
-		//     JOIN pg_type t ON a.atttypid = t.oid
-		//     WHERE a.attrelid = '%s'::regclass
-		//       AND a.attnum > 0
-		//       AND NOT a.attisdropped
-		//     ORDER BY a.attnum
-		// `, table.TableName)
-		// file: metadata_updater.go
+		// Hae saraketiedot
 		columnsQuery := fmt.Sprintf(`
 			SELECT a.attnum,
 				a.attname,

@@ -1,5 +1,5 @@
-// builder_chat_upload.js
-
+// coder_chat.js
+import { createContentFromData } from './chat_functions.js';
 /* ----------------------------------------
    1) Draggable-ikkunan luontifunktio
 ---------------------------------------- */
@@ -99,6 +99,7 @@ function start_code_editor_stream(chat_id, user_message) {
   const chat_container = document.getElementById(`${chat_id}_chat_container`);
 
   evtSource.addEventListener("chunk", (e) => {
+    console.log("chunk event received: ", e.data); // <- debug
     const chunk = e.data;
     if (!chunk.trim()) return;
     finalContent += chunk;
@@ -115,6 +116,7 @@ function start_code_editor_stream(chat_id, user_message) {
     }
     partial_text_elem.textContent += chunk;
 
+    //odotetaan n ms
     setTimeout(() => {
       chat_container.scrollTop = chat_container.scrollHeight;
     }, 0);
@@ -122,17 +124,21 @@ function start_code_editor_stream(chat_id, user_message) {
 
   evtSource.addEventListener("done", (e) => {
     evtSource.close();
-    // Poistetaan partial
+    // Poistetaan streamauksen aikainen "partial" bubble
     if (partial_bubble && chat_container) {
       chat_container.removeChild(partial_bubble);
       partial_bubble = null;
       partial_text_elem = null;
     }
-    // Lopullinen JSON-teksti
-    const finalJSON = e.data;
-
-    add_to_conversation_code(chat_id, { role: "assistant", content: finalJSON });
-    append_chat_message_code(chat_id, "assistant", finalJSON);
+    // Nyt finalContent sisältää kaikki chunkit
+    let final_text = finalContent.trim();
+    // Jos finalContent on tyhjä, käytetään SSE:n "done"-eventin dataa
+    if (!final_text) {
+      final_text = e.data;
+    }
+    // Lisätään lopullinen viesti chat-lokiin
+    add_to_conversation_code(chat_id, { role: "assistant", content: final_text });
+    append_chat_message_code(chat_id, "assistant", final_text);
   });
 
   evtSource.addEventListener("error", (e) => {
@@ -166,9 +172,8 @@ export function create_code_chat_ui(chat_id, parent_element) {
   chat_container_full.appendChild(chat_container);
 
   // Syötekenttä
-  const chat_input = document.createElement('input');
+  const chat_input = document.createElement('textarea');
   chat_input.id = `${chat_id}_chat_input`;
-  chat_input.type = 'text';
   chat_input.placeholder = 'Anna ohje koodin luontiin...';
 
   chat_input.addEventListener('keydown', (event) => {
@@ -215,11 +220,13 @@ export function create_code_chat_ui(chat_id, parent_element) {
     chat_container.innerHTML = '';
   });
 
-  const chat_input_row = document.createElement('div');
-  chat_input_row.appendChild(chat_input);
-  chat_input_row.appendChild(chat_send_btn);
-  chat_input_row.appendChild(clear_history_btn);
-  chat_container_full.appendChild(chat_input_row);
+  // Napit konttiin
+  const buttons_container = document.createElement('div');
+  buttons_container.classList.add('buttons_container');
+  buttons_container.appendChild(chat_send_btn);
+  buttons_container.appendChild(clear_history_btn);
+  chat_container_full.appendChild(chat_input);
+  chat_container_full.appendChild(buttons_container);
 
   chat_ui_wrapper.appendChild(chat_container_full);
   parent_element.appendChild(chat_ui_wrapper);
@@ -237,8 +244,9 @@ export function create_code_chat_ui(chat_id, parent_element) {
   load_conversation_from_local_storage_code(chat_id);
 }
 
-/* Viestien näyttö */
 function append_chat_message_code(chat_id, sender, text) {
+  text = text.replace(/\\n/g, '\n');
+
   const chat_container = document.getElementById(`${chat_id}_chat_container`);
   if (!chat_container) return;
 
@@ -255,11 +263,15 @@ function append_chat_message_code(chat_id, sender, text) {
 
   const text_elem = document.createElement('div');
   text_elem.classList.add('chat-text');
-  text_elem.textContent = text;
-
+  
+  // Käytä nyt createContentFromData-funktiota textContentin sijaan:
+  const htmlContent = createContentFromData(text);
+  text_elem.innerHTML = htmlContent;
+  
   bubble.appendChild(text_elem);
   chat_container.appendChild(bubble);
 
+  //odotetaan n ms
   setTimeout(() => {
     chat_container.scrollTop = chat_container.scrollHeight;
   }, 0);
@@ -330,25 +342,23 @@ function load_conversation_from_local_storage_code(chat_id) {
 
 
 /* ----------------------------------------
- 3) Ikkunoiden avaamiseen tarkoitetut funktiot
+ 3) Yhdistetty ikkuna: Chat + tiedostorakenne
 ---------------------------------------- */
 
-/** Avaa draggable-ikkuna chatille */
-export function open_chat_window() {
-  create_draggable_window('code_chat_window', 'Koodichat', (content_elem) => {
-    // Hyödynnetään jo luotua create_code_chat_ui-funktiota
+/** Avaa draggable-ikkunan, jossa on sekä koodichat että file-structure-päivitys */
+export function open_code_chat_and_file_structure_window() {
+  create_draggable_window('combined_code_chat_window', 'Koodichat   File-rakenteen päivitys', (content_elem) => {
+    // Lisätään chat UI
     create_code_chat_ui('draggable_code_chat', content_elem);
-  });
-}
 
-/** Avaa draggable-ikkuna file-structuren päivitykselle */
-export function open_file_struct_ud_window() {
-  create_draggable_window('db_upload_window', 'File-rakenteen päivitys', (content_elem) => {
-    const instructions = document.createElement('p');
-    instructions.textContent = 'Päivitä tiedostorakenne suoraan palvelimella painamalla nappia.';
-    content_elem.appendChild(instructions);
+    // Luodaan "päivitä file-structure" -osio
+    const separator = document.createElement('hr');
+    content_elem.appendChild(separator);
 
-    // Nappi, joka kutsuu /api/refresh-file-structure
+    // const instructions = document.createElement('p');
+    // instructions.textContent = 'Päivitä tiedostorakenne suoraan palvelimella painamalla nappia.';
+    // content_elem.appendChild(instructions);
+
     const update_btn = document.createElement('button');
     update_btn.textContent = 'Päivitä file-structure';
     update_btn.addEventListener('click', async () => {
@@ -357,16 +367,20 @@ export function open_file_struct_ud_window() {
         const res = await fetch('/api/refresh_file_structure', { method: 'POST' });
         if (!res.ok) {
           const errTxt = await res.text();
-          throw new Error(`Virhe: ${res.status} - ${errTxt}`);
+          throw new Error(`virhe: ${res.status} - ${errTxt}`);
         }
         const serverReply = await res.text();
         console.log('Palvelimen vastaus:', serverReply);
         alert('File-rakenne päivitetty. ' + serverReply);
       } catch (err) {
-        console.error('Päivitys epäonnistui:', err);
+        console.error('päivitys epäonnistui:', err);
         alert('File-rakenteen päivitys epäonnistui, tarkista konsoli.');
       }
     });
-    content_elem.appendChild(update_btn);
+
+    const buttons_container = content_elem.querySelector('.buttons_container');
+    if (buttons_container) {
+      buttons_container.appendChild(update_btn);
+    }
   });
 }
