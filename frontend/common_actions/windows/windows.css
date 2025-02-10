@@ -1,9 +1,8 @@
 /* windows.css */
 .draggable-window {
     position: absolute;
-    top: 1150px; /* Voit valita toisen oletussijainnin */
-    left: 0;
-    width: 400px;
+    top: 150px; /* Voit valita toisen oletussijainnin */
+    left: 150px;
     display: grid;
     grid-template-rows: auto 1fr; /* header + sisältö */
     background-color: var(--bg_color);
@@ -14,7 +13,9 @@
     overflow: hidden;
     resize: both; /* Jos haluat ikkunan koon muuttuvan */
     min-width: 300px;
-    min-height: 550px;
+    min-height: 500px;
+    width: 1400px;
+    min-height: 1400px;
   }
   
   .draggable-window-header {

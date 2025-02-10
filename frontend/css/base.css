@@ -131,8 +131,10 @@ td {
 thead tr:first-child th {
     position: sticky;
     top: -1px;
-    background: var(--bg_color); /* käytetään sovelluksesi CSS-muuttujaa */
-    z-index: 3; /* varmistaa, että header on muiden elementtien päällä */
+    background: var(--bg_color);
+    /* käytetään sovelluksesi CSS-muuttujaa */
+    z-index: 3;
+    /* varmistaa, että header on muiden elementtien päällä */
 }
 
 /* Toisen header-rivin (esim. suodattimet) solut jäävät header-rivin alapuolelle */
@@ -173,7 +175,7 @@ textarea {
     /* piilotetaan vierityspalkki */
     /* overflow: hidden; */
     /* pieni oletuskorkeus, kasvaa dynaamisesti kun tekstiä tulee */
-    line-height: 1.4em; 
+    line-height: 1.4em;
     min-height: 1.4em;
     width: 100%;
 }
@@ -214,26 +216,28 @@ textarea {
 }
 
 /* Kelluvan labelin aktivoituminen */
-.input-group input:focus + label,
-.input-group input:not(:placeholder-shown) + label,
-.input-group textarea:focus + label,
-.input-group textarea:not(:placeholder-shown) + label {
+.input-group input:focus+label,
+.input-group input:not(:placeholder-shown)+label,
+.input-group textarea:focus+label,
+.input-group textarea:not(:placeholder-shown)+label {
     top: 0;
     font-size: 12px;
     color: var(--text_color);
 }
 
 /* Tavallinen kenttä, jossa label EI kellu (ei mitään kokomuutoksia klikatessa) */
-.no-float + label {
+.no-float+label {
     position: static;
     transform: none;
     font-size: inherit;
     color: inherit;
-    transition: none; /* Voit myös poistaa transition:in */
+    transition: none;
+    /* Voit myös poistaa transition:in */
 }
+
 /* Ylikirjoitetaan focus- ja placeholder-shown -säännöt */
-.no-float:focus + label,
-.no-float:not(:placeholder-shown) + label {
+.no-float:focus+label,
+.no-float:not(:placeholder-shown)+label {
     position: static !important;
     transform: none !important;
     font-size: inherit !important;
@@ -255,5 +259,9 @@ textarea {
 
 
 
-
-
+details {
+    padding: 10px;
+    border: 1px solid var(--border_color);
+    max-height: 200px;
+    overflow: auto;
+}
