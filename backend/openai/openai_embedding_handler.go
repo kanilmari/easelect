@@ -64,7 +64,7 @@ func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Printf("error selecting rows: %v", err)
-		sendSSE("error", escapeForSSE(fmt.Sprintf("select error: %v", err)))
+		sendSSE("error", escape_for_sse(fmt.Sprintf("select error: %v", err)))
 		return
 	}
 	defer rows.Close()
@@ -73,7 +73,7 @@ func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 	columns, err := rows.Columns()
 	if err != nil {
 		log.Printf("error fetching columns: %v", err)
-		sendSSE("error", escapeForSSE(fmt.Sprintf("error fetching columns: %v", err)))
+		sendSSE("error", escape_for_sse(fmt.Sprintf("error fetching columns: %v", err)))
 		return
 	}
 
@@ -86,7 +86,7 @@ func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if idColIndex == -1 {
-		sendSSE("error", escapeForSSE("no 'id' column found in table"))
+		sendSSE("error", escape_for_sse("no 'id' column found in table"))
 		return
 	}
 
@@ -111,7 +111,7 @@ func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 
 		if err := rows.Scan(ptrs...); err != nil {
 			log.Printf("scan error: %v", err)
-			sendSSE("error", escapeForSSE(fmt.Sprintf("scan error row=%d: %v", totalRows, err)))
+			sendSSE("error", escape_for_sse(fmt.Sprintf("scan error row=%d: %v", totalRows, err)))
 			continue
 		}
 		rowIDVal := values[idColIndex]
@@ -135,13 +135,13 @@ func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 			rowID = v
 		default:
 			// Jos ID ei ole int-tyyppinen, muokkaa tarpeen mukaan:
-			sendSSE("error", escapeForSSE(fmt.Sprintf("row has non-int id: %v", rowIDVal)))
+			sendSSE("error", escape_for_sse(fmt.Sprintf("row has non-int id: %v", rowIDVal)))
 			continue
 		}
 
 		// Jos meillä ei ole sisältöä
 		if strings.TrimSpace(rowText) == "" {
-			sendSSE("progress", escapeForSSE(fmt.Sprintf("row id=%d empty text, skipped", rowID)))
+			sendSSE("progress", escape_for_sse(fmt.Sprintf("row id=%d empty text, skipped", rowID)))
 			continue
 		}
 
@@ -153,12 +153,12 @@ func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 		embedResp, err := client.CreateEmbeddings(ctx, embedReq)
 		if err != nil {
 			log.Printf("embedding error (id=%d): %v", rowID, err)
-			sendSSE("error", escapeForSSE(fmt.Sprintf("row=%d: %v", rowID, err)))
+			sendSSE("error", escape_for_sse(fmt.Sprintf("row=%d: %v", rowID, err)))
 			continue
 		}
 		if len(embedResp.Data) == 0 {
 			log.Printf("no embedding data returned for row %d", rowID)
-			sendSSE("error", escapeForSSE(fmt.Sprintf("no embedding data row=%d", rowID)))
+			sendSSE("error", escape_for_sse(fmt.Sprintf("no embedding data row=%d", rowID)))
 			continue
 		}
 
@@ -167,19 +167,19 @@ func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 		// Talletetaan openai_embedding -sarakkeeseen:
 		if err := storeEmbeddingInDB(db, tableName, rowID, embeddingVec); err != nil {
 			log.Printf("store embedding error (id=%d): %v", rowID, err)
-			sendSSE("error", escapeForSSE(fmt.Sprintf("row=%d: %v", rowID, err)))
+			sendSSE("error", escape_for_sse(fmt.Sprintf("row=%d: %v", rowID, err)))
 			continue
 		}
 
 		embeddedCount++
-		sendSSE("progress", escapeForSSE(fmt.Sprintf("embedded row id=%d", rowID)))
+		sendSSE("progress", escape_for_sse(fmt.Sprintf("embedded row id=%d", rowID)))
 	}
 	if err := rows.Err(); err != nil && err != io.EOF {
 		log.Printf("rows iteration error: %v", err)
-		sendSSE("error", escapeForSSE(fmt.Sprintf("rows error: %v", err)))
+		sendSSE("error", escape_for_sse(fmt.Sprintf("rows error: %v", err)))
 	}
 
-	sendSSE("done", escapeForSSE(fmt.Sprintf("embedding finished. total=%d, embedded=%d", totalRows, embeddedCount)))
+	sendSSE("done", escape_for_sse(fmt.Sprintf("embedding finished. total=%d, embedded=%d", totalRows, embeddedCount)))
 }
 
 // buildRowText luo yksinkertaisen tekstin tyyliin:

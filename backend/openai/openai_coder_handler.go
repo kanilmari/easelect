@@ -1,5 +1,3 @@
-// openai_coder_handler.go
-
 package openai
 
 import (
@@ -20,40 +18,45 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+// Rakenteet
 type MasterActionJSON struct {
 	MostProbableAction string `json:"most_suitable_consultant"`
 }
-
-// CodeEditorJSON helps us identify what the AI wants to do.
-// Esimerkiksi tiedoston luonti:
-//
-//	{"path_to_filename": "text.txt", "full_file_content": "abc"}
-//
-// tai semanttinen haku:
-//
-//	{"embedding_query": "some natural language text ..."}
 type CodeEditorJSON struct {
 	PathToFilename  string `json:"path_to_filename"`
 	FullFileContent string `json:"full_file_content"`
 	EmbeddingQuery  string `json:"embedding_query"`
 }
 
+// 1) Handler-funktio, joka alustaa SSE:n ja kutsuu handleCoderAction
 func OpenAICodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "only GET method allowed for SSE", http.StatusMethodNotAllowed)
 		return
 	}
 
-	user_message := r.URL.Query().Get("user_message")
-	encoded_conversation := r.URL.Query().Get("conversation")
+	userMessage := r.URL.Query().Get("user_message")
+	encodedConversation := r.URL.Query().Get("conversation")
 
-	var conversation_history []openai.ChatCompletionMessage
-	if encoded_conversation != "" {
-		decoded, err := url.QueryUnescape(encoded_conversation)
+	var conversationHistory []openai.ChatCompletionMessage
+	if encodedConversation != "" {
+		decoded, err := url.QueryUnescape(encodedConversation)
 		if err == nil {
-			_ = json.Unmarshal([]byte(decoded), &conversation_history)
+			unmarshalErr := json.Unmarshal([]byte(decoded), &conversationHistory)
+			if unmarshalErr != nil {
+				log.Printf("error unmarshaling conversationHistory: %v", unmarshalErr)
+			} else {
+				log.Printf("[OpenAICodeEditorStreamHandler] conversationHistory parsed, length=%d", len(conversationHistory))
+			}
+		} else {
+			log.Printf("url.QueryUnescape error: %v", err)
 		}
+	} else {
+		log.Printf("[OpenAICodeEditorStreamHandler] no conversation param provided")
 	}
+
+	// Lisätty lokitus: userMessage + conversationHistory
+	log.Printf("[OpenAICodeEditorStreamHandler] userMessage=%s, conversationHistoryLength=%d", userMessage, len(conversationHistory))
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -69,297 +72,266 @@ func OpenAICodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
 		flusher.Flush()
 	}
 
-	openai_key := os.Getenv("OPENAI_API_KEY")
-	if openai_key == "" {
-		http.Error(w, "missing OPENAI_API_KEY", http.StatusInternalServerError)
-		return
-	}
-
-	// System messages for different agents
-	master_agent_system_msg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
-	if master_agent_system_msg == "" {
-		http.Error(w, "missing OPENAI_CODER_SYSTEM_MESSAGE_MASTER environment variable", http.StatusInternalServerError)
-		return
-	}
-
-	text_chat_system_msg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
-	if text_chat_system_msg == "" {
-		http.Error(w, "missing OPENAI_CODER_SYSTEM_MESSAGE_TEXT environment variable", http.StatusInternalServerError)
-		return
-	}
-
-	embed_search_system_msg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
-	if embed_search_system_msg == "" {
-		http.Error(w, "missing OPENAI_CODER_SYSTEM_MESSAGE_EMBED environment variable", http.StatusInternalServerError)
-		return
-	}
-
-	file_creation_system_msg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_FILE")
-	if file_creation_system_msg == "" {
-		http.Error(w, "missing OPENAI_CODER_SYSTEM_MESSAGE_FILE environment variable", http.StatusInternalServerError)
-		return
-	}
-
-	// Uusi järjestelmäviesti tiedoston lukemiseen
-	file_read_system_msg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_READ")
-	if file_read_system_msg == "" {
-		http.Error(w, "missing OPENAI_CODER_SYSTEM_MESSAGE_READ environment variable", http.StatusInternalServerError)
-		return
-	}
-
-	// Logging
-	log.Printf("OpenAICodeEditorStreamHandler called. user_message = %q", user_message)
-	log.Printf("conversation_history length: %d", len(conversation_history))
-	for idx, msg := range conversation_history {
-		log.Printf("  conversation_history[%d].role = %s, length of content = %d chars",
-			idx, msg.Role, len(msg.Content))
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	client := openai.NewClient(openai_key)
-
-	// 1. Kutsutaan ensin Master-agentia, jotta saadaan selville käyttäjän intentio
-	master_answer, err := callOpenAIStreamOnce(
-		ctx,
-		client,
-		master_agent_system_msg,
-		conversation_history,
-		user_message,
-		os.Getenv("OPENAI_API_MODEL"),
-	)
-	if err != nil {
-		errMsg := fmt.Errorf("call to Master-agent failed: %v", err)
-		log.Println(errMsg)
-		sendSSE("error", escapeForSSE(errMsg.Error()))
-		return
-	}
-
-	// Parse the MasterAgent's JSON
-	var masterAction MasterActionJSON
-	jsonErr := json.Unmarshal([]byte(master_answer), &masterAction)
-	if jsonErr != nil {
-		log.Printf("MasterAgent JSON parse error: %v", jsonErr)
-		// fallback to communicator if we cannot parse
-		masterAction.MostProbableAction = "communicator"
-	}
-
-	log.Printf("[MASTER] Decided action: %s", masterAction.MostProbableAction)
-	sendSSE("chunk", escapeForSSE(fmt.Sprintf("Main agent suggests: %s \n", masterAction.MostProbableAction)))
-	// odotetaan n ms
-	time.Sleep(250 * time.Millisecond)
-
-	switch masterAction.MostProbableAction {
-	case "search_builder":
-		// 2. Kutsutaan embedSearch-agentia
-		search_answer, err := callOpenAIStreamOnce(
-			ctx,
-			client,
-			embed_search_system_msg,
-			conversation_history,
-			user_message,
-			os.Getenv("OPENAI_API_MODEL"),
-		)
-		if err != nil {
-			errMsg := fmt.Errorf("search_builder failed: %v", err)
-			log.Println(errMsg)
-			sendSSE("error", escapeForSSE(errMsg.Error()))
-			sendSSE("done", "")
-			return
-		}
-
-		// Parse the returned JSON: {"embedding_query":"..."}
-		var codeResp CodeEditorJSON
-		err = json.Unmarshal([]byte(search_answer), &codeResp)
-		if err != nil {
-			log.Printf("embedSearch JSON parse error: %v", err)
-			sendSSE("chunk", escapeForSSE(fmt.Sprintf("Embed parse error: %v", err)))
-			sendSSE("done", "")
-			return
-		}
-
-		if codeResp.EmbeddingQuery != "" {
-			log.Printf("Detected embedding_query: %q", codeResp.EmbeddingQuery)
-			results, err := doSemanticSearchInFileStructure(ctx, codeResp.EmbeddingQuery)
-			if err != nil {
-				log.Printf("error in doSemanticSearchInFileStructure: %v", err)
-				// odotetaan n ms
-				time.Sleep(250 * time.Millisecond)
-				sendSSE("error", escapeForSSE(fmt.Sprintf("semantic search failed: %v", err)))
-				sendSSE("done", "")
-				return
-			}
-
-			responseLine := fmt.Sprintf("Top 5 matching files:\n%v", strings.Join(results, "\n"))
-			sendSSE("chunk", escapeForSSE(responseLine))
-			// odotetaan n ms
-			time.Sleep(250 * time.Millisecond)
-		}
-		sendSSE("done", search_answer)
-		return
-
-	case "file_creator":
-		// 3. Kutsutaan fileCreation-agentia
-		file_answer, err := callOpenAIStreamOnce(
-			ctx,
-			client,
-			file_creation_system_msg,
-			conversation_history,
-			user_message,
-			os.Getenv("OPENAI_API_MODEL"),
-		)
-		if err != nil {
-			errMsg := fmt.Errorf("fileCreation-agent failed: %v", err)
-			log.Println(errMsg)
-			sendSSE("error", escapeForSSE(errMsg.Error()))
-			sendSSE("done", "")
-			return
-		}
-
-		var codeResp CodeEditorJSON
-		err = json.Unmarshal([]byte(file_answer), &codeResp)
-		if err != nil {
-			log.Printf("fileCreation parse error: %v", err)
-			sendSSE("chunk", escapeForSSE(fmt.Sprintf("File creation parse error: %v", err)))
-			sendSSE("done", "")
-			return
-		}
-
-		// Jos agentti palautti kelvollisen polun, kirjoitetaan tiedosto
-		if codeResp.PathToFilename != "" {
-			log.Printf("Detected path_to_filename: %s", codeResp.PathToFilename)
-			dirName := filepath.Dir(codeResp.PathToFilename)
-			if err := os.MkdirAll(dirName, 0755); err != nil {
-				log.Printf("could not create directory: %v", err)
-				sendSSE("error", escapeForSSE(fmt.Sprintf("could not create directory: %v", err)))
-				sendSSE("done", file_answer)
-				return
-			}
-			log.Printf("Writing file: %s", codeResp.PathToFilename)
-			err = os.WriteFile(codeResp.PathToFilename, []byte(codeResp.FullFileContent), 0644)
-			if err != nil {
-				log.Printf("error writing file: %v", err)
-				sendSSE("error", escapeForSSE(fmt.Sprintf("error writing file: %v", err)))
-				sendSSE("done", file_answer)
-				return
-			}
-			log.Printf("File written OK.")
-			sendSSE("chunk", escapeForSSE("File written OK."))
-			// odotetaan n ms
-			time.Sleep(250 * time.Millisecond)
-		}
-		sendSSE("done", file_answer)
-		return
-
-	case "file_read":
-		// Uusi haarautuminen: Luetaan pyydetty tiedosto ja lähetetään sen sisältö
-		file_read_answer, err := callOpenAIStreamOnce(
-			ctx,
-			client,
-			file_read_system_msg,
-			conversation_history,
-			user_message,
-			os.Getenv("OPENAI_API_MODEL"),
-		)
-		if err != nil {
-			errMsg := fmt.Errorf("fileRead-agent failed: %v", err)
-			log.Println(errMsg)
-			sendSSE("error", escapeForSSE(errMsg.Error()))
-			sendSSE("done", "")
-			return
-		}
-
-		var codeResp CodeEditorJSON
-		err = json.Unmarshal([]byte(file_read_answer), &codeResp)
-		if err != nil {
-			log.Printf("fileRead parse error: %v", err)
-			sendSSE("chunk", escapeForSSE(fmt.Sprintf("File read parse error: %v", err)))
-			sendSSE("done", "")
-			return
-		}
-
-		if codeResp.PathToFilename != "" {
-			log.Printf("Reading file: %s", codeResp.PathToFilename)
-			content, err := os.ReadFile(codeResp.PathToFilename)
-			if err != nil {
-				log.Printf("error reading file: %v", err)
-				sendSSE("error", escapeForSSE(fmt.Sprintf("Error reading file: %v", err)))
-				sendSSE("done", file_read_answer)
-				return
-			}
-			codeResp.FullFileContent = string(content)
-			sendSSE("chunk", escapeForSSE(fmt.Sprintf("File content of %s:\n%s", codeResp.PathToFilename, codeResp.FullFileContent)))
-			// odotetaan n ms
-			time.Sleep(250 * time.Millisecond)
-		}
-		sendSSE("done", file_read_answer)
-		return
-
-	default:
-		// 4. Oletuksena: communicator
-		chat_answer, err := callOpenAIStreamOnce(
-			ctx,
-			client,
-			text_chat_system_msg,
-			conversation_history,
-			user_message,
-			os.Getenv("OPENAI_API_MODEL"),
-		)
-		if err != nil {
-			errMsg := fmt.Errorf("textChat-agent failed: %v", err)
-			log.Println(errMsg)
-			sendSSE("error", escapeForSSE(errMsg.Error()))
-			sendSSE("done", "")
-			return
-		}
-
-		// Palautetaan plain text -vastaus
-		sendSSE("chunk", escapeForSSE(chat_answer))
-		// odotetaan n ms
-		time.Sleep(250 * time.Millisecond)
-		sendSSE("done", chat_answer)
+	// Kutsutaan toista funktiota, joka hoitaa varsinainen OpenAI-logiikan
+	if err := handleCoderAction(ctx, userMessage, conversationHistory, sendSSE); err != nil {
+		log.Printf("handleCoderAction error: %v", err)
+		sendSSE("error", escape_for_sse(err.Error()))
 	}
 }
 
-// callOpenAIStreamOnce suorittaa yhden ChatCompletion-kutsun streamauksella
-// ja palauttaa kerätyn vastauksen merkkijonona.
-func callOpenAIStreamOnce(
+// 2) Varsinainen logiikka, jaamme tämän irti SSE-handlerista
+func handleCoderAction(
 	ctx context.Context,
-	client *openai.Client,
-	systemMessage string,
-	history []openai.ChatCompletionMessage,
 	userMessage string,
-	modelName string,
-) (string, error) {
+	conversationHistory []openai.ChatCompletionMessage,
+	sendSSE func(string, string),
+) error {
 
-	if modelName == "" {
-		modelName = "gpt-3.5-turbo"
+	openaiKey := os.Getenv("OPENAI_API_KEY")
+	if openaiKey == "" {
+		return fmt.Errorf("missing OPENAI_API_KEY")
+	}
+	client := openai.NewClient(openaiKey)
+
+	// Lue environment-viestit (system-viestit)
+	masterAgentSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+	if masterAgentSystemMsg == "" {
+		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+	}
+	textChatSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+	if textChatSystemMsg == "" {
+		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+	}
+	embedSearchSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+	if embedSearchSystemMsg == "" {
+		return fmt.Errorf("missing_OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+	}
+	fileCreationSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_FILE")
+	if fileCreationSystemMsg == "" {
+		return fmt.Errorf("missing_OPENAI_CODER_SYSTEM_MESSAGE_FILE")
 	}
 
-	// Koostetaan viestit
-	var localMessages []openai.ChatCompletionMessage
-	localMessages = append(localMessages,
+	log.Printf("[handleCoderAction] userMessage=%q", userMessage)
+	log.Printf("[handleCoderAction] conversationHistory length: %d", len(conversationHistory))
+	for i, msg := range conversationHistory {
+		log.Printf(" - history[%d]: role=%s, len(content)=%d", i, msg.Role, len(msg.Content))
+	}
+
+	// 1) Master-agent
+	masterAnswer, err := call_openai_stream_once(
+		ctx,
+		client,
+		masterAgentSystemMsg,
+		conversationHistory,
+		userMessage,
+		os.Getenv("OPENAI_API_MODEL"),
+	)
+	if err != nil {
+		return fmt.Errorf("call to Master-agent failed: %w", err)
+	}
+	var masterAction MasterActionJSON
+	if err := json.Unmarshal([]byte(masterAnswer), &masterAction); err != nil {
+		log.Printf("MasterAgent JSON parse error: %v", err)
+		masterAction.MostProbableAction = "communicator"
+	}
+	log.Printf("[MASTER] Decided action: %s", masterAction.MostProbableAction)
+	sendSSE("chunk", escape_for_sse(fmt.Sprintf("Main agent suggests: %s \n", masterAction.MostProbableAction)))
+	//odotetaan n ms
+	time.Sleep(250 * time.Millisecond)
+
+	// 2) switch/case looginen haarautuminen
+	switch masterAction.MostProbableAction {
+	case "search_builder":
+		log.Printf("[handleCoderAction] calling embedSearch agent")
+		searchAnswer, err := call_openai_stream_once(
+			ctx,
+			client,
+			embedSearchSystemMsg,
+			conversationHistory,
+			userMessage,
+			os.Getenv("OPENAI_API_MODEL"),
+		)
+		if err != nil {
+			sendSSE("done", "")
+			return fmt.Errorf("search_builder failed: %w", err)
+		}
+
+		var codeResp CodeEditorJSON
+		if err := json.Unmarshal([]byte(searchAnswer), &codeResp); err != nil {
+			sendSSE("done", "")
+			return fmt.Errorf("embedSearch JSON parse error: %w", err)
+		}
+		if codeResp.EmbeddingQuery != "" {
+			log.Printf("[handleCoderAction/search_builder] embedding_query: %q", codeResp.EmbeddingQuery)
+			results, err := do_semantic_search_in_file_structure(ctx, codeResp.EmbeddingQuery)
+			if err != nil {
+				sendSSE("done", "")
+				return fmt.Errorf("semantic search failed: %w", err)
+			}
+
+			var sb strings.Builder
+			sb.WriteString("**Top matching files**:\n\n")
+			for i, r := range results {
+				sb.WriteString(fmt.Sprintf("**Match %d**:\n", i+1))
+				sb.WriteString("```javascript\n")
+				sb.WriteString(r)
+				sb.WriteString("\n```\n\n")
+			}
+			sendSSE("chunk", escape_for_sse(sb.String()))
+			//odotetaan n ms
+			time.Sleep(250 * time.Millisecond)
+
+			newAssistantMsg := openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: sb.String(),
+			}
+			conversationHistory = append(conversationHistory, newAssistantMsg)
+			_ = conversationHistory
+		}
+
+		// Pyydetään lyhyt yhteenveto
+		summaryMsg, errSum := call_openai_stream_once(
+			ctx,
+			client,
+			textChatSystemMsg,
+			conversationHistory,
+			"Käyttäjä suoritti search_builder-toiminnon. Anna lyhyt yhteenveto tehdyistä hakuvaiheista ja seuraavista askelista.",
+			os.Getenv("OPENAI_API_MODEL"),
+		)
+		if errSum != nil {
+			sendSSE("done", searchAnswer)
+			return fmt.Errorf("summary call failed: %w", errSum)
+		}
+		sendSSE("chunk", escape_for_sse(summaryMsg))
+		//odotetaan n ms
+		time.Sleep(250 * time.Millisecond)
+
+		sendSSE("done", searchAnswer)
+		return nil
+
+	case "file_creator":
+		log.Printf("[handleCoderAction] calling fileCreation agent")
+		fileAnswer, err := call_openai_stream_once(
+			ctx,
+			client,
+			fileCreationSystemMsg,
+			conversationHistory,
+			userMessage,
+			os.Getenv("OPENAI_API_MODEL"),
+		)
+		if err != nil {
+			sendSSE("done", "")
+			return fmt.Errorf("fileCreation-agent failed: %w", err)
+		}
+
+		var codeResp CodeEditorJSON
+		if err := json.Unmarshal([]byte(fileAnswer), &codeResp); err != nil {
+			sendSSE("done", "")
+			return fmt.Errorf("fileCreation parse error: %w", err)
+		}
+		if codeResp.PathToFilename != "" {
+			dirName := filepath.Dir(codeResp.PathToFilename)
+			if err := os.MkdirAll(dirName, 0755); err != nil {
+				sendSSE("done", fileAnswer)
+				return fmt.Errorf("could not create directory: %w", err)
+			}
+			log.Printf("[file_creator] writing file: %s", codeResp.PathToFilename)
+			if err := os.WriteFile(codeResp.PathToFilename, []byte(codeResp.FullFileContent), 0644); err != nil {
+				sendSSE("done", fileAnswer)
+				return fmt.Errorf("error writing file: %w", err)
+			}
+			sendSSE("chunk", escape_for_sse("File written OK."))
+			//odotetaan n ms
+			time.Sleep(250 * time.Millisecond)
+		}
+
+		// Pyydetään lyhyt yhteenveto
+		summaryMsg, errSum := call_openai_stream_once(
+			ctx,
+			client,
+			textChatSystemMsg,
+			conversationHistory,
+			"Käyttäjä suoritti file_creator-toiminnon. Anna lyhyt yhteenveto tiedoston luonnista ja seuraavista askelista.",
+			os.Getenv("OPENAI_API_MODEL"),
+		)
+		if errSum != nil {
+			sendSSE("done", fileAnswer)
+			return fmt.Errorf("summary call failed: %w", errSum)
+		}
+		sendSSE("chunk", escape_for_sse(summaryMsg))
+		//odotetaan n ms
+		time.Sleep(250 * time.Millisecond)
+
+		sendSSE("done", fileAnswer)
+		return nil
+
+	default:
+		// communicator (tekstichat) – ei yhteenvetokutsua
+		log.Printf("[handleCoderAction] calling textChat agent (communicator)")
+		chatAnswer, err := call_openai_stream_once(
+			ctx,
+			client,
+			textChatSystemMsg,
+			conversationHistory,
+			userMessage,
+			os.Getenv("OPENAI_API_MODEL"),
+		)
+		if err != nil {
+			sendSSE("done", "")
+			return fmt.Errorf("textChat-agent failed: %w", err)
+		}
+		sendSSE("chunk", escape_for_sse(chatAnswer))
+		//odotetaan n ms
+		time.Sleep(250 * time.Millisecond)
+
+		// Ei yhteenvetopyyntöä communicatorille
+		sendSSE("done", chatAnswer)
+		return nil
+	}
+}
+
+func call_openai_stream_once(
+	ctx context.Context,
+	client *openai.Client,
+	system_message string,
+	history []openai.ChatCompletionMessage,
+	user_message string,
+	model_name string,
+) (string, error) {
+
+	if model_name == "" {
+		model_name = "gpt-3.5-turbo"
+	}
+
+	// Lisätty lokitus: avaintiedot
+	log.Printf("[call_openai_stream_once] model=%s, systemMessageLen=%d, historyLen=%d, userMessageLen=%d",
+		model_name, len(system_message), len(history), len(user_message))
+
+	var local_messages []openai.ChatCompletionMessage
+	local_messages = append(local_messages,
 		openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleSystem,
-			Content: systemMessage,
+			Content: system_message,
 		},
 	)
-	localMessages = append(localMessages, history...)
-	localMessages = append(localMessages,
+	local_messages = append(local_messages, history...)
+	local_messages = append(local_messages,
 		openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
-			Content: userMessage,
+			Content: user_message,
 		},
 	)
 
-	streamReq := openai.ChatCompletionRequest{
-		Model:    modelName,
-		Messages: localMessages,
+	stream_req := openai.ChatCompletionRequest{
+		Model:    model_name,
+		Messages: local_messages,
 		Stream:   true,
 	}
 
-	stream, err := client.CreateChatCompletionStream(ctx, streamReq)
+	stream, err := client.CreateChatCompletionStream(ctx, stream_req)
 	if err != nil {
 		return "", fmt.Errorf("error creating chat stream: %w", err)
 	}
@@ -385,64 +357,48 @@ func callOpenAIStreamOnce(
 	}
 	answer := strings.TrimSpace(full_answer.String())
 
-	// Poistetaan mahdolliset JSON–koodauksen merkinnät
-	answer = strings.TrimPrefix(answer, "```json")
-	answer = strings.TrimSuffix(answer, "```")
-	answer = strings.TrimPrefix(answer, "```")
-	answer = strings.TrimSuffix(answer, "```")
-
+	log.Printf("[call_openai_stream_once] received answer len=%d", len(answer))
 	return answer, nil
 }
 
-func escapeForSSE(s string) string {
-	s = strings.ReplaceAll(s, "\r", "")
-	s = strings.ReplaceAll(s, "\n", "\\n")
-	return s
-}
-
-// doSemanticSearchInFileStructure suorittaa semanttisen haun "file_structure" -taulussa,
-// käyttämällä "openai_embedding" -saraketta vektorietäisyyksien mukaan.
-//
-// Palauttaa enintään 5 parasta tulosta. Nyt otamme myös parent_folder -kentän
-// ja luemme tiedoston sisällön levyltä, jos mahdollista.
-func doSemanticSearchInFileStructure(ctx context.Context, userQuery string) ([]string, error) {
+func do_semantic_search_in_file_structure(ctx context.Context, user_query string) ([]string, error) {
 	db := backend.Db
 
-	openaiKey := os.Getenv("OPENAI_API_KEY")
-	if openaiKey == "" {
+	openai_key := os.Getenv("OPENAI_API_KEY")
+	if openai_key == "" {
 		return nil, fmt.Errorf("missing OPENAI_API_KEY")
 	}
-	embeddingModel := os.Getenv("OPENAI_EMBEDDING_MODEL")
-	if embeddingModel == "" {
-		embeddingModel = "text-embedding-ada-002"
+	embedding_model := os.Getenv("OPENAI_EMBEDDING_MODEL")
+	if embedding_model == "" {
+		embedding_model = "text-embedding-ada-002"
 	}
 
-	client := openai.NewClient(openaiKey)
+	client := openai.NewClient(openai_key)
 
-	// 1) Luodaan embedding käyttäjän kyselylle
-	embedReq := openai.EmbeddingRequest{
-		Model: openai.EmbeddingModel(embeddingModel),
-		Input: []string{userQuery},
+	// 1) Luodaan embedding
+	embed_req := openai.EmbeddingRequest{
+		Model: openai.EmbeddingModel(embedding_model),
+		Input: []string{user_query},
 	}
-	embedResp, err := client.CreateEmbeddings(ctx, embedReq)
+	embed_resp, err := client.CreateEmbeddings(ctx, embed_req)
 	if err != nil {
 		return nil, fmt.Errorf("createEmbeddings error: %w", err)
 	}
-	if len(embedResp.Data) == 0 {
+	if len(embed_resp.Data) == 0 {
 		return nil, fmt.Errorf("createEmbeddings returned no data")
 	}
 
-	embedding := embedResp.Data[0].Embedding
-	vectorVal := pgvector.NewVector(embedding)
+	embedding := embed_resp.Data[0].Embedding
+	vector_val := pgvector.NewVector(embedding)
 
-	// 2) Haetaan top 5 tulosta, myös parent_folder
+	// 2) Haetaan top 5
 	query := `
-SELECT name, parent_folder 
+SELECT name, parent_folder
 FROM file_structure
 ORDER BY openai_embedding <-> $1
-LIMIT 5
+LIMIT 2
 `
-	rows, err := db.QueryContext(ctx, query, vectorVal)
+	rows, err := db.QueryContext(ctx, query, vector_val)
 	if err != nil {
 		return nil, fmt.Errorf("semantic search query error: %w", err)
 	}
@@ -450,39 +406,1422 @@ LIMIT 5
 
 	var results []string
 	for rows.Next() {
-		var fileName, parentFolder string
-		if err := rows.Scan(&fileName, &parentFolder); err != nil {
+		var file_name, parent_folder string
+		if err := rows.Scan(&file_name, &parent_folder); err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
-		// Rakennetaan polku muodossa parentFolder\fileName,
-		// jos parentFolder ei ole tyhjä. Muuten käytetään pelkkää fileNamea.
-		fullPath := fileName
-		if parentFolder != "" {
-			fullPath = parentFolder + "\\" + fileName
+		full_path := file_name
+		if parent_folder != "" {
+			full_path = parent_folder + "\\" + file_name
 		}
-
-		// Luetaan sisältö levyltä (jos löytyy).
-		contentBytes, readErr := os.ReadFile(fullPath)
-		if readErr != nil {
-			log.Printf("could not read file %s: %v", fullPath, readErr)
-			// Emme estä jatkoa, vaan vain mainitsemme ettei voitu lukea:
-			contentBytes = []byte("Could not read file from disk: " + readErr.Error())
+		content_bytes, read_err := os.ReadFile(full_path)
+		if read_err != nil {
+			log.Printf("could not read file %s: %v", full_path, read_err)
+			content_bytes = []byte("Could not read file from disk: " + read_err.Error())
 		}
-
-		// Muodostetaan selkeä kooste palautusarvoihin
-		resultString := fmt.Sprintf(
-			"parent_folder: %s\\nfile_name: %s\\nfull_path: %s\\ncontent:\\n%s",
-			parentFolder,
-			fileName,
-			fullPath,
-			string(contentBytes),
+		result_string := fmt.Sprintf(
+			"parent_folder: %s\nfile_name: %s\nfull_path: %s\ncontent:\n%s",
+			parent_folder,
+			file_name,
+			full_path,
+			string(content_bytes),
 		)
-		results = append(results, resultString)
+		results = append(results, result_string)
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
 
-	log.Printf("[DEBUG] semantic top 5 results with content read: %d items", len(results))
+	log.Printf("[do_semantic_search_in_file_structure] top 5 results with content read: %d items", len(results))
 	return results, nil
 }
+
+// package openai
+
+// import (
+// 	"context"
+// 	"easelect/backend"
+// 	"encoding/json"
+// 	"fmt"
+// 	"io"
+// 	"log"
+// 	"net/http"
+// 	"net/url"
+// 	"os"
+// 	"path/filepath"
+// 	"strings"
+// 	"time"
+
+// 	pgvector "github.com/pgvector/pgvector-go"
+// 	"github.com/sashabaranov/go-openai"
+// )
+
+// // Rakenteet
+// type MasterActionJSON struct {
+// 	MostProbableAction string `json:"most_suitable_consultant"`
+// }
+// type CodeEditorJSON struct {
+// 	PathToFilename  string `json:"path_to_filename"`
+// 	FullFileContent string `json:"full_file_content"`
+// 	EmbeddingQuery  string `json:"embedding_query"`
+// }
+
+// // 1) Handler-funktio, joka alustaa SSE:n ja kutsuu handleCoderAction
+// func OpenAICodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodGet {
+// 		http.Error(w, "only GET method allowed for SSE", http.StatusMethodNotAllowed)
+// 		return
+// 	}
+
+// 	userMessage := r.URL.Query().Get("user_message")
+// 	encodedConversation := r.URL.Query().Get("conversation")
+
+// 	var conversationHistory []openai.ChatCompletionMessage
+// 	if encodedConversation != "" {
+// 		decoded, err := url.QueryUnescape(encodedConversation)
+// 		if err == nil {
+// 			unmarshalErr := json.Unmarshal([]byte(decoded), &conversationHistory)
+// 			if unmarshalErr != nil {
+// 				log.Printf("error unmarshaling conversationHistory: %v", unmarshalErr)
+// 			} else {
+// 				log.Printf("[OpenAICodeEditorStreamHandler] conversationHistory parsed, length=%d", len(conversationHistory))
+// 			}
+// 		} else {
+// 			log.Printf("url.QueryUnescape error: %v", err)
+// 		}
+// 	} else {
+// 		log.Printf("[OpenAICodeEditorStreamHandler] no conversation param provided")
+// 	}
+
+// 	// Lisätty lokitus: userMessage + conversationHistory
+// 	log.Printf("[OpenAICodeEditorStreamHandler] userMessage=%s, conversationHistoryLength=%d", userMessage, len(conversationHistory))
+
+// 	w.Header().Set("Content-Type", "text/event-stream")
+// 	w.Header().Set("Cache-Control", "no-cache")
+// 	w.Header().Set("Connection", "keep-alive")
+
+// 	flusher, ok := w.(http.Flusher)
+// 	if !ok {
+// 		http.Error(w, "server does not support streaming", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	sendSSE := func(eventName, data string) {
+// 		fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventName, data)
+// 		flusher.Flush()
+// 	}
+
+// 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+// 	defer cancel()
+
+// 	// Kutsutaan toista funktiota, joka hoitaa varsinainen OpenAI-logiikan
+// 	if err := handleCoderAction(ctx, userMessage, conversationHistory, sendSSE); err != nil {
+// 		log.Printf("handleCoderAction error: %v", err)
+// 		sendSSE("error", escape_for_sse(err.Error()))
+// 	}
+// }
+
+// // 2) Varsinainen logiikka, jaamme tämän irti SSE-handlerista
+// func handleCoderAction(
+// 	ctx context.Context,
+// 	userMessage string,
+// 	conversationHistory []openai.ChatCompletionMessage,
+// 	sendSSE func(string, string),
+// ) error {
+
+// 	openaiKey := os.Getenv("OPENAI_API_KEY")
+// 	if openaiKey == "" {
+// 		return fmt.Errorf("missing OPENAI_API_KEY")
+// 	}
+// 	client := openai.NewClient(openaiKey)
+
+// 	// Lue environment-viestit (system-viestit)
+// 	masterAgentSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+// 	if masterAgentSystemMsg == "" {
+// 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+// 	}
+// 	textChatSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+// 	if textChatSystemMsg == "" {
+// 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+// 	}
+// 	embedSearchSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+// 	if embedSearchSystemMsg == "" {
+// 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+// 	}
+// 	fileCreationSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_FILE")
+// 	if fileCreationSystemMsg == "" {
+// 		return fmt.Errorf("missing_OPENAI_CODER_SYSTEM_MESSAGE_FILE")
+// 	}
+// 	fileReadSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_READ")
+// 	if fileReadSystemMsg == "" {
+// 		return fmt.Errorf("missing_OPENAI_CODER_SYSTEM_MESSAGE_READ")
+// 	}
+
+// 	log.Printf("[handleCoderAction] userMessage=%q", userMessage)
+// 	log.Printf("[handleCoderAction] conversationHistory length: %d", len(conversationHistory))
+// 	for i, msg := range conversationHistory {
+// 		log.Printf(" - history[%d]: role=%s, len(content)=%d", i, msg.Role, len(msg.Content))
+// 	}
+
+// 	// 1) Master-agent
+// 	masterAnswer, err := call_openai_stream_once(
+// 		ctx,
+// 		client,
+// 		masterAgentSystemMsg,
+// 		conversationHistory,
+// 		userMessage,
+// 		os.Getenv("OPENAI_API_MODEL"),
+// 	)
+// 	if err != nil {
+// 		return fmt.Errorf("call to Master-agent failed: %w", err)
+// 	}
+// 	var masterAction MasterActionJSON
+// 	if err := json.Unmarshal([]byte(masterAnswer), &masterAction); err != nil {
+// 		log.Printf("MasterAgent JSON parse error: %v", err)
+// 		masterAction.MostProbableAction = "communicator"
+// 	}
+// 	log.Printf("[MASTER] Decided action: %s", masterAction.MostProbableAction)
+// 	sendSSE("chunk", escape_for_sse(fmt.Sprintf("Main agent suggests: %s \n", masterAction.MostProbableAction)))
+// 	//odotetaan n ms
+// 	time.Sleep(250 * time.Millisecond)
+
+// 	// 2) switch/case looginen haarautuminen
+// 	switch masterAction.MostProbableAction {
+// 	case "search_builder":
+// 		// Kutsutaan embedSearch-agentia
+// 		log.Printf("[handleCoderAction] calling embedSearch agent")
+// 		searchAnswer, err := call_openai_stream_once(
+// 			ctx,
+// 			client,
+// 			embedSearchSystemMsg,
+// 			conversationHistory,
+// 			userMessage,
+// 			os.Getenv("OPENAI_API_MODEL"),
+// 		)
+// 		if err != nil {
+// 			sendSSE("done", "")
+// 			return fmt.Errorf("search_builder failed: %w", err)
+// 		}
+
+// 		var codeResp CodeEditorJSON
+// 		if err := json.Unmarshal([]byte(searchAnswer), &codeResp); err != nil {
+// 			sendSSE("done", "")
+// 			return fmt.Errorf("embedSearch JSON parse error: %w", err)
+// 		}
+// 		if codeResp.EmbeddingQuery != "" {
+// 			log.Printf("[handleCoderAction/search_builder] embedding_query: %q", codeResp.EmbeddingQuery)
+// 			results, err := do_semantic_search_in_file_structure(ctx, codeResp.EmbeddingQuery)
+// 			if err != nil {
+// 				sendSSE("done", "")
+// 				return fmt.Errorf("semantic search failed: %w", err)
+// 			}
+// 			// Muodostetaan selkeä viesti, jossa tiedostot sisällytetään code-lohkoina
+// 			var sb strings.Builder
+// 			sb.WriteString("**Top matching files**:\n\n")
+// 			for i, r := range results {
+// 				sb.WriteString(fmt.Sprintf("**Match %d**:\n", i+1))
+// 				sb.WriteString("```javascript\n")
+// 				sb.WriteString(r)
+// 				sb.WriteString("\n```\n\n")
+// 			}
+
+// 			// Lähetetään SSE-chunk, jotta käyttäjä näkee tiedostot
+// 			sendSSE("chunk", escape_for_sse(sb.String()))
+// 			time.Sleep(250 * time.Millisecond)
+
+// 			// Lisätään sama viesti conversationHistoryyn assistant-roolina
+// 			newAssistantMsg := openai.ChatCompletionMessage{
+// 				Role:    openai.ChatMessageRoleAssistant,
+// 				Content: sb.String(),
+// 			}
+// 			conversationHistory = append(conversationHistory, newAssistantMsg)
+// 			// Käytetään conversationHistory-arvoa, jottei SA4006-varoitusta tule
+// 			_ = conversationHistory
+// 		}
+// 		// Lopetetaan SSE
+// 		sendSSE("done", searchAnswer)
+// 		return nil
+
+// 	case "file_creator":
+// 		log.Printf("[handleCoderAction] calling fileCreation agent")
+// 		fileAnswer, err := call_openai_stream_once(
+// 			ctx,
+// 			client,
+// 			fileCreationSystemMsg,
+// 			conversationHistory,
+// 			userMessage,
+// 			os.Getenv("OPENAI_API_MODEL"),
+// 		)
+// 		if err != nil {
+// 			sendSSE("done", "")
+// 			return fmt.Errorf("fileCreation-agent failed: %w", err)
+// 		}
+
+// 		var codeResp CodeEditorJSON
+// 		if err := json.Unmarshal([]byte(fileAnswer), &codeResp); err != nil {
+// 			sendSSE("done", "")
+// 			return fmt.Errorf("fileCreation parse error: %w", err)
+// 		}
+// 		if codeResp.PathToFilename != "" {
+// 			dirName := filepath.Dir(codeResp.PathToFilename)
+// 			if err := os.MkdirAll(dirName, 0755); err != nil {
+// 				sendSSE("done", fileAnswer)
+// 				return fmt.Errorf("could not create directory: %w", err)
+// 			}
+// 			log.Printf("[file_creator] writing file: %s", codeResp.PathToFilename)
+// 			if err := os.WriteFile(codeResp.PathToFilename, []byte(codeResp.FullFileContent), 0644); err != nil {
+// 				sendSSE("done", fileAnswer)
+// 				return fmt.Errorf("error writing file: %w", err)
+// 			}
+// 			sendSSE("chunk", escape_for_sse("File written OK."))
+// 			time.Sleep(250 * time.Millisecond)
+
+// 			// Jos haluat viedä lisätietoa conversationHistoryyn,
+// 			// esim. "we created a new file", tee se tässä. Ei pakollinen.
+// 			/*
+// 			   newAssistantMsg := openai.ChatCompletionMessage{
+// 			   	Role:    openai.ChatMessageRoleAssistant,
+// 			   	Content: fmt.Sprintf("Created new file: %s", codeResp.PathToFilename),
+// 			   }
+// 			   conversationHistory = append(conversationHistory, newAssistantMsg)
+// 			   _ = conversationHistory
+// 			*/
+// 		}
+// 		sendSSE("done", fileAnswer)
+// 		return nil
+
+// 	case "file_read":
+// 		log.Printf("[handleCoderAction] calling fileRead agent")
+// 		fileReadAnswer, err := call_openai_stream_once(
+// 			ctx,
+// 			client,
+// 			fileReadSystemMsg,
+// 			conversationHistory,
+// 			userMessage,
+// 			os.Getenv("OPENAI_API_MODEL"),
+// 		)
+// 		if err != nil {
+// 			sendSSE("done", "")
+// 			return fmt.Errorf("fileRead-agent failed: %w", err)
+// 		}
+
+// 		var codeResp CodeEditorJSON
+// 		if err := json.Unmarshal([]byte(fileReadAnswer), &codeResp); err != nil {
+// 			sendSSE("done", "")
+// 			return fmt.Errorf("fileRead parse error: %w", err)
+// 		}
+// 		if codeResp.PathToFilename != "" {
+// 			log.Printf("[file_read] reading file: %s", codeResp.PathToFilename)
+// 			content, err := os.ReadFile(codeResp.PathToFilename)
+// 			if err != nil {
+// 				sendSSE("done", fileReadAnswer)
+// 				return fmt.Errorf("error reading file: %w", err)
+// 			}
+// 			codeResp.FullFileContent = string(content)
+
+// 			sendSSE("chunk", escape_for_sse(fmt.Sprintf("File content of %s:\n%s",
+// 				codeResp.PathToFilename,
+// 				codeResp.FullFileContent)))
+// 			time.Sleep(250 * time.Millisecond)
+
+// 			newAssistantMsg := openai.ChatCompletionMessage{
+// 				Role: openai.ChatMessageRoleAssistant,
+// 				Content: fmt.Sprintf(
+// 					"File content for reference (%s):\n```javascript\n%s\n```",
+// 					codeResp.PathToFilename,
+// 					codeResp.FullFileContent,
+// 				),
+// 			}
+// 			conversationHistory = append(conversationHistory, newAssistantMsg)
+// 			// Käytetään conversationHistory
+// 			_ = conversationHistory
+
+// 			// Kutsutaan vielä textChat-agenttia
+// 			secondaryAnswer, err2 := call_openai_stream_once(
+// 				ctx,
+// 				client,
+// 				textChatSystemMsg,
+// 				conversationHistory,
+// 				"Ok, now you have the file content. "+userMessage,
+// 				os.Getenv("OPENAI_API_MODEL"),
+// 			)
+// 			if err2 != nil {
+// 				sendSSE("done", fileReadAnswer)
+// 				return fmt.Errorf("secondary call with file content failed: %w", err2)
+// 			}
+// 			sendSSE("chunk", escape_for_sse(secondaryAnswer))
+// 			time.Sleep(250 * time.Millisecond)
+// 			sendSSE("done", secondaryAnswer)
+// 			return nil
+// 		}
+// 		sendSSE("done", fileReadAnswer)
+// 		return nil
+
+// 	default:
+// 		// communicator (tekstichat)
+// 		log.Printf("[handleCoderAction] calling textChat agent (communicator)")
+// 		chatAnswer, err := call_openai_stream_once(
+// 			ctx,
+// 			client,
+// 			textChatSystemMsg,
+// 			conversationHistory,
+// 			userMessage,
+// 			os.Getenv("OPENAI_API_MODEL"),
+// 		)
+// 		if err != nil {
+// 			sendSSE("done", "")
+// 			return fmt.Errorf("textChat-agent failed: %w", err)
+// 		}
+// 		sendSSE("chunk", escape_for_sse(chatAnswer))
+// 		time.Sleep(250 * time.Millisecond)
+// 		sendSSE("done", chatAnswer)
+// 		return nil
+// 	}
+// }
+
+// func call_openai_stream_once(
+// 	ctx context.Context,
+// 	client *openai.Client,
+// 	system_message string,
+// 	history []openai.ChatCompletionMessage,
+// 	user_message string,
+// 	model_name string,
+// ) (string, error) {
+
+// 	if model_name == "" {
+// 		model_name = "gpt-3.5-turbo"
+// 	}
+
+// 	// Lisätty lokitus: avaintiedot
+// 	log.Printf("[call_openai_stream_once] model=%s, systemMessageLen=%d, historyLen=%d, userMessageLen=%d",
+// 		model_name, len(system_message), len(history), len(user_message))
+
+// 	var local_messages []openai.ChatCompletionMessage
+// 	local_messages = append(local_messages,
+// 		openai.ChatCompletionMessage{
+// 			Role:    openai.ChatMessageRoleSystem,
+// 			Content: system_message,
+// 		},
+// 	)
+// 	local_messages = append(local_messages, history...)
+// 	local_messages = append(local_messages,
+// 		openai.ChatCompletionMessage{
+// 			Role:    openai.ChatMessageRoleUser,
+// 			Content: user_message,
+// 		},
+// 	)
+
+// 	stream_req := openai.ChatCompletionRequest{
+// 		Model:    model_name,
+// 		Messages: local_messages,
+// 		Stream:   true,
+// 	}
+
+// 	stream, err := client.CreateChatCompletionStream(ctx, stream_req)
+// 	if err != nil {
+// 		return "", fmt.Errorf("error creating chat stream: %w", err)
+// 	}
+// 	defer stream.Close()
+
+// 	var full_answer strings.Builder
+// 	for {
+// 		resp, err := stream.Recv()
+// 		if err != nil {
+// 			if err == io.EOF {
+// 				break
+// 			}
+// 			return "", fmt.Errorf("stream read error: %w", err)
+// 		}
+// 		if len(resp.Choices) == 0 {
+// 			continue
+// 		}
+// 		chunk := resp.Choices[0].Delta.Content
+// 		if chunk == "" {
+// 			continue
+// 		}
+// 		full_answer.WriteString(chunk)
+// 	}
+// 	answer := strings.TrimSpace(full_answer.String())
+
+// 	log.Printf("[call_openai_stream_once] received answer len=%d", len(answer))
+// 	return answer, nil
+// }
+
+// func do_semantic_search_in_file_structure(ctx context.Context, user_query string) ([]string, error) {
+// 	db := backend.Db
+
+// 	openai_key := os.Getenv("OPENAI_API_KEY")
+// 	if openai_key == "" {
+// 		return nil, fmt.Errorf("missing OPENAI_API_KEY")
+// 	}
+// 	embedding_model := os.Getenv("OPENAI_EMBEDDING_MODEL")
+// 	if embedding_model == "" {
+// 		embedding_model = "text-embedding-ada-002"
+// 	}
+
+// 	client := openai.NewClient(openai_key)
+
+// 	// 1) Luodaan embedding
+// 	embed_req := openai.EmbeddingRequest{
+// 		Model: openai.EmbeddingModel(embedding_model),
+// 		Input: []string{user_query},
+// 	}
+// 	embed_resp, err := client.CreateEmbeddings(ctx, embed_req)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("createEmbeddings error: %w", err)
+// 	}
+// 	if len(embed_resp.Data) == 0 {
+// 		return nil, fmt.Errorf("createEmbeddings returned no data")
+// 	}
+
+// 	embedding := embed_resp.Data[0].Embedding
+// 	vector_val := pgvector.NewVector(embedding)
+
+// 	// 2) Haetaan top 5
+// 	query := `
+// SELECT name, parent_folder
+// FROM file_structure
+// ORDER BY openai_embedding <-> $1
+// LIMIT 2
+// `
+// 	rows, err := db.QueryContext(ctx, query, vector_val)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("semantic search query error: %w", err)
+// 	}
+// 	defer rows.Close()
+
+// 	var results []string
+// 	for rows.Next() {
+// 		var file_name, parent_folder string
+// 		if err := rows.Scan(&file_name, &parent_folder); err != nil {
+// 			return nil, fmt.Errorf("scan error: %w", err)
+// 		}
+// 		full_path := file_name
+// 		if parent_folder != "" {
+// 			full_path = parent_folder + "\\" + file_name
+// 		}
+// 		content_bytes, read_err := os.ReadFile(full_path)
+// 		if read_err != nil {
+// 			log.Printf("could not read file %s: %v", full_path, read_err)
+// 			content_bytes = []byte("Could not read file from disk: " + read_err.Error())
+// 		}
+// 		result_string := fmt.Sprintf(
+// 			"parent_folder: %s\nfile_name: %s\nfull_path: %s\ncontent:\n%s",
+// 			parent_folder,
+// 			file_name,
+// 			full_path,
+// 			string(content_bytes),
+// 		)
+// 		results = append(results, result_string)
+// 	}
+// 	if rows.Err() != nil {
+// 		return nil, rows.Err()
+// 	}
+
+// 	log.Printf("[do_semantic_search_in_file_structure] top 5 results with content read: %d items", len(results))
+// 	return results, nil
+// }
+
+// // // openai_coder_handler.go
+
+// // // Go:
+// // package openai
+
+// // import (
+// // 	"context"
+// // 	"easelect/backend"
+// // 	"encoding/json"
+// // 	"fmt"
+// // 	"io"
+// // 	"log"
+// // 	"net/http"
+// // 	"net/url"
+// // 	"os"
+// // 	"path/filepath"
+// // 	"strings"
+// // 	"time"
+
+// // 	pgvector "github.com/pgvector/pgvector-go"
+// // 	"github.com/sashabaranov/go-openai"
+// // )
+
+// // // Rakenteet
+// // type MasterActionJSON struct {
+// // 	MostProbableAction string `json:"most_suitable_consultant"`
+// // }
+// // type CodeEditorJSON struct {
+// // 	PathToFilename  string `json:"path_to_filename"`
+// // 	FullFileContent string `json:"full_file_content"`
+// // 	EmbeddingQuery  string `json:"embedding_query"`
+// // }
+
+// // // 1) Handler-funktio, joka alustaa SSE:n ja kutsuu handleCoderAction
+// // func OpenAICodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
+// // 	if r.Method != http.MethodGet {
+// // 		http.Error(w, "only GET method allowed for SSE", http.StatusMethodNotAllowed)
+// // 		return
+// // 	}
+
+// // 	userMessage := r.URL.Query().Get("user_message")
+// // 	encodedConversation := r.URL.Query().Get("conversation")
+
+// // 	var conversationHistory []openai.ChatCompletionMessage
+// // 	if encodedConversation != "" {
+// // 		decoded, err := url.QueryUnescape(encodedConversation)
+// // 		if err == nil {
+// // 			unmarshalErr := json.Unmarshal([]byte(decoded), &conversationHistory)
+// // 			if unmarshalErr != nil {
+// // 				log.Printf("error unmarshaling conversationHistory: %v", unmarshalErr)
+// // 			} else {
+// // 				log.Printf("[OpenAICodeEditorStreamHandler] conversationHistory parsed, length=%d", len(conversationHistory))
+// // 			}
+// // 		} else {
+// // 			log.Printf("url.QueryUnescape error: %v", err)
+// // 		}
+// // 	} else {
+// // 		log.Printf("[OpenAICodeEditorStreamHandler] no conversation param provided")
+// // 	}
+
+// // 	// Lisätty lokitus: userMessage + conversationHistory
+// // 	log.Printf("[OpenAICodeEditorStreamHandler] userMessage=%s, conversationHistoryLength=%d", userMessage, len(conversationHistory))
+
+// // 	w.Header().Set("Content-Type", "text/event-stream")
+// // 	w.Header().Set("Cache-Control", "no-cache")
+// // 	w.Header().Set("Connection", "keep-alive")
+
+// // 	flusher, ok := w.(http.Flusher)
+// // 	if !ok {
+// // 		http.Error(w, "server does not support streaming", http.StatusInternalServerError)
+// // 		return
+// // 	}
+// // 	sendSSE := func(eventName, data string) {
+// // 		fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventName, data)
+// // 		flusher.Flush()
+// // 	}
+
+// // 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+// // 	defer cancel()
+
+// // 	// Kutsutaan toista funktiota, joka hoitaa varsinainen OpenAI-logiikan
+// // 	if err := handleCoderAction(ctx, userMessage, conversationHistory, sendSSE); err != nil {
+// // 		log.Printf("handleCoderAction error: %v", err)
+// // 		sendSSE("error", escape_for_sse(err.Error()))
+// // 	}
+// // }
+
+// // // 2) Varsinainen logiikka, jaamme tämän irti SSE-handlerista
+// // func handleCoderAction(
+// // 	ctx context.Context,
+// // 	userMessage string,
+// // 	conversationHistory []openai.ChatCompletionMessage,
+// // 	sendSSE func(string, string),
+// // ) error {
+
+// // 	openaiKey := os.Getenv("OPENAI_API_KEY")
+// // 	if openaiKey == "" {
+// // 		return fmt.Errorf("missing OPENAI_API_KEY")
+// // 	}
+// // 	client := openai.NewClient(openaiKey)
+
+// // 	// Lue environment-viestit (system-viestit)
+// // 	masterAgentSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+// // 	if masterAgentSystemMsg == "" {
+// // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+// // 	}
+// // 	textChatSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+// // 	if textChatSystemMsg == "" {
+// // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+// // 	}
+// // 	embedSearchSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+// // 	if embedSearchSystemMsg == "" {
+// // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+// // 	}
+// // 	fileCreationSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_FILE")
+// // 	if fileCreationSystemMsg == "" {
+// // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_FILE")
+// // 	}
+// // 	fileReadSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_READ")
+// // 	if fileReadSystemMsg == "" {
+// // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_READ")
+// // 	}
+
+// // 	log.Printf("[handleCoderAction] userMessage=%q", userMessage)
+// // 	log.Printf("[handleCoderAction] conversationHistory length: %d", len(conversationHistory))
+// // 	for i, msg := range conversationHistory {
+// // 		log.Printf(" - history[%d]: role=%s, len(content)=%d", i, msg.Role, len(msg.Content))
+// // 	}
+
+// // 	// 1) Master-agent
+// // 	masterAnswer, err := call_openai_stream_once(
+// // 		ctx,
+// // 		client,
+// // 		masterAgentSystemMsg,
+// // 		conversationHistory,
+// // 		userMessage,
+// // 		os.Getenv("OPENAI_API_MODEL"),
+// // 	)
+// // 	if err != nil {
+// // 		return fmt.Errorf("call to Master-agent failed: %w", err)
+// // 	}
+// // 	var masterAction MasterActionJSON
+// // 	if err := json.Unmarshal([]byte(masterAnswer), &masterAction); err != nil {
+// // 		log.Printf("MasterAgent JSON parse error: %v", err)
+// // 		masterAction.MostProbableAction = "communicator"
+// // 	}
+// // 	log.Printf("[MASTER] Decided action: %s", masterAction.MostProbableAction)
+// // 	sendSSE("chunk", escape_for_sse(fmt.Sprintf("Main agent suggests: %s \n", masterAction.MostProbableAction)))
+// // 	//odotetaan n ms
+// // 	time.Sleep(250 * time.Millisecond)
+
+// // 	// 2) switch/case looginen haarautuminen
+// // 	switch masterAction.MostProbableAction {
+// // 	case "search_builder":
+// // 		// Kutsutaan embedSearch-agentia
+// // 		log.Printf("[handleCoderAction] calling embedSearch agent")
+// // 		searchAnswer, err := call_openai_stream_once(
+// // 			ctx,
+// // 			client,
+// // 			embedSearchSystemMsg,
+// // 			conversationHistory,
+// // 			userMessage,
+// // 			os.Getenv("OPENAI_API_MODEL"),
+// // 		)
+// // 		if err != nil {
+// // 			sendSSE("done", "")
+// // 			return fmt.Errorf("search_builder failed: %w", err)
+// // 		}
+
+// // 		var codeResp CodeEditorJSON
+// // 		if err := json.Unmarshal([]byte(searchAnswer), &codeResp); err != nil {
+// // 			sendSSE("done", "")
+// // 			return fmt.Errorf("embedSearch JSON parse error: %w", err)
+// // 		}
+// // 		if codeResp.EmbeddingQuery != "" {
+// // 			log.Printf("[handleCoderAction/search_builder] embedding_query: %q", codeResp.EmbeddingQuery)
+// // 			results, err := do_semantic_search_in_file_structure(ctx, codeResp.EmbeddingQuery)
+// // 			if err != nil {
+// // 				sendSSE("done", "")
+// // 				return fmt.Errorf("semantic search failed: %w", err)
+// // 			}
+// // 			responseLine := fmt.Sprintf("Top 5 matching files:\n%v", strings.Join(results, "\n"))
+// // 			sendSSE("chunk", escape_for_sse(responseLine))
+// // 			//odotetaan n ms
+// // 			time.Sleep(250 * time.Millisecond)
+// // 		}
+// // 		sendSSE("done", searchAnswer)
+// // 		return nil
+
+// // 	case "file_creator":
+// // 		log.Printf("[handleCoderAction] calling fileCreation agent")
+// // 		fileAnswer, err := call_openai_stream_once(
+// // 			ctx,
+// // 			client,
+// // 			fileCreationSystemMsg,
+// // 			conversationHistory,
+// // 			userMessage,
+// // 			os.Getenv("OPENAI_API_MODEL"),
+// // 		)
+// // 		if err != nil {
+// // 			sendSSE("done", "")
+// // 			return fmt.Errorf("fileCreation-agent failed: %w", err)
+// // 		}
+
+// // 		var codeResp CodeEditorJSON
+// // 		if err := json.Unmarshal([]byte(fileAnswer), &codeResp); err != nil {
+// // 			sendSSE("done", "")
+// // 			return fmt.Errorf("fileCreation parse error: %w", err)
+// // 		}
+// // 		if codeResp.PathToFilename != "" {
+// // 			dirName := filepath.Dir(codeResp.PathToFilename)
+// // 			if err := os.MkdirAll(dirName, 0755); err != nil {
+// // 				sendSSE("done", fileAnswer)
+// // 				return fmt.Errorf("could not create directory: %w", err)
+// // 			}
+// // 			log.Printf("[file_creator] writing file: %s", codeResp.PathToFilename)
+// // 			if err := os.WriteFile(codeResp.PathToFilename, []byte(codeResp.FullFileContent), 0644); err != nil {
+// // 				sendSSE("done", fileAnswer)
+// // 				return fmt.Errorf("error writing file: %w", err)
+// // 			}
+// // 			sendSSE("chunk", escape_for_sse("File written OK."))
+// // 			//odotetaan n ms
+// // 			time.Sleep(250 * time.Millisecond)
+// // 		}
+// // 		sendSSE("done", fileAnswer)
+// // 		return nil
+
+// // 	case "file_read":
+// // 		log.Printf("[handleCoderAction] calling fileRead agent")
+// // 		fileReadAnswer, err := call_openai_stream_once(
+// // 			ctx,
+// // 			client,
+// // 			fileReadSystemMsg,
+// // 			conversationHistory,
+// // 			userMessage,
+// // 			os.Getenv("OPENAI_API_MODEL"),
+// // 		)
+// // 		if err != nil {
+// // 			sendSSE("done", "")
+// // 			return fmt.Errorf("fileRead-agent failed: %w", err)
+// // 		}
+
+// // 		var codeResp CodeEditorJSON
+// // 		if err := json.Unmarshal([]byte(fileReadAnswer), &codeResp); err != nil {
+// // 			sendSSE("done", "")
+// // 			return fmt.Errorf("fileRead parse error: %w", err)
+// // 		}
+// // 		if codeResp.PathToFilename != "" {
+// // 			log.Printf("[file_read] reading file: %s", codeResp.PathToFilename)
+// // 			content, err := os.ReadFile(codeResp.PathToFilename)
+// // 			if err != nil {
+// // 				sendSSE("done", fileReadAnswer)
+// // 				return fmt.Errorf("error reading file: %w", err)
+// // 			}
+// // 			codeResp.FullFileContent = string(content)
+
+// // 			sendSSE("chunk", escape_for_sse(fmt.Sprintf("File content of %s:\n%s",
+// // 				codeResp.PathToFilename,
+// // 				codeResp.FullFileContent)))
+// // 			//odotetaan n ms
+// // 			time.Sleep(250 * time.Millisecond)
+
+// // 			newAssistantMsg := openai.ChatCompletionMessage{
+// // 				Role:    openai.ChatMessageRoleAssistant,
+// // 				Content: fmt.Sprintf("File content for reference (%s):\n%s", codeResp.PathToFilename, codeResp.FullFileContent),
+// // 			}
+// // 			conversationHistory = append(conversationHistory, newAssistantMsg)
+
+// // 			// Kutsutaan toista agenttia (textChat) uudelleen, nyt tiedoston sisältö on historiassa
+// // 			secondaryAnswer, err2 := call_openai_stream_once(
+// // 				ctx,
+// // 				client,
+// // 				textChatSystemMsg,
+// // 				conversationHistory,
+// // 				"Ok, now you have the file content. "+userMessage,
+// // 				os.Getenv("OPENAI_API_MODEL"),
+// // 			)
+// // 			if err2 != nil {
+// // 				sendSSE("done", fileReadAnswer)
+// // 				return fmt.Errorf("secondary call with file content failed: %w", err2)
+// // 			}
+
+// // 			sendSSE("chunk", escape_for_sse(secondaryAnswer))
+// // 			//odotetaan n ms
+// // 			time.Sleep(250 * time.Millisecond)
+// // 			sendSSE("done", secondaryAnswer)
+// // 			return nil
+// // 		}
+// // 		// Jos path puuttui
+// // 		sendSSE("done", fileReadAnswer)
+// // 		return nil
+
+// // 	default:
+// // 		// communicator (tekstichat)
+// // 		log.Printf("[handleCoderAction] calling textChat agent (communicator)")
+// // 		chatAnswer, err := call_openai_stream_once(
+// // 			ctx,
+// // 			client,
+// // 			textChatSystemMsg,
+// // 			conversationHistory,
+// // 			userMessage,
+// // 			os.Getenv("OPENAI_API_MODEL"),
+// // 		)
+// // 		if err != nil {
+// // 			sendSSE("done", "")
+// // 			return fmt.Errorf("textChat-agent failed: %w", err)
+// // 		}
+// // 		sendSSE("chunk", escape_for_sse(chatAnswer))
+// // 		//odotetaan n ms
+// // 		time.Sleep(250 * time.Millisecond)
+// // 		sendSSE("done", chatAnswer)
+// // 		return nil
+// // 	}
+// // }
+
+// // func call_openai_stream_once(
+// // 	ctx context.Context,
+// // 	client *openai.Client,
+// // 	system_message string,
+// // 	history []openai.ChatCompletionMessage,
+// // 	user_message string,
+// // 	model_name string,
+// // ) (string, error) {
+
+// // 	if model_name == "" {
+// // 		model_name = "gpt-3.5-turbo"
+// // 	}
+
+// // 	// Lisätty lokitus: avaintiedot
+// // 	log.Printf("[call_openai_stream_once] model=%s, systemMessageLen=%d, historyLen=%d, userMessageLen=%d",
+// // 		model_name, len(system_message), len(history), len(user_message))
+
+// // 	var local_messages []openai.ChatCompletionMessage
+// // 	local_messages = append(local_messages,
+// // 		openai.ChatCompletionMessage{
+// // 			Role:    openai.ChatMessageRoleSystem,
+// // 			Content: system_message,
+// // 		},
+// // 	)
+// // 	local_messages = append(local_messages, history...)
+// // 	local_messages = append(local_messages,
+// // 		openai.ChatCompletionMessage{
+// // 			Role:    openai.ChatMessageRoleUser,
+// // 			Content: user_message,
+// // 		},
+// // 	)
+
+// // 	stream_req := openai.ChatCompletionRequest{
+// // 		Model:    model_name,
+// // 		Messages: local_messages,
+// // 		Stream:   true,
+// // 	}
+
+// // 	stream, err := client.CreateChatCompletionStream(ctx, stream_req)
+// // 	if err != nil {
+// // 		return "", fmt.Errorf("error creating chat stream: %w", err)
+// // 	}
+// // 	defer stream.Close()
+
+// // 	var full_answer strings.Builder
+// // 	for {
+// // 		resp, err := stream.Recv()
+// // 		if err != nil {
+// // 			if err == io.EOF {
+// // 				break
+// // 			}
+// // 			return "", fmt.Errorf("stream read error: %w", err)
+// // 		}
+// // 		if len(resp.Choices) == 0 {
+// // 			continue
+// // 		}
+// // 		chunk := resp.Choices[0].Delta.Content
+// // 		if chunk == "" {
+// // 			continue
+// // 		}
+// // 		full_answer.WriteString(chunk)
+// // 	}
+// // 	answer := strings.TrimSpace(full_answer.String())
+
+// // 	// Poistetaan mahdolliset ``` -merkit
+// // 	answer = strings.TrimPrefix(answer, "```json")
+// // 	answer = strings.TrimSuffix(answer, "```")
+// // 	answer = strings.TrimPrefix(answer, "```")
+// // 	answer = strings.TrimSuffix(answer, "```")
+
+// // 	log.Printf("[call_openai_stream_once] received answer len=%d", len(answer))
+// // 	return answer, nil
+// // }
+
+// // func do_semantic_search_in_file_structure(ctx context.Context, user_query string) ([]string, error) {
+// // 	db := backend.Db
+
+// // 	openai_key := os.Getenv("OPENAI_API_KEY")
+// // 	if openai_key == "" {
+// // 		return nil, fmt.Errorf("missing OPENAI_API_KEY")
+// // 	}
+// // 	embedding_model := os.Getenv("OPENAI_EMBEDDING_MODEL")
+// // 	if embedding_model == "" {
+// // 		embedding_model = "text-embedding-ada-002"
+// // 	}
+
+// // 	client := openai.NewClient(openai_key)
+
+// // 	// 1) Luodaan embedding
+// // 	embed_req := openai.EmbeddingRequest{
+// // 		Model: openai.EmbeddingModel(embedding_model),
+// // 		Input: []string{user_query},
+// // 	}
+// // 	embed_resp, err := client.CreateEmbeddings(ctx, embed_req)
+// // 	if err != nil {
+// // 		return nil, fmt.Errorf("createEmbeddings error: %w", err)
+// // 	}
+// // 	if len(embed_resp.Data) == 0 {
+// // 		return nil, fmt.Errorf("createEmbeddings returned no data")
+// // 	}
+
+// // 	embedding := embed_resp.Data[0].Embedding
+// // 	vector_val := pgvector.NewVector(embedding)
+
+// // 	// 2) Haetaan top 5
+// // 	query := `
+// // SELECT name, parent_folder
+// // FROM file_structure
+// // ORDER BY openai_embedding <-> $1
+// // LIMIT 2
+// // `
+// // 	rows, err := db.QueryContext(ctx, query, vector_val)
+// // 	if err != nil {
+// // 		return nil, fmt.Errorf("semantic search query error: %w", err)
+// // 	}
+// // 	defer rows.Close()
+
+// // 	var results []string
+// // 	for rows.Next() {
+// // 		var file_name, parent_folder string
+// // 		if err := rows.Scan(&file_name, &parent_folder); err != nil {
+// // 			return nil, fmt.Errorf("scan error: %w", err)
+// // 		}
+// // 		full_path := file_name
+// // 		if parent_folder != "" {
+// // 			full_path = parent_folder + "\\" + file_name
+// // 		}
+// // 		content_bytes, read_err := os.ReadFile(full_path)
+// // 		if read_err != nil {
+// // 			log.Printf("could not read file %s: %v", full_path, read_err)
+// // 			content_bytes = []byte("Could not read file from disk: " + read_err.Error())
+// // 		}
+// // 		result_string := fmt.Sprintf(
+// // 			"parent_folder: %s\\nfile_name: %s\\nfull_path: %s\\ncontent:\\n%s",
+// // 			parent_folder,
+// // 			file_name,
+// // 			full_path,
+// // 			string(content_bytes),
+// // 		)
+// // 		results = append(results, result_string)
+// // 	}
+// // 	if rows.Err() != nil {
+// // 		return nil, rows.Err()
+// // 	}
+
+// // 	log.Printf("[do_semantic_search_in_file_structure] top 5 results with content read: %d items", len(results))
+// // 	return results, nil
+// // }
+
+// // // package openai
+
+// // // import (
+// // // 	"context"
+// // // 	"easelect/backend"
+// // // 	"encoding/json"
+// // // 	"fmt"
+// // // 	"io"
+// // // 	"log"
+// // // 	"net/http"
+// // // 	"net/url"
+// // // 	"os"
+// // // 	"path/filepath"
+// // // 	"strings"
+// // // 	"time"
+
+// // // 	pgvector "github.com/pgvector/pgvector-go"
+// // // 	"github.com/sashabaranov/go-openai"
+// // // )
+
+// // // // Rakenteet
+// // // type MasterActionJSON struct {
+// // // 	MostProbableAction string `json:"most_suitable_consultant"`
+// // // }
+// // // type CodeEditorJSON struct {
+// // // 	PathToFilename  string `json:"path_to_filename"`
+// // // 	FullFileContent string `json:"full_file_content"`
+// // // 	EmbeddingQuery  string `json:"embedding_query"`
+// // // }
+
+// // // // 1) Handler-funktio, joka alustaa SSE:n ja kutsuu handleCoderAction
+// // // func OpenAICodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
+// // // 	if r.Method != http.MethodGet {
+// // // 		http.Error(w, "only GET method allowed for SSE", http.StatusMethodNotAllowed)
+// // // 		return
+// // // 	}
+
+// // // 	userMessage := r.URL.Query().Get("user_message")
+// // // 	encodedConversation := r.URL.Query().Get("conversation")
+
+// // // 	var conversationHistory []openai.ChatCompletionMessage
+// // // 	if encodedConversation != "" {
+// // // 		decoded, err := url.QueryUnescape(encodedConversation)
+// // // 		if err == nil {
+// // // 			_ = json.Unmarshal([]byte(decoded), &conversationHistory)
+// // // 		}
+// // // 	}
+
+// // // 	w.Header().Set("Content-Type", "text/event-stream")
+// // // 	w.Header().Set("Cache-Control", "no-cache")
+// // // 	w.Header().Set("Connection", "keep-alive")
+
+// // // 	flusher, ok := w.(http.Flusher)
+// // // 	if !ok {
+// // // 		http.Error(w, "server does not support streaming", http.StatusInternalServerError)
+// // // 		return
+// // // 	}
+// // // 	sendSSE := func(eventName, data string) {
+// // // 		fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventName, data)
+// // // 		flusher.Flush()
+// // // 	}
+
+// // // 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+// // // 	defer cancel()
+
+// // // 	// Kutsutaan toista funktiota, joka hoitaa varsinainen OpenAI-logiikan
+// // // 	if err := handleCoderAction(ctx, userMessage, conversationHistory, sendSSE); err != nil {
+// // // 		log.Printf("handleCoderAction error: %v", err)
+// // // 		sendSSE("error", escape_for_sse(err.Error()))
+// // // 	}
+// // // }
+
+// // // // 2) Varsinainen logiikka, jaamme tämän irti SSE-handlerista
+// // // func handleCoderAction(
+// // // 	ctx context.Context,
+// // // 	userMessage string,
+// // // 	conversationHistory []openai.ChatCompletionMessage,
+// // // 	sendSSE func(string, string),
+// // // ) error {
+
+// // // 	openaiKey := os.Getenv("OPENAI_API_KEY")
+// // // 	if openaiKey == "" {
+// // // 		return fmt.Errorf("missing OPENAI_API_KEY")
+// // // 	}
+// // // 	client := openai.NewClient(openaiKey)
+
+// // // 	// Lue environment-viestit (system-viestit)
+// // // 	masterAgentSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+// // // 	if masterAgentSystemMsg == "" {
+// // // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_MASTER")
+// // // 	}
+// // // 	textChatSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+// // // 	if textChatSystemMsg == "" {
+// // // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_TEXT")
+// // // 	}
+// // // 	embedSearchSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+// // // 	if embedSearchSystemMsg == "" {
+// // // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_EMBED")
+// // // 	}
+// // // 	fileCreationSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_FILE")
+// // // 	if fileCreationSystemMsg == "" {
+// // // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_FILE")
+// // // 	}
+// // // 	fileReadSystemMsg := os.Getenv("OPENAI_CODER_SYSTEM_MESSAGE_READ")
+// // // 	if fileReadSystemMsg == "" {
+// // // 		return fmt.Errorf("missing OPENAI_CODER_SYSTEM_MESSAGE_READ")
+// // // 	}
+
+// // // 	log.Printf("handleCoderAction: user_message=%q", userMessage)
+// // // 	log.Printf("conversationHistory length: %d", len(conversationHistory))
+// // // 	for i, msg := range conversationHistory {
+// // // 		log.Printf(" - history[%d]: role=%s, len(content)=%d", i, msg.Role, len(msg.Content))
+// // // 	}
+
+// // // 	// 1) Master-agent
+// // // 	masterAnswer, err := call_openai_stream_once(
+// // // 		ctx,
+// // // 		client,
+// // // 		masterAgentSystemMsg,
+// // // 		conversationHistory,
+// // // 		userMessage,
+// // // 		os.Getenv("OPENAI_API_MODEL"),
+// // // 	)
+// // // 	if err != nil {
+// // // 		return fmt.Errorf("call to Master-agent failed: %w", err)
+// // // 	}
+// // // 	var masterAction MasterActionJSON
+// // // 	if err := json.Unmarshal([]byte(masterAnswer), &masterAction); err != nil {
+// // // 		log.Printf("MasterAgent JSON parse error: %v", err)
+// // // 		masterAction.MostProbableAction = "communicator"
+// // // 	}
+// // // 	log.Printf("[MASTER] Decided action: %s", masterAction.MostProbableAction)
+// // // 	sendSSE("chunk", escape_for_sse(fmt.Sprintf("Main agent suggests: %s \n", masterAction.MostProbableAction)))
+// // // 	time.Sleep(250 * time.Millisecond)
+
+// // // 	// 2) switch/case looginen haarautuminen
+// // // 	switch masterAction.MostProbableAction {
+// // // 	case "search_builder":
+// // // 		// Kutsutaan embedSearch-agentia
+// // // 		searchAnswer, err := call_openai_stream_once(
+// // // 			ctx,
+// // // 			client,
+// // // 			embedSearchSystemMsg,
+// // // 			conversationHistory,
+// // // 			userMessage,
+// // // 			os.Getenv("OPENAI_API_MODEL"),
+// // // 		)
+// // // 		if err != nil {
+// // // 			sendSSE("done", "")
+// // // 			return fmt.Errorf("search_builder failed: %w", err)
+// // // 		}
+
+// // // 		var codeResp CodeEditorJSON
+// // // 		if err := json.Unmarshal([]byte(searchAnswer), &codeResp); err != nil {
+// // // 			sendSSE("done", "")
+// // // 			return fmt.Errorf("embedSearch JSON parse error: %w", err)
+// // // 		}
+// // // 		if codeResp.EmbeddingQuery != "" {
+// // // 			log.Printf("Detected embedding_query: %q", codeResp.EmbeddingQuery)
+// // // 			results, err := do_semantic_search_in_file_structure(ctx, codeResp.EmbeddingQuery)
+// // // 			if err != nil {
+// // // 				sendSSE("done", "")
+// // // 				return fmt.Errorf("semantic search failed: %w", err)
+// // // 			}
+// // // 			responseLine := fmt.Sprintf("Top 5 matching files:\n%v", strings.Join(results, "\n"))
+// // // 			sendSSE("chunk", escape_for_sse(responseLine))
+// // // 			time.Sleep(250 * time.Millisecond)
+// // // 		}
+// // // 		sendSSE("done", searchAnswer)
+// // // 		return nil
+
+// // // 	case "file_creator":
+// // // 		// Kutsutaan fileCreation-agentia
+// // // 		fileAnswer, err := call_openai_stream_once(
+// // // 			ctx,
+// // // 			client,
+// // // 			fileCreationSystemMsg,
+// // // 			conversationHistory,
+// // // 			userMessage,
+// // // 			os.Getenv("OPENAI_API_MODEL"),
+// // // 		)
+// // // 		if err != nil {
+// // // 			sendSSE("done", "")
+// // // 			return fmt.Errorf("fileCreation-agent failed: %w", err)
+// // // 		}
+
+// // // 		var codeResp CodeEditorJSON
+// // // 		if err := json.Unmarshal([]byte(fileAnswer), &codeResp); err != nil {
+// // // 			sendSSE("done", "")
+// // // 			return fmt.Errorf("fileCreation parse error: %w", err)
+// // // 		}
+// // // 		if codeResp.PathToFilename != "" {
+// // // 			dirName := filepath.Dir(codeResp.PathToFilename)
+// // // 			if err := os.MkdirAll(dirName, 0755); err != nil {
+// // // 				sendSSE("done", fileAnswer)
+// // // 				return fmt.Errorf("could not create directory: %w", err)
+// // // 			}
+// // // 			log.Printf("Writing file: %s", codeResp.PathToFilename)
+// // // 			if err := os.WriteFile(codeResp.PathToFilename, []byte(codeResp.FullFileContent), 0644); err != nil {
+// // // 				sendSSE("done", fileAnswer)
+// // // 				return fmt.Errorf("error writing file: %w", err)
+// // // 			}
+// // // 			sendSSE("chunk", escape_for_sse("File written OK."))
+// // // 			time.Sleep(250 * time.Millisecond)
+// // // 		}
+// // // 		sendSSE("done", fileAnswer)
+// // // 		return nil
+
+// // // 	case "file_read":
+// // // 		// Kutsutaan fileRead-agenttia
+// // // 		fileReadAnswer, err := call_openai_stream_once(
+// // // 			ctx,
+// // // 			client,
+// // // 			fileReadSystemMsg,
+// // // 			conversationHistory,
+// // // 			userMessage,
+// // // 			os.Getenv("OPENAI_API_MODEL"),
+// // // 		)
+// // // 		if err != nil {
+// // // 			sendSSE("done", "")
+// // // 			return fmt.Errorf("fileRead-agent failed: %w", err)
+// // // 		}
+
+// // // 		var codeResp CodeEditorJSON
+// // // 		if err := json.Unmarshal([]byte(fileReadAnswer), &codeResp); err != nil {
+// // // 			sendSSE("done", "")
+// // // 			return fmt.Errorf("fileRead parse error: %w", err)
+// // // 		}
+// // // 		if codeResp.PathToFilename != "" {
+// // // 			log.Printf("Reading file: %s", codeResp.PathToFilename)
+// // // 			content, err := os.ReadFile(codeResp.PathToFilename)
+// // // 			if err != nil {
+// // // 				sendSSE("done", fileReadAnswer)
+// // // 				return fmt.Errorf("error reading file: %w", err)
+// // // 			}
+// // // 			codeResp.FullFileContent = string(content)
+
+// // // 			// Lähetetään content selaimelle (vain näkyviin)
+// // // 			sendSSE("chunk", escape_for_sse(fmt.Sprintf("File content of %s:\n%s",
+// // // 				codeResp.PathToFilename,
+// // // 				codeResp.FullFileContent)))
+// // // 			time.Sleep(250 * time.Millisecond)
+
+// // // 			// ***** Lisätään tiedosto AI:n kontekstiin (assistant-viesti) *****
+// // // 			newAssistantMsg := openai.ChatCompletionMessage{
+// // // 				Role:    openai.ChatMessageRoleAssistant,
+// // // 				Content: fmt.Sprintf("File content for reference (%s):\n%s", codeResp.PathToFilename, codeResp.FullFileContent),
+// // // 			}
+// // // 			conversationHistory = append(conversationHistory, newAssistantMsg)
+
+// // // 			// Kutsutaan toista agenttia (textChat) uudelleen, nyt tiedoston sisältö on historiassa
+// // // 			secondaryAnswer, err2 := call_openai_stream_once(
+// // // 				ctx,
+// // // 				client,
+// // // 				textChatSystemMsg,
+// // // 				conversationHistory,
+// // // 				"Ok, now you have the file content. "+userMessage,
+// // // 				os.Getenv("OPENAI_API_MODEL"),
+// // // 			)
+// // // 			if err2 != nil {
+// // // 				sendSSE("done", fileReadAnswer)
+// // // 				return fmt.Errorf("secondary call with file content failed: %w", err2)
+// // // 			}
+
+// // // 			// Palautetaan lopullinen vastaus SSE:nä
+// // // 			sendSSE("chunk", escape_for_sse(secondaryAnswer))
+// // // 			time.Sleep(250 * time.Millisecond)
+// // // 			sendSSE("done", secondaryAnswer)
+// // // 			return nil
+// // // 		}
+// // // 		// Jos path puuttui
+// // // 		sendSSE("done", fileReadAnswer)
+// // // 		return nil
+
+// // // 	default:
+// // // 		// communicator (tekstichat)
+// // // 		chatAnswer, err := call_openai_stream_once(
+// // // 			ctx,
+// // // 			client,
+// // // 			textChatSystemMsg,
+// // // 			conversationHistory,
+// // // 			userMessage,
+// // // 			os.Getenv("OPENAI_API_MODEL"),
+// // // 		)
+// // // 		if err != nil {
+// // // 			sendSSE("done", "")
+// // // 			return fmt.Errorf("textChat-agent failed: %w", err)
+// // // 		}
+// // // 		sendSSE("chunk", escape_for_sse(chatAnswer))
+// // // 		time.Sleep(250 * time.Millisecond)
+// // // 		sendSSE("done", chatAnswer)
+// // // 		return nil
+// // // 	}
+// // // }
+
+// // // // call_openai_stream_once on sama kuin ennen
+// // // func call_openai_stream_once(
+// // // 	ctx context.Context,
+// // // 	client *openai.Client,
+// // // 	system_message string,
+// // // 	history []openai.ChatCompletionMessage,
+// // // 	user_message string,
+// // // 	model_name string,
+// // // ) (string, error) {
+
+// // // 	if model_name == "" {
+// // // 		model_name = "gpt-3.5-turbo"
+// // // 	}
+
+// // // 	var local_messages []openai.ChatCompletionMessage
+// // // 	local_messages = append(local_messages,
+// // // 		openai.ChatCompletionMessage{
+// // // 			Role:    openai.ChatMessageRoleSystem,
+// // // 			Content: system_message,
+// // // 		},
+// // // 	)
+// // // 	local_messages = append(local_messages, history...)
+// // // 	local_messages = append(local_messages,
+// // // 		openai.ChatCompletionMessage{
+// // // 			Role:    openai.ChatMessageRoleUser,
+// // // 			Content: user_message,
+// // // 		},
+// // // 	)
+
+// // // 	stream_req := openai.ChatCompletionRequest{
+// // // 		Model:    model_name,
+// // // 		Messages: local_messages,
+// // // 		Stream:   true,
+// // // 	}
+
+// // // 	stream, err := client.CreateChatCompletionStream(ctx, stream_req)
+// // // 	if err != nil {
+// // // 		return "", fmt.Errorf("error creating chat stream: %w", err)
+// // // 	}
+// // // 	defer stream.Close()
+
+// // // 	var full_answer strings.Builder
+// // // 	for {
+// // // 		resp, err := stream.Recv()
+// // // 		if err != nil {
+// // // 			if err == io.EOF {
+// // // 				break
+// // // 			}
+// // // 			return "", fmt.Errorf("stream read error: %w", err)
+// // // 		}
+// // // 		if len(resp.Choices) == 0 {
+// // // 			continue
+// // // 		}
+// // // 		chunk := resp.Choices[0].Delta.Content
+// // // 		if chunk == "" {
+// // // 			continue
+// // // 		}
+// // // 		full_answer.WriteString(chunk)
+// // // 	}
+// // // 	answer := strings.TrimSpace(full_answer.String())
+
+// // // 	// Poistetaan mahdolliset ``` -merkit
+// // // 	answer = strings.TrimPrefix(answer, "```json")
+// // // 	answer = strings.TrimSuffix(answer, "```")
+// // // 	answer = strings.TrimPrefix(answer, "```")
+// // // 	answer = strings.TrimSuffix(answer, "```")
+
+// // // 	return answer, nil
+// // // }
+
+// // // // do_semantic_search_in_file_structure kuten ennen
+// // // func do_semantic_search_in_file_structure(ctx context.Context, user_query string) ([]string, error) {
+// // // 	db := backend.Db
+
+// // // 	openai_key := os.Getenv("OPENAI_API_KEY")
+// // // 	if openai_key == "" {
+// // // 		return nil, fmt.Errorf("missing OPENAI_API_KEY")
+// // // 	}
+// // // 	embedding_model := os.Getenv("OPENAI_EMBEDDING_MODEL")
+// // // 	if embedding_model == "" {
+// // // 		embedding_model = "text-embedding-ada-002"
+// // // 	}
+
+// // // 	client := openai.NewClient(openai_key)
+
+// // // 	// 1) Luodaan embedding
+// // // 	embed_req := openai.EmbeddingRequest{
+// // // 		Model: openai.EmbeddingModel(embedding_model),
+// // // 		Input: []string{user_query},
+// // // 	}
+// // // 	embed_resp, err := client.CreateEmbeddings(ctx, embed_req)
+// // // 	if err != nil {
+// // // 		return nil, fmt.Errorf("createEmbeddings error: %w", err)
+// // // 	}
+// // // 	if len(embed_resp.Data) == 0 {
+// // // 		return nil, fmt.Errorf("createEmbeddings returned no data")
+// // // 	}
+
+// // // 	embedding := embed_resp.Data[0].Embedding
+// // // 	vector_val := pgvector.NewVector(embedding)
+
+// // // 	// 2) Haetaan top 5
+// // // 	query := `
+// // // SELECT name, parent_folder
+// // // FROM file_structure
+// // // ORDER BY openai_embedding <-> $1
+// // // LIMIT 5
+// // // `
+// // // 	rows, err := db.QueryContext(ctx, query, vector_val)
+// // // 	if err != nil {
+// // // 		return nil, fmt.Errorf("semantic search query error: %w", err)
+// // // 	}
+// // // 	defer rows.Close()
+
+// // // 	var results []string
+// // // 	for rows.Next() {
+// // // 		var file_name, parent_folder string
+// // // 		if err := rows.Scan(&file_name, &parent_folder); err != nil {
+// // // 			return nil, fmt.Errorf("scan error: %w", err)
+// // // 		}
+// // // 		full_path := file_name
+// // // 		if parent_folder != "" {
+// // // 			full_path = parent_folder + "\\" + file_name
+// // // 		}
+// // // 		content_bytes, read_err := os.ReadFile(full_path)
+// // // 		if read_err != nil {
+// // // 			log.Printf("could not read file %s: %v", full_path, read_err)
+// // // 			content_bytes = []byte("Could not read file from disk: " + read_err.Error())
+// // // 		}
+// // // 		result_string := fmt.Sprintf(
+// // // 			"parent_folder: %s\\nfile_name: %s\\nfull_path: %s\\ncontent:\\n%s",
+// // // 			parent_folder,
+// // // 			file_name,
+// // // 			full_path,
+// // // 			string(content_bytes),
+// // // 		)
+// // // 		results = append(results, result_string)
+// // // 	}
+// // // 	if rows.Err() != nil {
+// // // 		return nil, rows.Err()
+// // // 	}
+
+// // // 	log.Printf("[DEBUG] semantic top 5 results with content read: %d items", len(results))
+// // // 	return results, nil
+// // // }

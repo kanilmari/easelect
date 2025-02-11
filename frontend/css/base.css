@@ -264,4 +264,10 @@ details {
     border: 1px solid var(--border_color);
     max-height: 200px;
     overflow: auto;
+    border-radius: 4px;
+}
+
+summary {
+    border-bottom: 1px solid var(--border_color);
+    cursor: pointer;
 }
