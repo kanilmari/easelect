@@ -21,7 +21,7 @@ import (
 	"easelect/backend/middlewares"
 	"easelect/backend/openai"
 	"easelect/backend/refresh_file_structure"
-	"easelect/backend/sessions"
+	e_sessions "easelect/backend/sessions"
 	"easelect/backend/tree_data"
 
 	gt_triggers "easelect/backend/general_tables/triggers"
@@ -120,7 +120,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Muutoin tarkistetaan, onko käyttäjä kirjautunut
-	store := sessions.GetStore()
+	store := e_sessions.GetStore()
 	session, err := store.Get(r, "session")
 	if err != nil {
 		log.Printf("rootHandler: session error: %v", err)
@@ -188,12 +188,14 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 			// Pelkkä lokitus
 			finalHandler = middlewares.WithUserLogging(rd.HandlerFunc)
 		} else {
-			// Käyttöoikeus + lokitus
+			// Käyttöoikeus + laitetarkistus + lokitus
 			finalHandler = middlewares.WithUserLogging(
-				middlewares.WithAccessControl(rd.HandlerName, rd.HandlerFunc),
+				middlewares.WithAccessControl(
+					rd.HandlerName,
+					middlewares.WithDeviceIDCheck(rd.HandlerFunc),
+				),
 			)
 		}
-
 		http.HandleFunc(rd.UrlPattern, finalHandler)
 		registeredFunctions[rd.HandlerName] = true
 	}

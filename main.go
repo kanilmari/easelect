@@ -14,7 +14,7 @@ import (
 	"easelect/backend/auth"
 	"easelect/backend/general_tables"
 	"easelect/backend/router"
-	"easelect/backend/sessions"
+	e_sessions "easelect/backend/sessions"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	}
 
 	// 2) Alustetaan sessiot (CookieStore, asetukset)
-	sessions.InitSessionStore()
+	e_sessions.InitSessionStore()
 
 	// 3) Alustetaan tietokanta
 	err := backend.InitDB()
@@ -52,7 +52,7 @@ func main() {
 	http.Handle("/media/", http.StripPrefix("/media/", http.FileServer(http.Dir(mediaPath))))
 
 	// --- TÄRKEÄ KUTSU auth.InitAuth ---
-	auth.InitAuth(sessions.GetStore(), frontendDir)
+	auth.InitAuth(e_sessions.GetStore(), frontendDir)
 
 	// 6) Rekisteröidään reitit + polku staattisiin tiedostoihin
 	router.RegisterRoutes(frontendDir)

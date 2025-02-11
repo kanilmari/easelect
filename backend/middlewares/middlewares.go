@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	"easelect/backend"          // Tarvitsemme vain Db
-	"easelect/backend/sessions" // Sessioiden Store
+	"easelect/backend" // Tarvitsemme vain Db
+	e_sessions "easelect/backend/sessions"
+	// Sessioiden Store
 )
 
 // WithUserLogging kirjaa lokiin perustietoja HTTP-pyynnöistä.
@@ -30,7 +31,7 @@ func WithUserLogging(original_handler http.HandlerFunc) http.HandlerFunc {
 			log_line += fmt.Sprintf(", table: %s", table_name)
 		}
 
-		store := sessions.GetStore()
+		store := e_sessions.GetStore()
 		session, err := store.Get(r, "session")
 		if err != nil {
 			log_line += fmt.Sprintf(", session err: %v]", err)
@@ -115,7 +116,7 @@ func WithAccessControl(handler_name string, original_handler http.HandlerFunc) h
 		// )
 
 		// --- Session ja käyttäjätarkistus ---
-		store := sessions.GetStore()
+		store := e_sessions.GetStore()
 		session, err := store.Get(r, "session")
 		if err != nil {
 			log.Printf("[WithAccessControl][%s] session haku epäonnistui: %v", handler_name, err)
@@ -217,4 +218,42 @@ func userHasTablePermission(user_id int, function_name, table_name string) bool 
 		return false
 	}
 	return true
+}
+
+// WithDeviceIDCheck varmistaa, että sessionin device_id vastaa device_id-evästettä.
+func WithDeviceIDCheck(originalHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		store := e_sessions.GetStore()
+		session, err := store.Get(r, "session")
+		if err != nil {
+			log.Printf("[WithDeviceIDCheck] session haku epäonnistui: %v", err)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// Haetaan session arvot
+		sess_device_id, _ := session.Values["device_id"].(string)
+		if sess_device_id == "" {
+			log.Printf("[WithDeviceIDCheck] ei device_id:tä sessiossa -> login")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// Haetaan device_id-eväste
+		cookie_device_id, err := r.Cookie("device_id")
+		if err != nil || cookie_device_id.Value == "" {
+			log.Printf("[WithDeviceIDCheck] ei device_id-evästettä -> login")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		if cookie_device_id.Value != sess_device_id {
+			log.Printf("[WithDeviceIDCheck] device_id eroaa sessiosta -> login")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// OK -> jatketaan varsinaiseen handleriin
+		originalHandler(w, r)
+	}
 }

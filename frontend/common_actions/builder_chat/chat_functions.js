@@ -184,27 +184,37 @@ function convertMarkdownLikeText(data) {
  * - Jos löytyy tiedostoblokkeja, jokainen luodaan details-rakenteella ja
  *   kootaan lopuksi yhteen HTML-tekstiin.
  */
-export function createContentFromData(data) {
-    console.log("createContentFromData() has this data to process:" + data);
-
-    // 1. Etsitään tiedostoblokit
-    const parsedBlocks = parseFileBlocks(data);
-
-    // Jos parseFileBlocks ei löytänyt ainuttakaan lohkoa, 
-    // pidetään data vain perinteisenä tekstinä
-    if (parsedBlocks.length === 0) {
-        console.log("No file blocks found, returning plain markdown-ish text.");
-        return convertMarkdownLikeText(data);
-    }
-
-    // Muodostetaan jokaiselle tiedostolle details-block
-    let finalHTML = '';
-    parsedBlocks.forEach(file => {
-        finalHTML += createDetailsHTMLForFile(file);
-    });
-
-    console.log("Result HTML after processing file blocks: " + finalHTML);
-    return finalHTML;
-}
-
+function removeTripleBackticks(rawText) {
+    // Poistetaan ` ```javascript ` ja ` ``` ` -rivit:
+    let cleaned = rawText.replace(/```javascript\s*/gi, '')
+                         .replace(/```/g, '');
+    return cleaned;
+  }
+  
+  export function createContentFromData(data) {
+      console.log("createContentFromData() raw data:", data);
+  
+      // 0) Poistetaan code-fence -merkinnät, jotta parseFileBlocks näkee rivit
+      const preprocessed = removeTripleBackticks(data);
+  
+      // 1) Etsitään tiedostoblokit
+      const parsedBlocks = parseFileBlocks(preprocessed);
+  
+      if (parsedBlocks.length === 0) {
+          // Ei löytynyt "parent_folder:"-alkuisia rivejä, joten käsitellään vain markdown-tyylisenä
+          console.log("No file blocks found, returning plain markdown-ish text.");
+          return convertMarkdownLikeText(data); 
+          // HUOM: Käytämme *alkuperäistä* dataa, jotta code-lokerot 
+          //       renderöityvät <pre><code>-lohkona, jos niitä on.
+      }
+  
+      // 2) Jos löytyi tiedostoblokkeja, luodaan <details>...
+      let finalHTML = '';
+      parsedBlocks.forEach(file => {
+          finalHTML += createDetailsHTMLForFile(file);
+      });
+  
+      console.log("Result HTML after processing file blocks: " + finalHTML);
+      return finalHTML;
+  }
 

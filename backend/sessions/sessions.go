@@ -1,4 +1,4 @@
-package sessions
+package e_sessions
 
 import (
 	"github.com/gorilla/sessions"
