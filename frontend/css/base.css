@@ -271,3 +271,16 @@ summary {
     border-bottom: 1px solid var(--border_color);
     cursor: pointer;
 }
+
+
+
+
+
+/* .filterBar-section > div {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 10px;
+} */
+.sort_button {
+    margin: 5px;
+}

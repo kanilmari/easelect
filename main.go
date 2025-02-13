@@ -46,25 +46,23 @@ func main() {
 	}
 	exeDir := filepath.Dir(exePath)
 	frontendDir := filepath.Join(exeDir, "frontend")
-	// log.Printf("[INFO] Frontend-hakemisto: %s", frontendDir)
 
+	// HUOM! Poistettu suora http.Handle("/media/", ...) -kutsu
 	mediaPath := filepath.Join(exeDir, "media")
-	http.Handle("/media/", http.StripPrefix("/media/", http.FileServer(http.Dir(mediaPath))))
 
 	// --- TÄRKEÄ KUTSU auth.InitAuth ---
 	auth.InitAuth(e_sessions.GetStore(), frontendDir)
 
-	// 6) Rekisteröidään reitit + polku staattisiin tiedostoihin
-	router.RegisterRoutes(frontendDir)
+	// 6) Rekisteröidään reitit
+	router.RegisterRoutes(frontendDir, mediaPath)
 
 	// 7) Viedään reitit varsinaisesti http.HandleFunc -kutsuihin
-	//    ja päivitetään *functions*-taulu (jos sinulla on “functions” -logiikka)
 	err = router.RegisterAllRoutesAndUpdateFunctions(backend.Db)
 	if err != nil {
 		log.Printf("virhe rekisteröidessä reittejä/päivittäessä funktioita: %v", err)
 	}
 
-	// 8) Synkronoidaan: merkitään ne funktiot, joita ei käytetä, disabled = true
+	// 8) Synkronoidaan funktiot
 	err = router.SyncFunctions(backend.Db)
 	if err != nil {
 		log.Printf("virhe synkronoitaessa funktioita: %v", err)

@@ -103,6 +103,36 @@ func WithUserLogging(original_handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// WithLoginCheck varmistaa, että sessiossa on user_id.
+// Ei tee function- tai table-level -oikeustarkistuksia.
+func WithLoginCheck(original_handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		store := e_sessions.GetStore()
+		session, err := store.Get(r, "session")
+		if err != nil {
+			log.Printf("\033[31m[WithLoginCheck] session haku epäonnistui: %v\033[0m", err)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		user_id_val, ok := session.Values["user_id"]
+		if !ok {
+			log.Printf("\033[31m[WithLoginCheck] anonyymi -> uudelleenohjaus login-sivulle\033[0m")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		_, ok2 := user_id_val.(int)
+		if !ok2 {
+			log.Printf("\033[31m[WithLoginCheck] user_id ei ole int -> ei oikeuksia\033[0m")
+			http.Error(w, "403 - Forbidden", http.StatusForbidden)
+			return
+		}
+
+		original_handler(w, r)
+	}
+}
+
 // WithAccessControl tarkistaa, onko käyttäjällä oikeus kutsua annettua handler_namea
 // (function-level) sekä valinnaisesti tauluun (table-level).
 func WithAccessControl(handler_name string, original_handler http.HandlerFunc) http.HandlerFunc {
@@ -147,7 +177,7 @@ func WithAccessControl(handler_name string, original_handler http.HandlerFunc) h
 			}
 			for _, tbl := range table_list {
 				if !userHasTablePermission(user_id, handler_name, tbl) {
-					log.Printf("[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta: %s",
+					log.Printf("\033[31m[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta\033[0m: %s",
 						handler_name, user_id, tbl)
 					http.Error(w, "403 - Forbidden (multiple tables)", http.StatusForbidden)
 					return
@@ -158,7 +188,7 @@ func WithAccessControl(handler_name string, original_handler http.HandlerFunc) h
 			table_name := r.URL.Query().Get("table")
 			if table_name != "" {
 				if !userHasTablePermission(user_id, handler_name, table_name) {
-					log.Printf("[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta: %s",
+					log.Printf("\033[31m[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta\033[0m: %s",
 						handler_name, user_id, table_name)
 					http.Error(w, "403 - Forbidden (single table)", http.StatusForbidden)
 					return
@@ -254,6 +284,50 @@ func WithDeviceIDCheck(originalHandler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// OK -> jatketaan varsinaiseen handleriin
+		originalHandler(w, r)
+	}
+}
+
+// WithFingerprintCheck varmistaa, että tämänhetkinen fingerprint (pyynnön mukana tullut)
+// täsmää sessiossa tallennettuun fingerprint_hash-arvoon.
+// Se voidaan ketjuttaa WithLoginCheckin tai WithDeviceIDCheckin jälkeen.
+func WithFingerprintCheck(originalHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		store := e_sessions.GetStore()
+		session, err := store.Get(r, "session")
+		if err != nil {
+			log.Printf("\033[31mvirhe: session haku epäonnistui: %s\033[0m\n", err.Error())
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		sessFingerprint, _ := session.Values["fingerprint_hash"].(string)
+		if sessFingerprint == "" {
+			log.Printf("[WithFingerprintCheck] sessiossa ei fingerprint_hash-arvoa")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// Luetaan fingerprint evästeestä
+		cookieFingerprint, cookieErr := r.Cookie("fingerprint")
+		if cookieErr != nil || cookieFingerprint.Value == "" {
+			log.Printf("[WithFingerprintCheck] ei fingerprint-evästettä pyynnössä")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// Lokitetaan debugina
+		log.Printf("[WithFingerprintCheck] sessFingerprint='%s', cookieFingerprint='%s'",
+			sessFingerprint, cookieFingerprint.Value)
+
+		// Verrataan sessiossa ja evästeessä olevaa fingerprintiä
+		if sessFingerprint != cookieFingerprint.Value {
+			log.Println("[WithFingerprintCheck] fingerprint mismatch -> kirjaudutaan ulos")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// OK -> jatketaan
 		originalHandler(w, r)
 	}
 }

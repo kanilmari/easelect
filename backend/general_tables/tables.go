@@ -16,7 +16,7 @@ import (
 
 // GetGroupedTables palauttaa ryhmitellyt taulut ilman tietotyyppejä sarakkeissa
 func GetGroupedTables(response_writer http.ResponseWriter, http_request *http.Request) {
-	select_tables_query := `SELECT id, table_name, columns FROM system_db_tables`
+	select_tables_query := `SELECT id, table_name, columns FROM system_db_tables ORDER BY table_name`
 	query_rows, query_error := backend.Db.Query(select_tables_query)
 	if query_error != nil {
 		log.Printf("virhe taulujen hakemisessa: %v", query_error)

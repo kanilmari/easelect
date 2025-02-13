@@ -42,6 +42,21 @@
     transform: scale(var(--button_pressed_scale));
 }
 
+.collapsible.child-active::after {
+    content: "•";
+    color: rgba(0, 70, 255);
+    margin-left: 0.5em;
+    font-weight: bold;
+}
+
+/* child-rv: himmeä korostus, jos ryhmässä on vain RV-nappeja */
+.collapsible.child-rv::after {
+    content: "•";
+    color: rgba(20, 35, 128); /* himmeämpi punainen */
+    margin-left: 0.5em;
+    font-weight: bold;
+}
+
 #navbar button.recently_viewed {
     /* background-color: rgba(70, 100, 127, 0.2); */
     /* background-color: rgba(89, 110, 166, 0.2); */

@@ -12,9 +12,9 @@ export function create_filter_bar(table_name, columns, data_types) {
   if (!filter_bar) {
     filter_bar = document.createElement('div');
     filter_bar.id = `${table_name}_filterBar`;
-    filter_bar.classList.add('filterBar'); // Koko korkeus, oikea reuna
+    filter_bar.classList.add('filterBar');
 
-    // 1) Hakukenttä yläreunaan
+    // 1) Hakukenttä
     const search_row = document.createElement('div');
     search_row.classList.add('filterBar-search-row');
     const global_search_input = document.createElement('input');
@@ -24,7 +24,7 @@ export function create_filter_bar(table_name, columns, data_types) {
     search_row.appendChild(global_search_input);
     filter_bar.appendChild(search_row);
 
-    // 2) Välilehtipainikkeet (Sort+Filtterit / Chat)
+    // 2) Välilehtipainikkeet (Suodatin & Sort / Chat)
     const tabs_row = document.createElement('div');
     tabs_row.classList.add('filterBar-tabs-row');
     const tab_button_sortfilter = document.createElement('button');
@@ -44,8 +44,7 @@ export function create_filter_bar(table_name, columns, data_types) {
     // 3a) Sort+filter -container
     const sort_filter_section = document.createElement('div');
     sort_filter_section.classList.add('sort_filter_section');
-    // oletuksena näkyvissä
-    sort_filter_section.classList.remove('hidden');
+    sort_filter_section.classList.remove('hidden'); // Oletuksena näkyvissä
 
     const top_sections = document.createElement('div');
     top_sections.classList.add('top-sections');
@@ -53,7 +52,6 @@ export function create_filter_bar(table_name, columns, data_types) {
     // Sorttaus
     const sort_container = document.createElement('div');
     sort_container.classList.add('filterBar-section');
-
     const sort_label = document.createElement('label');
     sort_label.textContent = 'Sort by column:';
     sort_container.appendChild(sort_label);
@@ -61,6 +59,7 @@ export function create_filter_bar(table_name, columns, data_types) {
     const sort_options_container = document.createElement('div');
     columns.forEach((column) => {
       const sort_button = document.createElement('button');
+      sort_button.classList.add('sort_button');
       sort_button.textContent = column;
       sort_button.addEventListener('click', () => {
         applySort(table_name, column);
@@ -69,6 +68,7 @@ export function create_filter_bar(table_name, columns, data_types) {
     });
     sort_container.appendChild(sort_options_container);
 
+    // HUOM! Kolmas parametri 'true' tekee tämän collapsible-sectionin auki oletuksena
     const sort_collapsible = create_collapsible_section('Sorttaus', sort_container, true);
     top_sections.appendChild(sort_collapsible);
 
@@ -81,7 +81,8 @@ export function create_filter_bar(table_name, columns, data_types) {
       filter_container.appendChild(filter_element);
     });
 
-    const filter_collapsible = create_collapsible_section('Filtterit', filter_container, false);
+    // Halutaan filtteriosio myös auki oletuksena
+    const filter_collapsible = create_collapsible_section('Filtterit', filter_container, true);
     top_sections.appendChild(filter_collapsible);
 
     sort_filter_section.appendChild(top_sections);
@@ -89,18 +90,20 @@ export function create_filter_bar(table_name, columns, data_types) {
     // 3b) Chat -container
     const chat_section = document.createElement('div');
     chat_section.classList.add('chat_section');
-    // oletuksena piilossa
-    chat_section.classList.add('hidden');
+    chat_section.classList.add('hidden'); // Oletuksena piilossa
 
-    // Chat UI
+    // Rakennetaan Chat UI
     create_chat_ui(table_name, chat_section);
 
-    tab_button_sortfilter.classList.remove('tab-button-active');
-    tab_button_chat.classList.add('tab-button-active');
-    sort_filter_section.classList.add('hidden');
-    chat_section.classList.remove('hidden');
+    // ! Määritellään kumpi välilehti on oletuksena aktiivinen
+    //   Halutaan, että Sort+Filter on päällä
+    tab_button_sortfilter.classList.add('tab-button-active');
+    tab_button_chat.classList.remove('tab-button-active');
+    // Jätetään sort_filter_section näkyviin, chat piiloon
+    sort_filter_section.classList.remove('hidden');
+    chat_section.classList.add('hidden');
 
-    // Lisätään containeriin
+    // Lisätään containerit
     tabs_content_container.appendChild(sort_filter_section);
     tabs_content_container.appendChild(chat_section);
 

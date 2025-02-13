@@ -3,6 +3,7 @@
 <html lang="fi">
 <head>
     <meta charset="UTF-8">
+    <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="format-detection" content="telephone=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -71,14 +72,20 @@
             margin-top: 20px;
         }
     </style>
+    <script type="module" src="/login.js"></script>
 </head>
 <body>
-    <form method="POST" action="/login">
+    <form method="POST" action="/login" onsubmit="return attachFingerprint();">
         <h2>Kirjaudu sisään</h2>
         <label for="username">Käyttäjätunnus:</label>
         <input type="text" id="username" name="username" required>
+        
         <label for="password">Salasana:</label>
         <input type="password" id="password" name="password" required>
+        
+        <!-- Piilotettu kenttä fingerprintille -->
+        <input type="hidden" id="fingerprint" name="fingerprint">
+        
         <div id="submit">
             <input type="submit" value="Kirjaudu">
         </div>

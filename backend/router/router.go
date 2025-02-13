@@ -30,6 +30,8 @@ import (
 // localFrontendDir on polku staattisiin tiedostoihin (esim. "./frontend")
 var localFrontendDir string
 
+var localMediaDir string
+
 // RouteDefinition edustaa yksittäistä reittiä
 type RouteDefinition struct {
 	UrlPattern  string
@@ -44,7 +46,14 @@ var routeDefinitions []RouteDefinition
 var registeredFunctions = make(map[string]bool)
 
 // RegisterRoutes tallentaa reittien määritykset.
-func RegisterRoutes(frontendDir string) {
+func RegisterRoutes(frontendDir string, mediaPath string) {
+	localFrontendDir = frontendDir
+
+	// Otetaan mediaPath talteen
+	localMediaDir = mediaPath
+
+	// Rekisteröidään uusi "ServeMedia" -reitti
+	functionRegisterHandler("/media/", ServeMedia, "router.ServeMedia")
 	// Talletetaan frontendiä varten
 	localFrontendDir = frontendDir
 
@@ -112,36 +121,67 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filepath.Join(localFrontendDir, "favicon.ico"))
 }
 
+// ServeMedia palvelee /media/ -pyynnöt, mutta kulkee middlewaresin kautta
+func ServeMedia(w http.ResponseWriter, r *http.Request) {
+	// Otetaan tiedoston polku pyyntöosoitteesta
+	relativePath := strings.TrimPrefix(r.URL.Path, "/media/")
+	if relativePath == "" {
+		http.Error(w, "tiedostonnimi puuttuu", http.StatusBadRequest)
+		return
+	}
+
+	fullPath := filepath.Join(localMediaDir, relativePath)
+
+	// Halutessasi voit lisätä turvatarkistuksia, esim. estää polun ".." -> polkuhyppy
+	if strings.Contains(relativePath, "..") {
+		log.Printf("ServeMedia: hylätään polku (sisälsi '..'): %s", relativePath)
+		http.Error(w, "403 - Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Tarjoillaan tiedosto
+	http.ServeFile(w, r, fullPath)
+}
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	// Jos favicon-pyyntö, tarjoillaan se anonyymisti
+	// Jos pyyntö on favicon, palvellaan se heti
 	if r.URL.Path == "/favicon.ico" {
 		http.ServeFile(w, r, filepath.Join(localFrontendDir, "favicon.ico"))
 		return
 	}
 
-	// Muutoin tarkistetaan, onko käyttäjä kirjautunut
+	// Salli suoraan JS, CSS, PNG, yms. ilman kirjautumista
+	if strings.HasSuffix(r.URL.Path, ".js") ||
+		strings.HasSuffix(r.URL.Path, ".css") ||
+		strings.HasSuffix(r.URL.Path, ".png") ||
+		strings.HasSuffix(r.URL.Path, ".jpg") {
+		fs := http.FileServer(http.Dir(localFrontendDir))
+		fs.ServeHTTP(w, r)
+		return
+	}
+
+	// Muut pyynnöt tarkistetaan, onko kirjautunut
 	store := e_sessions.GetStore()
 	session, err := store.Get(r, "session")
 	if err != nil {
-		log.Printf("rootHandler: session error: %v", err)
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
 	_, ok := session.Values["user_id"]
 	if !ok {
-		log.Println("rootHandler: not logged in -> redirecting to /login")
+		// Jos ei kirjautunut -> login
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	// Jos polku on "/"
+	// Kirjautunut -> jos pyyntö on "/", palvellaan index.html
 	if r.URL.Path == "/" {
 		http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
 		return
 	}
 
-	// Muut pyynnöt palvelee staattiset tiedostot
+	// Muut polut -> staattiset tiedostot
 	fs := http.FileServer(http.Dir(localFrontendDir))
 	fs.ServeHTTP(w, r)
 }
@@ -158,13 +198,19 @@ func functionRegisterHandler(urlPattern string, handlerFunc http.HandlerFunc, ha
 // RegisterAllRoutesAndUpdateFunctions tekee varsinaiset http.HandleFunc-kytkennät
 // ja päivittää functions-taulun
 func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
-	// noAccessControlNeeded-lista (ei vaadi sisäänkirjautumista)
+	// Reitit, jotka eivät vaadi kirjautumista EIKÄ oikeustarkistusta
 	noAccessControlNeeded := map[string]bool{
-		"router.faviconHandler":                              true,
-		"router.rootHandler":                                 true,
-		"auth.LoginHandler":                                  true,
-		"auth.LogoutHandler":                                 true,
+		"router.faviconHandler": true,
+		"router.rootHandler":    true,
+		"auth.LoginHandler":     true,
+	}
+
+	// Reitit, jotka vaativat kirjautumisen,
+	// mutta EI function/table-level -tarkistusta
+	loginOnlyNeeded := map[string]bool{
 		"auth.RegisterHandler":                               true,
+		"router.ServeMedia":                                  true,
+		"auth.LogoutHandler":                                 true,
 		"tree_data.GetTreeDataHandler":                       true,
 		"tree_data.GetTranslationsHandler":                   true,
 		"table_folders.HandleUpdateFolder":                   true,
@@ -174,28 +220,39 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 		"openai.OpenAIEmbeddingStreamHandler":                true,
 		"gt_read.GetResultsVector":                           true,
 		"refresh_file_structure.RefreshFileStructureHandler": true,
-
-		// "general_tables.HandleUpdateOidsAndTableNames": true,
-		// "general_tables.GetGroupedTables":              true,
-
-		// "auth.LogoutHandler": true, // valitse, haluatko sallia uloskirjautumisen ilman session-tarkistusta
 	}
 
 	for _, rd := range routeDefinitions {
 		var finalHandler http.HandlerFunc
 
-		if noAccessControlNeeded[rd.HandlerName] {
+		switch {
+		case noAccessControlNeeded[rd.HandlerName]:
 			// Pelkkä lokitus
 			finalHandler = middlewares.WithUserLogging(rd.HandlerFunc)
-		} else {
-			// Käyttöoikeus + laitetarkistus + lokitus
+
+		case loginOnlyNeeded[rd.HandlerName]:
+			// Käyttäjän pitää olla kirjautuneena,
+			// haluamme myös sormenjälkitarkistuksen
+			finalHandler = middlewares.WithUserLogging(
+				middlewares.WithLoginCheck(
+					middlewares.WithFingerprintCheck(
+						middlewares.WithDeviceIDCheck(rd.HandlerFunc),
+					),
+				),
+			)
+
+		default:
+			// Täysi AccessControl + laitetarkistus + sormenjälkitarkistus + lokitus
 			finalHandler = middlewares.WithUserLogging(
 				middlewares.WithAccessControl(
 					rd.HandlerName,
-					middlewares.WithDeviceIDCheck(rd.HandlerFunc),
+					middlewares.WithFingerprintCheck(
+						middlewares.WithDeviceIDCheck(rd.HandlerFunc),
+					),
 				),
 			)
 		}
+
 		http.HandleFunc(rd.UrlPattern, finalHandler)
 		registeredFunctions[rd.HandlerName] = true
 	}
@@ -221,10 +278,7 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
         `, handlerName, packageName, generalTableRelated)
 		if err != nil {
 			log.Printf("virhe tallennettaessa funktiota %s: %v", handlerName, err)
-		} // else {
-		// 	log.Printf("funktio %s lisätty/päivitetty kantaan (disabled=false, package=%s, general_table_related=%t)",
-		// 		handlerName, packageName, generalTableRelated)
-		// }
+		}
 	}
 
 	return nil

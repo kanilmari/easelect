@@ -14,66 +14,60 @@ import { fetchTableData } from './tabcontent/general_table_tab/gt_crud/gt_read/e
 import { updateMenuLanguageDisplay } from './navbar/lang_panel/lang_panel.js';
 import './common_actions/lang/lang.js';
 
-// Määrittelemme custom_views (kuten ”▶ Chat” jne.)
+// Huomaa, että group-arvo ("tools") toimii kieliavaimena navigaatiossa.
 export const custom_views = [
     {
         name: '▶ Oikeuksien hallinta',
         loadFunction: load_rights_management,
         containerId: 'rights_management_container',
-        group: 'Custom views'
+        group: 'tools'
     },
     {
         name: '▶ Taulukohtaiset oikeudet',
         loadFunction: load_table_based_permissions,
         containerId: 'table_based_permissions_container',
-        group: 'Custom views'
+        group: 'tools'
     },
     {
         name: '▶ Lisää heräte',
         loadFunction: load_trigger_management,
         containerId: 'trigger_management_container',
-        group: 'Custom views'
+        group: 'tools'
     },
     {
         name: '▶ Vierasavaimet',
         loadFunction: load_foreign_keys_view,
         containerId: 'foreign_keys_container',
-        group: 'Custom views'
+        group: 'tools'
     },
     {
         name: '▶ Sarakkeiden järjestys',
         loadFunction: load_table_columns,
         containerId: 'table_columns_container',
-        group: 'Custom views'
+        group: 'tools'
     },
     {
         name: '▶ Luo taulu',
         loadFunction: load_table_creation,
         containerId: 'table_creation_container',
-        group: 'Custom views'
+        group: 'tools'
+    },
+    {
+        name: '▶ Chat',
+        loadFunction: load_single_chat_view,
+        containerId: 'single_chat_container',
+        group: 'tools'
     }
-    // ,
-    // {
-    //     name: '▶ Chat',
-    //     loadFunction: load_single_chat_view,
-    //     containerId: 'single_chat_container',
-    //     group: 'Custom views'
-    // }
 ];
 
-// DOMContentLoaded: aseta perustoiminnot, päivitä OIDit, lataa taulut, jne.
+// DOMContentLoaded: aseta perustoiminnot jne.
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Päivitetään OID:t ja taulujen nimet
     update_oids_and_table_names();
-    // 2. Ladataan taulut (ja custom views)
     load_tables();
-    // 3. Päivitetään menun kielivalinta
     updateMenuLanguageDisplay();
-    load_single_chat_view();
+
 });
 
-
-// --- Tapahtuma, kun jokin taulu on valittu sivun valikosta ---
 document.addEventListener('tableSelected', async (event) => {
     const selected_table_name = event.detail.tableName;
     const { loadFunction, containerId } = get_load_info(selected_table_name, custom_views);
@@ -81,7 +75,6 @@ document.addEventListener('tableSelected', async (event) => {
     localStorage.setItem('selected_table', selected_table_name);
 });
 
-// OID-tietojen haku
 async function update_oids_and_table_names() {
     try {
         const response = await fetch('/update-oids');
@@ -93,7 +86,6 @@ async function update_oids_and_table_names() {
     }
 }
 
-// Ladataan sivulla näkyvä lista tauluista (vasemman reunan navigaatio)
 async function load_tables() {
     try {
         const response = await fetch('/api/tables');
@@ -113,13 +105,11 @@ async function load_tables() {
             all_table_names.add(table.table_name);
         });
 
-        // Tarkistetaan localStoragen valinta
         let selected_table = localStorage.getItem('selected_table');
         if (selected_table && all_table_names.has(selected_table)) {
             const { loadFunction, containerId } = get_load_info(selected_table, custom_views);
             await handle_navigation(selected_table, containerId, loadFunction);
         } else {
-            // Jos ei ole tallennettua tai se on virheellinen, valitaan oletus
             let default_table_name = 'main_todo';
             if (!all_table_names.has(default_table_name)) {
                 if (custom_views.length > 0) {
@@ -137,10 +127,6 @@ async function load_tables() {
     }
 }
 
-/**
- * Palauttaa luku-funktion ja container-id:n sen mukaan,
- * onko kyseessä custom-näkymä vai tavallinen taulu.
- */
 export function get_load_info(name, custom_views) {
     const custom_view = custom_views.find(view => view.name === name);
     if (custom_view) {
@@ -157,19 +143,13 @@ export function get_load_info(name, custom_views) {
     }
 }
 
-/**
- * Lataa yhden taulun dataa kannasta ja generoi HTML-taulukon.
- */
 export async function load_table(table_name) {
     try {
         let filters = {};
         let sort_column = null;
         let sort_order = null;
 
-        // Sarakkeet
         const columns_response = await fetch(`/api/get-columns?table=${table_name}`);
-
-        // Filterbar, jos on
         const filterBar = document.getElementById(`${table_name}_filterBar`);
         if (filterBar) {
             const inputs = filterBar.querySelectorAll('input, select');
@@ -181,18 +161,16 @@ export async function load_table(table_name) {
             });
         }
 
-        // Lajittelu
         sort_column = localStorage.getItem(`${table_name}_sort_column`);
         if (sort_column) {
             sort_order = localStorage.getItem(`${table_name}_sort_order_${sort_column}`);
         }
 
-        // Haetaan data (endpoint_data_fetcher.js: fetchTableData)
         const result = await fetchTableData({
-            table_name: table_name,
-            sort_column: sort_column,
-            sort_order: sort_order,
-            filters: filters
+            table_name,
+            sort_column,
+            sort_order,
+            filters
         });
         const data = result.data || [];
         const response_columns = result.columns || [];
@@ -201,7 +179,6 @@ export async function load_table(table_name) {
         localStorage.setItem(`${table_name}_columns`, JSON.stringify(response_columns));
         localStorage.setItem(`${table_name}_dataTypes`, JSON.stringify(data_types));
 
-        // Generoidaan varsinainen taulunäkymä
         await generate_table(table_name, response_columns, data, data_types);
 
     } catch (error) {
@@ -209,13 +186,7 @@ export async function load_table(table_name) {
     }
 }
 
-// Exportataan custom_views, jotta muualla esim. navigation.js voi käyttää
-// export { custom_views };
-
-/** 
- * (Valinnainen) Sarakeotsikoiden leveyden säätö 
- * – säilytetty sama logiikka kuin aiemmin.
- */
+// Sarakeotsikoiden leveyden säätö
 document.addEventListener("DOMContentLoaded", function() {
     const table_headers = document.querySelectorAll("#auth_user_groups_table th");
     table_headers.forEach(function(table_header) {

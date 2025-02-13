@@ -3,6 +3,7 @@
 import { loadManagementView } from '../utils.js';
 import { createVanillaDropdown } from '../vanilla_dropdown/vanilla_dropdown.js';
 import { fetch_columns_for_table } from '../../tabcontent/general_table_tab/gt_crud/gt_read/endpoint_column_fetcher.js';
+import { endpoint_router } from '../../endpoint_router.js';
 
 export async function load_trigger_management() {
   return loadManagementView('trigger_management_container', generate_trigger_creation_form);
@@ -76,40 +77,41 @@ async function generate_trigger_creation_form(container) {
 /**
  * Hakee kaikki taulut /api/tables -endpointista
  */
-async function fetchContentTables() {
-  const response = await fetch('/api/tables');
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Virhe taulujen haussa:', errorText);
+export async function fetchContentTables() {
+  try {
+    // Käytetään endpoint_router:ia
+    const result = await endpoint_router('fetchContentTables');
+    console.log('Fetched tables:', result);
+
+    // Käydään dynaamisesti läpi kaikki result.tables avaimet ja yhdistetään ne
+    const all_tables_from_all_groups = Object.values(result.tables).flat();
+    return all_tables_from_all_groups;
+  } catch (err) {
+    console.error('Virhe taulujen haussa:', err);
     throw new Error('Failed to fetch content tables');
   }
-  const result = await response.json();
-  console.log('Fetched tables:', result);
-
-  // Käydään dynaamisesti läpi kaikki result.tables avaimet ja yhdistetään ne
-  const all_tables_from_all_groups = Object.values(result.tables).flat();
-  return all_tables_from_all_groups;
 }
 
-/**
- * Hakee olemassa olevat herätteet list-endpointista
- * (uusi GET /api/system_triggers/list)
- */
-export async function fetchAllTriggers() {
-  try {
-    const response = await fetch('/api/system_triggers/list', {
-      method: 'GET'
-    });
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Virhe herätteiden haussa: ${errText}`);
-    }
-    return await response.json();
-  } catch (err) {
-    console.error('fetchAllTriggers error:', err);
-    throw err;
-  }
-}
+// /**
+//  * Hakee olemassa olevat herätteet list-endpointista
+//  * (uusi GET /api/system_triggers/list)
+//  */
+// export async function fetchAllTriggers() {
+//   try {
+//     const response = await fetch('/api/system_triggers/list', {
+//       method: 'GET'
+//     });
+//     console.log('fetching triggers');
+//     if (!response.ok) {
+//       const errText = await response.text();
+//       throw new Error(`Virhe herätteiden haussa: ${errText}`);
+//     }
+//     return await response.json();
+//   } catch (err) {
+//     console.error('fetchAllTriggers error:', err);
+//     throw err;
+//   }
+// }
 
 /* ------------------------------------------------------------------
    DOM-rakenteen luontifunktiot
@@ -246,10 +248,10 @@ function createConditionContainer() {
     const data_type = colObj?.dataType || 'text';
 
     let operators = [];
-    if (['integer','numeric','double_precision','real','smallint','bigint'].includes(data_type)) {
+    if (['integer', 'numeric', 'double_precision', 'real', 'smallint', 'bigint'].includes(data_type)) {
       operators = ['=', '!=', '>', '<', '>=', '<='];
       valueInput.type = 'number';
-    } else if (['character_varying','text','varchar'].includes(data_type)) {
+    } else if (['character_varying', 'text', 'varchar'].includes(data_type)) {
       operators = ['=', '!=', 'ILIKE', 'NOT ILIKE'];
       valueInput.type = 'text';
     } else if (['boolean'].includes(data_type)) {
@@ -360,7 +362,7 @@ async function addActionValueRow(action_values_container, target_table_dropdown)
     containerElement: columnDropdownContainer,
     options: [],
     placeholder: "Valitse sarake...",
-    useSearch: false 
+    useSearch: false
   });
   columnDropdownContainer.__dropdown = columnDropdown;
 
