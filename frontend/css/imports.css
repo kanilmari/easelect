@@ -1,15 +1,62 @@
 @import url("../common_tools/vanilla_shortener/vanilla_shortener.css");
+
 @import url("./cards_big.css");
+
 /* tables.css */
 @import url("./tables.css");
-@import url("./cards.css");
+
+
+
 @import url("./navbar.css");
+
 /* filterbar */
 @import url("./filterbar.css");
+
 /* inner_sidebar */
 @import url("./inner_sidebar.css");
-/* table_permissions */
-/* @import url("./table_permissions.css"); */
+
 /* chat */
 @import url("./chat.css");
+
+/* import  common_tools  vanilla_tree vanilla_tree.css */
+
+@import url("../common_tools/vanilla_tree/vanilla_tree.css");
+
+/* import common_tools/windows/windows.css */
+
+@import url("../common_tools/windows/windows.css");
+
+/* /common_tools/vanilla_dropdown/vanilla_dropdown.css */
+
+@import url("../common_tools/vanilla_dropdown/vanilla_dropdown.css");
+
+/* /common_tools/notification_triggers/add_notification.css */
+
+@import url("../common_tools/notification_triggers/add_notification.css");
+
+/* /navbar/lang_panel/lang_panel.css */
+
+@import url("../navbar/lang_panel/lang_panel.css");
+
+@import url("./variables.css");
+
+@import url("./base.css");
+
+@import url("./buttons.css");
+
+@import url("./modals.css");
+
+@import url("./dropdowns.css");
+
+@import url("./form.css");
+
 @import url("./table_creation.css");
+
+
+
+
+/* @import url("./cards.css"); */
+@import url("./html_table_views/cards_view/cards.css");
+@import url("./html_table_views/table_view/cells.css");
+
+
