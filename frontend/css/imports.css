@@ -1,4 +1,4 @@
-@import url("../common_tools/vanilla_shortener/vanilla_shortener.css");
+@import url("../logical_components/vanilla_shortener/vanilla_shortener.css");
 
 @import url("./cards_big.css");
 
@@ -18,25 +18,25 @@
 /* chat */
 @import url("./chat.css");
 
-/* import  common_tools  vanilla_tree vanilla_tree.css */
+/* import  logical_components  vanilla_tree vanilla_tree.css */
 
-@import url("../common_tools/vanilla_tree/vanilla_tree.css");
+@import url("../logical_components/vanilla_tree/vanilla_tree.css");
 
-/* import common_tools/windows/windows.css */
+/* import logical_components/windows/windows.css */
 
-@import url("../common_tools/windows/windows.css");
+@import url("../logical_components/windows/windows.css");
 
-/* /common_tools/vanilla_dropdown/vanilla_dropdown.css */
+/* /logical_components/vanilla_dropdown/vanilla_dropdown.css */
 
-@import url("../common_tools/vanilla_dropdown/vanilla_dropdown.css");
+@import url("../logical_components/vanilla_dropdown/vanilla_dropdown.css");
 
-/* /common_tools/notification_triggers/add_notification.css */
+/* /logical_components/notification_triggers/add_notification.css */
 
-@import url("../common_tools/notification_triggers/add_notification.css");
+@import url("../logical_components/notification_triggers/add_notification.css");
 
 /* /navbar/lang_panel/lang_panel.css */
 
-@import url("../navbar/lang_panel/lang_panel.css");
+@import url("../logical_components/navbar/lang_panel/lang_panel.css");
 
 @import url("./variables.css");
 
