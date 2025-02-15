@@ -1,14 +1,13 @@
 // view_table.js
 
-import { create_table_element } from '../create_table_structure_and_data.js';
-import { create_card_view } from './card_view.js';
-import { applySavedColumnVisibility } from '../../headerbuttons/column_visibility_dropdown.js';
-import { initializeInfiniteScroll, resetOffset, updateOffset } from '../../../logical_components/infinite_scroll/infinite_scroll.js';
-import { createToolbar } from '../create_toolbar.js';
-import { create_filter_bar } from '../../filterbar/create_filter_bar.js';
-// import { create_filter_bar_window } from '../create_filter_bar_window.js';
-import { create_chat_ui } from '../chat.js';
-import { render_tree } from '../../../logical_components/vanilla_tree/vanilla_tree.js';
+import { create_table_element } from './table_view/create_table_structure_and_data.js';
+import { create_card_view } from './card_view/card_view.js';
+import { applySavedColumnVisibility } from '../../main_app/gt_toolbar/column_visibility_dropdown.js';
+import { initializeInfiniteScroll, resetOffset, updateOffset } from '../infinite_scroll/infinite_scroll.js';
+import { createToolbar } from '../../main_app/gt_toolbar/create_toolbar.js';
+import { create_filter_bar } from '../../main_app/filterbar/create_filter_bar.js';
+import { create_chat_ui } from '../ai_features/table_chat/chat.js';
+import { create_tree_view } from './tree_view/tree_view.js';
 
 export async function generate_table(table_name, columns, data, data_types) {
     try {
@@ -104,8 +103,7 @@ export async function generate_table(table_name, columns, data, data_types) {
             table_view_div.style.display = 'none';
             card_view_div.style.display = 'block';
             tree_view_div.style.display = 'none';
-        } else {
-            // current_view === 'tree'
+        } else if (current_view === 'tree') {
             table_view_div.style.display = 'none';
             card_view_div.style.display = 'none';
             tree_view_div.style.display = 'block';
@@ -129,83 +127,5 @@ export async function generate_table(table_name, columns, data, data_types) {
     } catch (error) {
         console.error(`error creating table ${table_name}:`, error);
     }
-}
-
-async function create_tree_view(table_name, columns, data) {
-    const tree_view_div = document.getElementById(`${table_name}_tree_view_container`);
-    if (!tree_view_div) return;
-
-    let id_column = null;
-    let parent_column = null;
-    for (const col of columns) {
-        const lower = col.toLowerCase();
-        if (!id_column && lower === 'id') {
-            id_column = col;
-        }
-        if (!parent_column && lower.startsWith('parent_')) {
-            parent_column = col;
-        }
-    }
-    if (!id_column) {
-        tree_view_div.innerHTML = '<div">Ei "id"-saraketta – ei puuta.</div>';
-        return;
-    }
-
-    // Etsitään name/nimi-sarake
-    let name_column = null;
-    const name_candidates = columns.filter(c => {
-        const lower = c.toLowerCase();
-        return lower.includes('name') || lower.includes('nimi');
-    });
-    if (name_candidates.length > 0) {
-        name_column = name_candidates[0];
-    }
-
-    // Etsitään type-sarake
-    let type_column = null;
-    for (const col of columns) {
-        if (col.toLowerCase() === 'type') {
-            type_column = col;
-            break;
-        }
-    }
-
-    // Rakennetaan "flat"-data
-    const tree_data = data.map(row => {
-        const typeVal = type_column && row[type_column] ? String(row[type_column]).trim() : '';
-        const nameVal = (name_column && row[name_column] != null)
-            ? String(row[name_column]).trim()
-            : String(row[id_column]); // fallback id:hen
-
-        // Iso alkukirjain ja kaksoispiste
-        const nodeLabel = typeVal
-            ? `${typeVal.charAt(0).toUpperCase() + typeVal.slice(1)}: ${nameVal}`
-            : nameVal;
-
-        return {
-            id: row[id_column],
-            parent_id: parent_column ? row[parent_column] : null,
-            name: nodeLabel
-        };
-    });
-
-    tree_view_div.innerHTML = '';
-    render_tree(tree_data, {
-        container_id: tree_view_div.id,
-        id_suffix: `_${table_name}_tree`,
-        render_mode: 'button',
-        checkbox_mode: 'none',
-        use_icons: false,
-        populate_checkbox_selection: false,
-        max_recursion_depth: 64,
-        tree_model: 'flat',
-        initial_open_level: 2,
-        show_node_count: true,
-        show_search: true,
-        use_data_lang_key: false,
-        // button_action_function: (nodeData) => {
-        //     // console.log("Klikkasit solmua:", nodeData);
-        // }
-    });
 }
 

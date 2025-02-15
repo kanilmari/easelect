@@ -3,11 +3,8 @@
 /* Modaalin tausta */
 .modal_overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    inset: 0; /* korvaa top, left, right, bottom: 0; */
+    background: rgb(0 0 0 / 60%);
     display: none; /* Piilotettu oletuksena */
     justify-content: center;
     align-items: center;
@@ -25,7 +22,7 @@
     width: 100%;
     max-width: 700px;
     box-sizing: border-box;
-    box-shadow: 0 2px 30px 30px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 2px 30px 30px rgb(0 0 0 / 60%);
     max-height: 95vh;
     overflow-y: auto;
     position: relative;

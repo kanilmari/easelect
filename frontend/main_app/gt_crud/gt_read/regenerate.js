@@ -1,5 +1,5 @@
 // regenerate.js
-import { generate_table } from './view_table.js';
+import { generate_table } from '../../../logical_components/table_views/view_table.js';
 import { fetchTableData } from '../../endpoints/endpoint_data_fetcher.js';
 
 export async function regenerate_view(table_name) {

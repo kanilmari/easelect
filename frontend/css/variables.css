@@ -7,10 +7,7 @@
     --border_radius: 7px;
     --border_radius_small: 4px;
     /* --filterbar_width: 450px; */
-}
 
-/* CSS-muuttujat ja teemat */
-:root {
     --bg_color: #f0f0f0;
     --bg_color_2: #eee;
     --text_color: #000000;

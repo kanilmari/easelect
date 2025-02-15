@@ -1,6 +1,6 @@
 // add_row.js
 
-import { generate_table } from '../gt_read/view_table.js';
+import { generate_table } from '../../../logical_components/table_views/view_table.js';
 import { createModal, showModal, hideModal } from '../../../logical_components/modal/modal_factory.js';
 import { fetchTableData } from '../../endpoints/endpoint_data_fetcher.js';
 import { createVanillaDropdown } from '../../../logical_components/vanilla_dropdown/vanilla_dropdown.js';

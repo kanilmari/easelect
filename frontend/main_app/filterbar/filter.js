@@ -1,6 +1,6 @@
 // filter.js
 import { get_filtered_data } from './filter_table_data.js';
-import { generate_table } from '../gt_crud/gt_read/view_table.js';
+import { generate_table } from '../../logical_components/table_views/view_table.js';
 
 export async function filter_table(table_name) {
     try {

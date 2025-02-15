@@ -1,8 +1,8 @@
 // infinite_scroll.js
 
 import { getFiltersFromFilterBar } from '../../main_app/filterbar/filter_table_data.js';
-import { appendDataToTable } from '../../main_app/gt_crud/gt_read/append_rows_to_table_view.js';
-import { appendDataToCardView } from '../../main_app/gt_crud/gt_read/card_view.js';
+import { appendDataToTable } from '../table_views/table_view/append_rows_to_table_view.js';
+import { appendDataToCardView } from '../table_views/card_view/card_view.js';
 import { fetchTableData } from '../../main_app/endpoints/endpoint_data_fetcher.js'; // polku tarpeen mukaan
 
 let isLoading = false;

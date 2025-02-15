@@ -1,17 +1,17 @@
 // main.js
 
-import { generate_table } from './main_app/gt_crud/gt_read/view_table.js';
+import { generate_table } from './logical_components/table_views/view_table.js';
 import { load_rights_management } from './main_app/rights/rights_management.js';
 import { load_foreign_keys_view } from './main_app/foreign_keys_view.js';
 import { load_trigger_management } from './logical_components/notification_triggers/notification_triggers.js';
-import { load_single_chat_view } from './logical_components/builder_chat/load_single_chat_view.js';
-import { handle_navigation, create_navigation_buttons } from './main_app/nav/navigation.js';
+import { load_single_chat_view } from './logical_components/ai_features/project_chat/load_single_chat_view.js';
+import { handle_navigation, create_navigation_buttons } from './main_app/navigation/navigation.js';
 import { load_table_columns } from './logical_components/set_table_columns.js';
 import { load_table_creation } from './main_app/table_crud/create_table.js';
 import { load_table_based_permissions } from './main_app/table_permissions/manage_table_permissions.js';
 import './logical_components/vanilla_tree/tree_call.js';
 import { fetchTableData } from './main_app/endpoints/endpoint_data_fetcher.js';
-import { updateMenuLanguageDisplay } from './logical_components/navbar/lang_panel/lang_panel.js';
+import { updateMenuLanguageDisplay } from './logical_components/lang/lang_panel/lang_panel.js';
 import './logical_components/lang/lang.js';
 
 // Huomaa, että group-arvo ("tools") toimii kieliavaimena navigaatiossa.

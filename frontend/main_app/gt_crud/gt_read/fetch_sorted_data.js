@@ -2,7 +2,7 @@
 
 import { resetOffset, updateOffset } from '../../../logical_components/infinite_scroll/infinite_scroll.js';
 import { getFiltersFromFilterBar } from '../../filterbar/filter_table_data.js';
-import { generate_table } from './view_table.js';
+import { generate_table } from '../../../logical_components/table_views/view_table.js';
 import { fetchTableData } from '../../endpoints/endpoint_data_fetcher.js';
 
 export async function fetchDataWithSort(table_name, sortColumn, sortOrder) {

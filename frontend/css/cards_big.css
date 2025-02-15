@@ -9,7 +9,7 @@
 .big_card_content {
     display: grid;
     gap: 1.5rem;
-    /* Voit halutessasi tehdä monimutkaisemman gridin tänne */
+    max-width: inherit !important;
 }
 
 .big_card_image img {
@@ -24,9 +24,7 @@
     color: var(--text_color);
 }
 
-.big_card_content {
-    max-width: inherit !important;
-}
+
 
 .big_card_content * {
     max-width: inherit !important;

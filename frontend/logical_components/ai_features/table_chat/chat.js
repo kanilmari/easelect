@@ -1,6 +1,6 @@
 /* chat.js */
 
-import { generate_table } from './gt_read/view_table.js';
+import { generate_table } from '../../table_views/view_table.js';
 
 // Mapit keskustelun hallintaan
 let conversation_map = new Map();

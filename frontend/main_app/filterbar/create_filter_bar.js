@@ -3,9 +3,9 @@
 import { resetOffset } from '../../logical_components/infinite_scroll/infinite_scroll.js';
 import { applySort } from '../gt_crud/gt_read/apply_sort.js';
 import { filter_table } from './filter.js';
-import { create_collapsible_section } from '../gt_crud/collapsible_section.js';
-import { create_chat_ui } from '../gt_crud/chat.js'; // Huom! tuodaan nyt samasta tiedostosta
-import { generate_table } from '../gt_crud/gt_read/view_table.js';
+import { create_collapsible_section } from '../../logical_components/collapsible_section.js';
+import { create_chat_ui } from '../../logical_components/ai_features/table_chat/chat.js';
+import { generate_table } from '../../logical_components/table_views/view_table.js';
 
 export function create_filter_bar(table_name, columns, data_types) {
   let filter_bar = document.getElementById(`${table_name}_filterBar`);

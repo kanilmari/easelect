@@ -37,7 +37,8 @@ import * as importPlugin from "eslint-plugin-import";
 export default [
   js.configs.recommended,
   {
-    files: ["**/*.js"],
+    "files": ["**/*.js"], 
+    "ignorePatterns": ["**/*.css"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

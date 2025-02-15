@@ -1,8 +1,13 @@
 // card_view.js
 
-import { update_card_selection } from '../selection.js';
+
 import { createModal, showModal } from '../../../logical_components/modal/modal_factory.js';
-import { endpoint_router } from '../../endpoints/endpoint_router.js';
+import { endpoint_router } from '../../../main_app/endpoints/endpoint_router.js';
+
+
+// REFACTOR THIS //
+import { update_card_selection } from '../table_view/selection.js';
+
 
 export async function create_seeded_avatar(seed_string, letter_for_avatar, useLargeSize = false) {
     // Lasketaan seed_string -> SHA-256 (hex)

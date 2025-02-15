@@ -6,7 +6,7 @@ import {
     createViewSelectorDropdown,
     createColumnVisibilityDropdownButton,
     createColumnManagementButton
-} from '../headerbuttons/button_factory.js';
+} from './button_factory.js';
 
 // import { delete_selected_items } from './gt_delete/delete_rows.js';
 

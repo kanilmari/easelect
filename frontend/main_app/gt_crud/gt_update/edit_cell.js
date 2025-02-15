@@ -1,6 +1,6 @@
 // edit_cell.js
 
-import { selectCell } from '../table_content_utils.js';
+import { selectCell } from '../../../logical_components/table_views/table_view/table_content_utils.js';
 import { fetchReferencedData } from '../gt_create/add_row.js'; // Tarvitaan foreign key -tietojen hakemiseen
 
 export async function editCell(cell, columns, data, dataTypes, table_name) {

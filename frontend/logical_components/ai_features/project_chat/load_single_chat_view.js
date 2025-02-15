@@ -1,7 +1,7 @@
 // load_single_chat_view.js
 
-import { loadManagementView } from '../utils.js';
-import { open_code_chat_and_file_structure_window } from './coder_chat.js';
+import { loadManagementView } from '../../utils.js';
+import { open_code_chat_and_file_structure_window } from './project_chat.js';
 
 /**
  * Tämä funktio kutsutaan navigaatiosta, kun käyttäjä klikkaa “▶ Chat”.

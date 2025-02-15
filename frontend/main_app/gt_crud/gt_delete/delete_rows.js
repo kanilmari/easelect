@@ -1,5 +1,5 @@
 // delete_rows.js
-import { get_selected_ids } from '../selection_helper.js';
+import { get_selected_ids } from '../../../logical_components/table_views/table_view/selection_helper.js';
 import { regenerate_view } from '../gt_read/regenerate.js';
 
 export async function delete_selected_items(table_name) {

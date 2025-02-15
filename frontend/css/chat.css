@@ -4,7 +4,7 @@
   --chat-user-bg: #05c;
   --chat-assistant-bg: #444;
   --chat-error-bg: #522;
-  --shadow-color: rgba(0, 0, 0, 0.6);
+  --shadow-color: rgb(0 0 0 / 60%);
   --box-shadow: -2px 2px 1px 0px var(--shadow-color);
   --box-shadow2: 2px 2px 1px 0px var(--shadow-color);
 }

@@ -33,9 +33,9 @@
 }
 
 #navbar button.active {
-    background-color: rgba(0, 70, 255, 0.2);
+    background-color: rgb(0 70 255 / 0.2);
     color: var(--button_active_text_color);
-    outline: 2px solid var(--border_color)
+    outline: 2px solid var(--border_color);
 }
 
 #navbar button:active {
@@ -44,7 +44,7 @@
 
 .collapsible.child-active::after {
     content: "•";
-    color: rgba(0, 70, 255);
+    color: rgb(0 70 255);
     margin-left: 0.5em;
     font-weight: bold;
 }
@@ -52,7 +52,7 @@
 /* child-rv: himmeä korostus, jos ryhmässä on vain RV-nappeja */
 .collapsible.child-rv::after {
     content: "•";
-    color: rgba(20, 35, 128); /* himmeämpi punainen */
+    color: rgb(20 35 128); /* himmeämpi punainen */
     margin-left: 0.5em;
     font-weight: bold;
 }
@@ -60,8 +60,8 @@
 #navbar button.recently_viewed {
     /* background-color: rgba(70, 100, 127, 0.2); */
     /* background-color: rgba(89, 110, 166, 0.2); */
-    background-color: rgba(77, 104, 179, 0.2);
-    outline: 2px solid rgba(77, 104, 179, 0.2);
+    background-color: rgb(77 104 179 / 0.2);
+    outline: 2px solid rgb(77 104 179 / 0.2);
     /* background-color: rgba(124, 89, 166, 0.2); */
     color: var(--button_active_text_color);
 }
@@ -81,16 +81,9 @@
     max-width: calc(var(--navbar_width) - 2*var(--navbar_padding) - 1px);
 }
 
-
-
-
-
-
-
 /* Style the collapsible buttons */
 .collapsible,
 .toolbar button {
-    /* color: #444; */
     cursor: pointer;
     padding: 10px;
     width: 100%;
@@ -104,7 +97,7 @@
 /* Add an active class to highlight the collapsible button when it is clicked */
 .collapsible.active,
 .collapsible:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgb(255 255 255 / 0.1);
 }
 
 /* Style the collapsible content */
@@ -115,7 +108,7 @@
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.2s ease-out;
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgb(0 0 0 / 0.1);
 }
 
 /* Style for navigation buttons inside content */
@@ -130,16 +123,9 @@
     cursor: pointer;
 }
 
-/* .navigation_buttons:hover {
-    background-color: #e0e0e0;
-} */
-
-
-
-
 /* Voit lisätä oman muuttujan: */
 :root {
-    --recently_visited_bg_color: rgba(255, 165, 0, 0.2);
+    --recently_visited_bg_color: rgb(255 165 0 / 0.2);
 }
 
 /* Luokka, joka näyttää viimeksi vieraillun n. 2h sisällä */
@@ -147,8 +133,6 @@
     background-color: var(--recently_visited_bg_color);
     /* Halutessasi muita efektejä */
 }
-
-
 
 #navContainer {
     width: calc(var(--navbar_width) - 22px);

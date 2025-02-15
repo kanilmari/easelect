@@ -1,11 +1,11 @@
 // create_table_structure_and_data.js
 
-import { filter_table } from '../filterbar/filter.js';
+import { filter_table } from '../../../main_app/filterbar/filter.js';
 import { toggle_select_all, update_row_selection } from './selection.js';
-import { initializeInfiniteScroll } from '../../logical_components/infinite_scroll/infinite_scroll.js';
+import { initializeInfiniteScroll } from '../../infinite_scroll/infinite_scroll.js';
 import { addEventListenersToCells } from './add_listeners_to_table_cells.js';
-import { handleSortClick } from './gt_read/handle_sort_and_search.js';
-import { initialize_column_resizing } from './column_resizing.js'; 
+import { handleSortClick } from '../../../main_app/gt_crud/gt_read/handle_sort_and_search.js';
+import { initialize_column_resizing } from './column_resizing.js';
 
 // Pääfunktio, joka luo taulun rakenteen ja asettaa datan
 export function create_table_element(columns, data, table_name, dataTypes) {
