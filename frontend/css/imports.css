@@ -1,0 +1,15 @@
+@import url("../common_tools/vanilla_shortener/vanilla_shortener.css");
+@import url("./cards_big.css");
+/* tables.css */
+@import url("./tables.css");
+@import url("./cards.css");
+@import url("./navbar.css");
+/* filterbar */
+@import url("./filterbar.css");
+/* inner_sidebar */
+@import url("./inner_sidebar.css");
+/* table_permissions */
+/* @import url("./table_permissions.css"); */
+/* chat */
+@import url("./chat.css");
+@import url("./table_creation.css");

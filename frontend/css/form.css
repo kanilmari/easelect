@@ -11,7 +11,7 @@ form {
     background-color: var(--bg_color);
     color: var(--text_color);
     border: 1px solid var(--border_color);
-    border-radius: var(--border-radius);
+    border-radius: var(--border_radius_small);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
@@ -27,7 +27,7 @@ label textarea {
     margin-top: 5px;
     padding: 8px;
     border: 1px solid var(--border_color);
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border_radius_small);
     background-color: var(--bg_color);
     color: var(--text_color);
     font-size: 1rem;
@@ -46,7 +46,7 @@ button {
     background-color: var(--button_bg_color);
     color: var(--button_text_color);
     /* border: 1px solid var(--border_color); */
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border_radius_small);
     cursor: pointer;
     font-size: 1rem;
     transition: background-color 0.3s, color 0.3s, transform 0.1s;
@@ -78,7 +78,7 @@ button[type="submit"] {
     grid-gap: 10px;
     padding: 10px;
     border: 1px solid var(--border_color);
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border_radius_small);
     background-color: var(--bg_color);
 }
 
@@ -93,7 +93,7 @@ button[type="submit"] {
     background-color: var(--button_bg_color);
     color: var(--button_text_color);
     border: 1px solid var(--border_color);
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border_radius_small);
 }
 
 #action-values_container {

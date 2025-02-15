@@ -2,6 +2,7 @@
 package general_tables
 
 import (
+	"database/sql"
 	"easelect/backend"
 	"encoding/json"
 	"fmt"
@@ -25,6 +26,36 @@ func PermissionsHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "metodi ei ole sallittu", http.StatusMethodNotAllowed)
 	}
+}
+
+// Poistaa auth_group_table_func_rights -taulusta kaikki rivit, joiden (schema, table) ei enää ole kannassa.
+func Remove_non_existent_table_rights(db *sql.DB) error {
+	delete_query := `
+		DELETE FROM auth_group_table_func_rights
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM information_schema.tables
+			WHERE tables.table_schema = auth_group_table_func_rights.target_schema_name
+			  AND tables.table_name = auth_group_table_func_rights.target_table_name
+		)
+	`
+
+	log.Println("Poistetaan auth_group_table_func_rights -taulusta viittaukset, joita ei enää ole skeemassa...")
+
+	result, err := db.Exec(delete_query)
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		return err
+	}
+
+	rows_affected, err := result.RowsAffected()
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		return err
+	}
+
+	log.Printf("Poistettu %d riviä auth_group_table_func_rights -taulusta", rows_affected)
+	return nil
 }
 
 func getPermissions(w http.ResponseWriter, r *http.Request) {

@@ -115,6 +115,10 @@
     grid-area: description;
 }
 
+.card_description_container > div {
+    word-wrap: break-word;
+}
+
 .card_details {
     grid-area: details;
 }
@@ -126,24 +130,6 @@
 
 
 
-
-/* .card_content {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 300px 1fr auto;
-    grid-template-rows: auto auto auto auto auto;
-    grid-template-areas:
-        "image header triggered_by"
-        "image description description"
-        "image keywords keywords"
-        "image details details"
-        "thumbnails details details";
-}
-
-.card_image>img {
-    max-width: 300px;
-    max-height: 300px;
-} */
 
 /* Yleinen kortin sisältö (jos tarvitset sieltä jotain yleistä) */
 .card_content {
@@ -157,7 +143,8 @@
         "image keywords keywords"
         "image list list"
         "image details details"
-        "thumbnails details details";
+        "thumbnails details details"
+        "footer footer footer";
 }
 
 /* Iso layout (300px image-col) */
@@ -190,7 +177,8 @@
     "image description description"
     "image keywords keywords"
     "details details details"
-    "details details details" !important;
+    "details details details"
+    "footer footer footer" !important;
 }
 
 
@@ -255,4 +243,18 @@
     padding: 4px;
     border-radius: 4px;
     /* tai ihan vain plain-teksti, makuasia */
+}
+
+
+
+
+.card_footer {
+    grid-area: footer;
+    /* Tässä vapaasti tyylejä, esim: */
+    display: flex;
+    justify-content: flex-end; /* napit oikealle */
+    gap: 1rem;
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-top: 1px solid #999;
 }

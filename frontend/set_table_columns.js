@@ -1,9 +1,9 @@
 // set_table_columns.js
 
-import { loadManagementView } from './common_actions/utils.js';
+import { loadManagementView } from './common_tools/utils.js';
 import { fetchTableData } from './tabcontent/general_table_tab/gt_crud/gt_read/endpoint_data_fetcher.js';
 import { fetch_columns_for_table } from './tabcontent/general_table_tab/gt_crud/gt_read/endpoint_column_fetcher.js';
-import { createVanillaDropdown } from './common_actions/vanilla_dropdown/vanilla_dropdown.js';
+import { createVanillaDropdown } from './common_tools/vanilla_dropdown/vanilla_dropdown.js';
 
 export async function load_table_columns() {
     return loadManagementView('table_columns_container', generate_table_columns_view);
@@ -168,7 +168,7 @@ async function saveColumnOrder(table_name) {
 
 // // set_table_columns.js
 
-// import { loadManagementView } from './common_actions/utils.js';
+// import { loadManagementView } from './common_tools/utils.js';
 // import { fetchTableData } from './tabcontent/general_table_tab/gt_crud/gt_read/endpoint_data_fetcher.js';
 // import { fetch_columns_for_table } from './tabcontent/general_table_tab/gt_crud/gt_read/endpoint_column_fetcher.js';
 

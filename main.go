@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -66,6 +67,11 @@ func main() {
 	err = router.SyncFunctions(backend.Db)
 	if err != nil {
 		log.Printf("virhe synkronoitaessa funktioita: %v", err)
+	}
+
+	err = general_tables.Remove_non_existent_table_rights(backend.Db)
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 	}
 
 	// 9) Käynnistetään palvelin

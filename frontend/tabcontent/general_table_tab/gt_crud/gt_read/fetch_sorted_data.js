@@ -1,6 +1,6 @@
 // fetch_sorted_data.js
 
-import { resetOffset, updateOffset } from '../../../../common_actions/infinite_scroll/infinite_scroll.js';
+import { resetOffset, updateOffset } from '../../../../common_tools/infinite_scroll/infinite_scroll.js';
 import { getFiltersFromFilterBar } from './filterbar/filter_table_data.js';
 import { generate_table } from './view_table.js';
 import { fetchTableData } from './endpoint_data_fetcher.js';

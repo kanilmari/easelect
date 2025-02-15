@@ -160,7 +160,7 @@ export function createColumnVisibilityDropdownButton(tableContainer) {
 export function createColumnManagementButton(table_name) {
     const button = document.createElement('button');
     button.classList.add('column_management_button');
-    button.setAttribute('data-lang-key', 'manage_table');
+    button.setAttribute('data-lang-key', 'manage_table_short');
     button.style.backgroundColor = 'var(--button_bg_color)';
     button.style.color = 'var(--button_text_color)';
     button.addEventListener('mouseenter', () => {

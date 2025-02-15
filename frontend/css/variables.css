@@ -4,6 +4,8 @@
 :root {
     --navbar_padding: 10px;
     --navbar_width: 300px;
+    --border_radius: 7px;
+    --border_radius_small: 4px;
     /* --filterbar_width: 450px; */
 }
 

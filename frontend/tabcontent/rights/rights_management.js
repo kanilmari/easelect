@@ -2,7 +2,7 @@
 
 import { create_dropdown } from './rights_dropdown_helpers.js';
 import { save_usergroup_right } from './rights_api.js';
-import { loadManagementView } from '../../common_actions/utils.js';
+import { loadManagementView } from '../../common_tools/utils.js';
 
 export async function load_rights_management() {
     return loadManagementView('rights_management_container', generate_rights_management);

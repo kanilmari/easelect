@@ -45,6 +45,10 @@ var routeDefinitions []RouteDefinition
 // registeredFunctions pitää kirjaa funktioista, joita on lopulta rekisteröity
 var registeredFunctions = make(map[string]bool)
 
+func tablesHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
+}
+
 // RegisterRoutes tallentaa reittien määritykset.
 func RegisterRoutes(frontendDir string, mediaPath string) {
 	localFrontendDir = frontendDir
@@ -59,6 +63,8 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 
 	// Käytetään erillistä functionRegisterHandler-kutsua faviconille
 	functionRegisterHandler("/favicon.ico", faviconHandler, "router.faviconHandler")
+
+	functionRegisterHandler("/tables/", tablesHandler, "router.tablesHandler")
 
 	// --- Julkiset reitit ---
 	functionRegisterHandler("/", rootHandler, "router.rootHandler")
@@ -94,6 +100,7 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 
 	functionRegisterHandler("/api/add-row", gt_create.AddRowHandlerWrapper, "gt_create.AddRowHandlerWrapper")
 	functionRegisterHandler("/api/get-results", gt_read.GetResultsHandlerWrapper, "gt_read.GetResultsHandlerWrapper")
+	functionRegisterHandler("/api/fetch-dynamic-children", gt_read.GetDynamicChildItemsHandler, "gt_read.GetChildItemsHandler")
 	functionRegisterHandler("/api/update-row", gt_update.UpdateRowHandlerWrapper, "gt_update.UpdateRowHandlerWrapper")
 	functionRegisterHandler("/api/delete-rows", gt_delete.DeleteRowsHandlerWrapper, "gt_delete.DeleteRowsHandlerWrapper")
 	functionRegisterHandler("/api/get-columns", gt_create.GetAddRowColumnsHandlerWrapper, "gt_create.GetAddRowColumnsHandlerWrapper")
@@ -220,6 +227,8 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 		"openai.OpenAIEmbeddingStreamHandler":                true,
 		"gt_read.GetResultsVector":                           true,
 		"refresh_file_structure.RefreshFileStructureHandler": true,
+		"gt_read.GetDynamicChildItemsHandler":                true,
+		"router.tablesHandler":                               true,
 	}
 
 	for _, rd := range routeDefinitions {

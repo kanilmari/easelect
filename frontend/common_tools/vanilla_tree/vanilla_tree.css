@@ -70,7 +70,7 @@
 
 .node-row .toggle {
     transform: rotate(0deg);
-    transition: transform 0.2s ease;
+    /* transition: transform 0.2s ease; */
     /* margin-right: 5px; */
     transform-origin: center;
 }
@@ -101,7 +101,7 @@
 /* Lapsisolmuille sisennys */
 .children {
     padding-left: 23px;
-    transition: max-height 0.5s ease-in-out;
+    /* transition: max-height 0.25s ease-in-out; */
 }
 
 .children.visible {

@@ -1,20 +1,21 @@
 <!-- index.html -->
 <!DOCTYPE html>
 <html lang="fi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    
+
     <!-- Tell mobile browsers to use the device's full width and scale -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+
     <!-- Disable automatic phone number detection for better design control -->
     <meta name="format-detection" content="telephone=no">
-    
+
     <!-- Add to home screen for Safari on iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    
+
     <!-- Add to home screen for Chrome on Android -->
     <meta name="mobile-web-app-capable" content="yes">
 
@@ -22,71 +23,77 @@
          - Rajaa ulkopuoliset resurssit vain tunnetuille lähteille (tässä esimerkissä cdn.jsdelivr.net käytössä).
          - Mieti, voitko välttää 'unsafe-inline' ja käyttää nonce/hashi-tapaa inline-koodille.
          - Pidä domain-luettelo mahdollisimman suppeana ja kiristä tarvittaessa.-->
-    <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'self'; 
-                   script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; 
-                   style-src 'self'; 
-                   connect-src 'self'; 
-                   img-src 'self'; 
-                   font-src 'self'; 
-                   base-uri 'self'; 
-                   form-action 'self';">
-                   
-                   
-                   <!-- frame-ancestors 'self';" -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+        style-src 'self';
+        script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; 
+        connect-src 'self'; 
+        img-src 'self'; 
+        font-src 'self'; 
+        base-uri 'self'; 
+        form-action 'self';">
+
+
+    <!-- 
+                   frame-ancestors 'self';"
+                     -->
 
     <title>Easelect</title>
-    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
     <!-- CSS-tiedostot -->
-    <link rel="stylesheet" href="./css/variables.css">
-    <link rel="stylesheet" href="./css/base.css">
-    <link rel="stylesheet" href="./css/buttons.css">
-    <link rel="stylesheet" href="./tabcontent/tables.css">
-    <link rel="stylesheet" href="./css/modals.css">
-    <link rel="stylesheet" href="./css/dropdowns.css">
-    <link rel="stylesheet" href="./css/form.css">
-    <link rel="stylesheet" href="./tabcontent/general_table_tab/gt_crud/gt_read/cards.css">
-    <link rel="stylesheet" href="./tabcontent/table_creation.css">
-    <link rel="stylesheet" href="./tabcontent/general_table_tab/gt_crud/gt_read/cells.css">
-    <link rel="stylesheet" href="./common_actions/notification_triggers/add_notification.css">
-    <link rel="stylesheet" href="./navbar/navbar.css">
-    <link rel="stylesheet" href="tabcontent/general_table_tab/gt_crud/inner_sidebar.css">
-    <link rel="stylesheet" href="tabcontent/general_table_tab/gt_crud/gt_read/filterbar/filterbar.css">
-    <link rel="stylesheet" href="./common_actions/vanilla_tree/vanilla_tree.css">
-    <link rel="stylesheet" href="./tabcontent/table_permissions/table_permissions.css">
-    <link rel="stylesheet" href="./navbar/lang_panel/lang_panel.css">
-    <link rel="stylesheet" href="./tabcontent/general_table_tab/gt_crud/chat.css">
-    <link rel="stylesheet" href="./common_actions/windows/windows.css">
+    <link rel="stylesheet" href="/css/imports.css">
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/buttons.css">
+    <link rel="stylesheet" href="/css/modals.css">
+    <link rel="stylesheet" href="/css/dropdowns.css">
+    <link rel="stylesheet" href="/css/form.css">
+
+    <link rel="stylesheet" href="/navbar/lang_panel/lang_panel.css">
+    <link rel="stylesheet" href="/common_tools/notification_triggers/add_notification.css">
+    <link rel="stylesheet" href="/common_tools/vanilla_tree/vanilla_tree.css">
+    <link rel="stylesheet" href="/common_tools/windows/windows.css">
+    <link rel="stylesheet" href="/common_tools/vanilla_dropdown/vanilla_dropdown.css">
 </head>
+
 <body>
     <!-- Sisältö -->
     <div id="navbar">
         <!-- Painikkeet generoidaan tänne -->
         <div class="language-selection menu-language-selection">
-            <button class="select-selected regular-button"><svg class="svg-icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24"><path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-155.5t86-127Q252-817 325-848.5T480-880q83 0 155.5 31.5t127 86q54.5 54.5 86 127T880-480q0 82-31.5 155t-86 127.5q-54.5 54.5-127 86T480-80Zm0-82q26-36 45-75t31-83H404q12 44 31 83t45 75Zm-104-16q-18-33-31.5-68.5T322-320H204q29 50 72.5 87t99.5 55Zm208 0q56-18 99.5-55t72.5-87H638q-9 38-22.5 73.5T584-178ZM170-400h136q-3-20-4.5-39.5T300-480q0-21 1.5-40.5T306-560H170q-5 20-7.5 39.5T160-480q0 21 2.5 40.5T170-400Zm216 0h188q3-20 4.5-39.5T580-480q0-21-1.5-40.5T574-560H386q-3 20-4.5 39.5T380-480q0 21 1.5 40.5T386-400Zm268 0h136q5-20 7.5-39.5T800-480q0-21-2.5-40.5T790-560H654q3 20 4.5 39.5T660-480q0 21-1.5 40.5T654-400Zm-16-240h118q-29-50-72.5-87T584-782q18 33 31.5 68.5T638-640Zm-234 0h152q-12-44-31-83t-45-75q-26 36-45 75t-31 83Zm-200 0h118q9-38 22.5-73.5T376-782q-56 18-99.5 55T204-640Z"></path></svg> EN </button>
+            <button class="select-selected regular-button"><svg class="svg-icon" xmlns="http://www.w3.org/2000/svg"
+                    height="24" viewBox="0 -960 960 960" width="24">
+                    <path
+                        d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-155.5t86-127Q252-817 325-848.5T480-880q83 0 155.5 31.5t127 86q54.5 54.5 86 127T880-480q0 82-31.5 155t-86 127.5q-54.5 54.5-127 86T480-80Zm0-82q26-36 45-75t31-83H404q12 44 31 83t45 75Zm-104-16q-18-33-31.5-68.5T322-320H204q29 50 72.5 87t99.5 55Zm208 0q56-18 99.5-55t72.5-87H638q-9 38-22.5 73.5T584-178ZM170-400h136q-3-20-4.5-39.5T300-480q0-21 1.5-40.5T306-560H170q-5 20-7.5 39.5T160-480q0 21 2.5 40.5T170-400Zm216 0h188q3-20 4.5-39.5T580-480q0-21-1.5-40.5T574-560H386q-3 20-4.5 39.5T380-480q0 21 1.5 40.5T386-400Zm268 0h136q5-20 7.5-39.5T800-480q0-21-2.5-40.5T790-560H654q3 20 4.5 39.5T660-480q0 21-1.5 40.5T654-400Zm-16-240h118q-29-50-72.5-87T584-782q18 33 31.5 68.5T638-640Zm-234 0h152q-12-44-31-83t-45-75q-26 36-45 75t-31 83Zm-200 0h118q9-38 22.5-73.5T376-782q-56 18-99.5 55T204-640Z">
+                    </path>
+                </svg> EN </button>
             <div class="select-items select-hide menu-language">
                 <div class="section inner-select-area">
                     <label class="marginbottom"><b>☰ Select menu language</b></label>
 
                     <div class="language-option">
                         <input id="lang-en" type="radio" name="menu-lang" value="en" title="Show menus in English">
-                        <label for="lang-en" class="select-option" title="Show menus in English" data-lang-key="english">English (US)</label>
+                        <label for="lang-en" class="select-option" title="Show menus in English"
+                            data-lang-key="english">English (US)</label>
                     </div>
 
                     <div class="language-option">
                         <input id="lang-fi" type="radio" name="menu-lang" value="fi" title="Show menus in Finnish">
-                        <label for="lang-fi" class="select-option" title="Show menus in Finnish" data-lang-key="finnish">Finnish (Suomi)</label>
+                        <label for="lang-fi" class="select-option" title="Show menus in Finnish"
+                            data-lang-key="finnish">Finnish (Suomi)</label>
                     </div>
 
                     <div class="language-option">
-                        <input id="lang-swedish" type="radio" name="menu-lang" value="swedish" title="Show menus in Swedish">
-                        <label for="lang-swedish" class="select-option" title="Show menus in Swedish" data-lang-key="swedish">Swedish (Svenska)</label>
+                        <input id="lang-swedish" type="radio" name="menu-lang" value="swedish"
+                            title="Show menus in Swedish">
+                        <label for="lang-swedish" class="select-option" title="Show menus in Swedish"
+                            data-lang-key="swedish">Swedish (Svenska)</label>
                     </div>
 
                     <div class="language-option">
                         <input id="lang-chinese" type="radio" name="menu-lang" value="ch" title="Show menus in Chinese">
-                        <label for="lang-chinese" class="select-option" title="Show menus in Chinese" data-lang-key="chinese">Chinese (中文)</label>
+                        <label for="lang-chinese" class="select-option" title="Show menus in Chinese"
+                            data-lang-key="chinese">Chinese (中文)</label>
                     </div>
 
                     <!-- <div class="additional-info">
@@ -102,7 +109,7 @@
         <div id="navContainer"></div>
         <div id="nav_tree"></div>
     </div>
-    
+
     <div id="tabs_container">
         <!-- Dynaamisesti generoidut taulukot ja näkymät tulevat tänne -->
     </div>
@@ -113,9 +120,10 @@
     <div id="add_row_modal_overlay" class="modal_overlay hidden">
         <div id="add_row_modal" class="modal"></div>
     </div>
-    
+
     <!-- JavaScript-tiedosto -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script type="module" src="./main.js"></script>
+    <script type="module" src="/main.js"></script>
 </body>
+
 </html>

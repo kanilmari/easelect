@@ -259,7 +259,7 @@ textarea {
 
 
 
-details {
+.chat-bubble details {
     padding: 10px;
     border: 1px solid var(--border_color);
     max-height: 200px;
@@ -267,12 +267,13 @@ details {
     border-radius: 4px;
 }
 
-summary {
+.chat-bubble summary {
     border-bottom: 1px solid var(--border_color);
-    cursor: pointer;
 }
 
-
+summary {
+    cursor: pointer;
+}
 
 
 
@@ -284,3 +285,29 @@ summary {
 .sort_button {
     margin: 5px;
 }
+
+
+
+/* .single_detail_item {
+    word-wrap: break-word;
+    overflow: auto;
+    max-height: 200px;
+} */
+
+/* .single_description_item {
+    word-wrap: break-word;
+    overflow: auto;
+    max-height: 250px;
+} */
+
+
+
+
+
+
+
+.column_management_forms input[type="text"] {
+    font-size: 16px;
+    font-weight: bold;
+    /* text-transform: uppercase; */
+  }

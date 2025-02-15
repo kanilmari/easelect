@@ -2,7 +2,7 @@
 
 import { filter_table } from './gt_read/filterbar/filter.js';
 import { toggle_select_all, update_row_selection } from './selection.js';
-import { initializeInfiniteScroll } from '../../../common_actions/infinite_scroll/infinite_scroll.js';
+import { initializeInfiniteScroll } from '../../../common_tools/infinite_scroll/infinite_scroll.js';
 import { addEventListenersToCells } from './add_listeners_to_table_cells.js';
 import { handleSortClick } from './gt_read/handle_sort_and_search.js';
 import { initialize_column_resizing } from './column_resizing.js'; 

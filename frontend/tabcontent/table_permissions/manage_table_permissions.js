@@ -1,6 +1,6 @@
 // manage_table_permissions.js
 
-import { loadManagementView } from '../../common_actions/utils.js';
+import { loadManagementView } from '../../common_tools/utils.js';
 import { fetchTableData } from '../general_table_tab/gt_crud/gt_read/endpoint_data_fetcher.js';
 
 export async function load_table_based_permissions() {

@@ -11,7 +11,7 @@ import {
 import { delete_selected_items } from './gt_delete/delete_rows.js';
 
 // Jos haluat joskus avata GPT-lause-funktioita:
-// import { open_prompt_modal_for_table } from '../../../common_actions/openai/openai_sql_modal.js';
+// import { open_prompt_modal_for_table } from '../../../common_tools/openai/openai_sql_modal.js';
 
 function insertWbrForUnderscores(str) {
     return str.replaceAll("_", "_<wbr>");

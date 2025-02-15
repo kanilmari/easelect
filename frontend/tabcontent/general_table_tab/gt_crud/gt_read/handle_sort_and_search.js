@@ -1,7 +1,7 @@
 // handle_sort_and_search.js
 
 import { fetchDataWithSort } from './fetch_sorted_data.js';
-import { initializeInfiniteScroll } from '../../../../common_actions/infinite_scroll/infinite_scroll.js';
+import { initializeInfiniteScroll } from '../../../../common_tools/infinite_scroll/infinite_scroll.js';
 
 // Säilytetään handleSortClick entisellään,
 // mutta kutsutaan jo olemassa olevaa fetchDataWithSort-funktiota.

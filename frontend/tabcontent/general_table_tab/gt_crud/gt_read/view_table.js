@@ -3,12 +3,12 @@
 import { create_table_element } from '../create_table_structure_and_data.js';
 import { create_card_view } from './card_view.js';
 import { applySavedColumnVisibility } from '../../headerbuttons/column_visibility_dropdown.js';
-import { initializeInfiniteScroll, resetOffset, updateOffset } from '../../../../common_actions/infinite_scroll/infinite_scroll.js';
+import { initializeInfiniteScroll, resetOffset, updateOffset } from '../../../../common_tools/infinite_scroll/infinite_scroll.js';
 import { createToolbar } from '../create_toolbar.js';
 import { create_filter_bar } from '../create_filter_bar.js';
 // import { create_filter_bar_window } from '../create_filter_bar_window.js';
 import { create_chat_ui } from '../chat.js';
-import { render_tree } from '../../../../common_actions/vanilla_tree/vanilla_tree.js';
+import { render_tree } from '../../../../common_tools/vanilla_tree/vanilla_tree.js';
 
 export async function generate_table(table_name, columns, data, data_types) {
     try {

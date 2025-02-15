@@ -47,7 +47,7 @@ func AddRowHandler(w http.ResponseWriter, r *http.Request, tableName string) {
 	}
 
 	// Exclude specific columns
-	excludeColumns := []string{"id", "created", "updated", "openai_embedding"}
+	excludeColumns := []string{"id", "created", "updated", "openai_embedding", "creation_spec"}
 
 	// Create a list of allowed columns
 	allowedColumns := make(map[string]bool)

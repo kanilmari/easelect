@@ -1,6 +1,6 @@
 /* create_filter_bar.js */
 
-import { resetOffset } from '../../../common_actions/infinite_scroll/infinite_scroll.js';
+import { resetOffset } from '../../../common_tools/infinite_scroll/infinite_scroll.js';
 import { applySort } from './gt_read/apply_sort.js';
 import { filter_table } from './gt_read/filterbar/filter.js';
 import { create_collapsible_section } from './collapsible_section.js';
