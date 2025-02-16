@@ -1,5 +1,6 @@
 .table_from_db td {
     /* overflow: hidden; */
-    padding: 5px;
-    /* box-shadow: inset -5px 0px 3px -3px rgba(0,0,0,0.5); */
+    border-color: var(--border_color_blended);
+    padding: 10px;
+    /* box-shadow: inset 0px 0px 2px 2px rgb(0 0 0 / 10%); */
 }

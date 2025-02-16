@@ -26,6 +26,8 @@
     --button_active_text_color: #000;
     --button_active_border_color: #444444;
     --button_pressed_scale: 0.98;
+
+    --border_color_blended: rgb(0 0 0 / 15%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -45,5 +47,7 @@
         --button_active_bg_color: #222;
         --button_active_text_color: #fff;
         --button_active_border_color: #555;
+
+        --border_color_blended: rgb(255 255 255 / 20%);
     }
 }

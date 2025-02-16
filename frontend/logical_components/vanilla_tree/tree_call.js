@@ -2,7 +2,7 @@
 
 import { render_tree } from './vanilla_tree.js';
 // Jos haluat navigointifunktioita, esim.:
-import { get_load_info, custom_views } from '../../main.js';
+import { get_load_info, custom_views } from '../../../frontend/main.js';
 import { handle_navigation } from '../../main_app/navigation/navigation.js';
 
 document.addEventListener('DOMContentLoaded', () => {

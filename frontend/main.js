@@ -5,14 +5,19 @@ import { load_rights_management } from './main_app/rights/rights_management.js';
 import { load_foreign_keys_view } from './main_app/foreign_keys_view.js';
 import { load_trigger_management } from './logical_components/notification_triggers/notification_triggers.js';
 import { load_single_chat_view } from './logical_components/ai_features/project_chat/load_single_chat_view.js';
-import { handle_navigation, create_navigation_buttons } from './main_app/navigation/navigation.js';
+import {
+    handle_navigation,
+    create_navigation_buttons
+}
+    from './main_app/navigation/navigation.js';
 import { load_table_columns } from './logical_components/set_table_columns.js';
 import { load_table_creation } from './main_app/table_crud/create_table.js';
 import { load_table_based_permissions } from './main_app/table_permissions/manage_table_permissions.js';
-import './logical_components/vanilla_tree/tree_call.js';
 import { fetchTableData } from './main_app/endpoints/endpoint_data_fetcher.js';
 import { updateMenuLanguageDisplay } from './logical_components/lang/lang_panel/lang_panel.js';
 import './logical_components/lang/lang.js';
+import './logical_components/vanilla_tree/tree_call.js';
+import './logical_components/lang/lang_panel/draw_lang_panel.js';
 
 // Huomaa, että group-arvo ("tools") toimii kieliavaimena navigaatiossa.
 export const custom_views = [
@@ -152,49 +157,6 @@ export function get_load_info(name, custom_views) {
     }
 }
 
-// export async function load_table(table_name) {
-//     try {
-//         let filters = {};
-//         let sort_column = null;
-//         let sort_order = null;
-
-//         const columns_response = await fetch(`/api/get-columns?table=${table_name}`);
-//         const filterBar = document.getElementById(`${table_name}_filterBar`);
-//         if (filterBar) {
-//             const inputs = filterBar.querySelectorAll('input, select');
-//             inputs.forEach(input => {
-//                 if (input.value.trim() !== '') {
-//                     const column = input.id.replace(`${table_name}_filter_`, '');
-//                     filters[column] = input.value.trim();
-//                 }
-//             });
-//         }
-
-//         sort_column = localStorage.getItem(`${table_name}_sort_column`);
-//         if (sort_column) {
-//             sort_order = localStorage.getItem(`${table_name}_sort_order_${sort_column}`);
-//         }
-
-//         const result = await fetchTableData({
-//             table_name,
-//             sort_column,
-//             sort_order,
-//             filters
-//         });
-//         const data = result.data || [];
-//         const response_columns = result.columns || [];
-//         const data_types = result.types || [];
-
-//         localStorage.setItem(`${table_name}_columns`, JSON.stringify(response_columns));
-//         localStorage.setItem(`${table_name}_dataTypes`, JSON.stringify(data_types));
-
-//         await generate_table(table_name, response_columns, data, data_types);
-
-//     } catch (error) {
-//         console.error(`error loading table ${table_name}:`, error);
-//     }
-// }
-
 /**
  * Lataa taulun datan huomioiden sekä URL:n query-parametrit (esim. ?status=Open)
  * että mahdollisen filterBarin.
@@ -325,4 +287,86 @@ document.addEventListener("DOMContentLoaded", function () {
             document.addEventListener("mouseup", handle_mouseup);
         });
     });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// mobile_friendly_nav.js (esimerkki, ei välttämättä tarvitse filtteriosuutta)
+const navbar = document.getElementById('navbar');
+// const navContainer = document.getElementById('navContainer');
+const menuButton = document.getElementById('menuButton');
+const overlay = document.getElementById('overlay');
+
+// Alustustilat
+let navVisible = true;
+let isInitialLoad = true;
+
+// Päivitetään overlayn näkyvyys
+function updateOverlayVisibility() {
+    if (window.innerWidth < 1080 && navVisible) {
+        overlay.classList.add('active');
+    } else {
+        overlay.classList.remove('active');
+    }
+}
+
+// Napin klikkaus: näytä/piilota navigation
+menuButton.addEventListener('click', function () {
+    navVisible = !navVisible;
+    if (navVisible) {
+        navbar.classList.remove('collapsed');
+    } else {
+        navbar.classList.add('collapsed');
+    }
+    updateOverlayVisibility();
+});
+
+// Overlay-klikkaus sulkee navin
+overlay.addEventListener('click', function () {
+    if (navVisible) {
+        navVisible = false;
+        navbar.classList.add('collapsed');
+    }
+    overlay.classList.remove('active');
+});
+
+// Responsiivinen tarkistus
+function checkWindowWidth() {
+    const windowWidth = window.innerWidth;
+    if (windowWidth < 1080) {
+        // Pakotetaan navbar piilotetuksi, jos halutaan aloittaa pienellä ruudulla
+        if (isInitialLoad) {
+            navbar.classList.add('collapsed');
+            navVisible = false;
+        } else {
+            // Tai jos haluat pitää edellisen tilan, voit kommentoida nämä pois
+        }
+    } else {
+        // Suuremmalla ruudulla näytä nav automaattisesti, jos haluat
+        if (!navbar.classList.contains('collapsed')) {
+            navVisible = true;
+        }
+    }
+    updateOverlayVisibility();
+
+    if (isInitialLoad) {
+        isInitialLoad = false;
+    }
+}
+
+// Eventit
+window.addEventListener('resize', checkWindowWidth);
+document.addEventListener('DOMContentLoaded', () => {
+    checkWindowWidth();
 });

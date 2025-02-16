@@ -1,0 +1,1 @@
+This folder contains repeatable components, like special dropdowns and tree structures. Login, register, etc. aren't repeated on sites, so they don't belong here.

@@ -1,7 +1,7 @@
 // card_view.js
 
 
-import { createModal, showModal } from '../../../logical_components/modal/modal_factory.js';
+import { createModal, showModal } from '../../modal/modal_factory.js';
 import { endpoint_router } from '../../../main_app/endpoints/endpoint_router.js';
 
 

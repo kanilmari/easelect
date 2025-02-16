@@ -72,7 +72,7 @@ export function createDeleteSelectedButton(table_name, current_view) {
  *       (EI .custom-dropdown), jotta sitä EI poisteta 
  *       kun siirrytään table-näkymästä pois.
  */
-export function createViewSelectorDropdown(table_name, current_view) {
+export function createViewSelectorDropdown(table_name) {
     const container = document.createElement('div');
     container.classList.add('view-selector-dropdown'); 
     // Huom. Se EI ole .custom-dropdown!
@@ -117,10 +117,10 @@ export function createViewSelectorDropdown(table_name, current_view) {
     const itemCard  = createItem('Korttinäkymä', 'card');
     const itemTree  = createItem('Puunäkymä',   'tree');
 
-    // Korostetaan valittua
-    if (current_view === 'table') itemTable.style.fontWeight = 'bold';
-    if (current_view === 'card')  itemCard.style.fontWeight  = 'bold';
-    if (current_view === 'tree')  itemTree.style.fontWeight  = 'bold';
+    // // Korostetaan valittua
+    // if (current_view === 'table') itemTable.style.fontWeight = 'bold';
+    // if (current_view === 'card')  itemCard.style.fontWeight  = 'bold';
+    // if (current_view === 'tree')  itemTree.style.fontWeight  = 'bold';
 
     dropdownContent.appendChild(itemTable);
     dropdownContent.appendChild(itemCard);

@@ -1,10 +1,10 @@
-/* check_import_paths.js
+/* check_css_imports.js
 
 Käyttö:
    1) Vain tarkistus:
-      node check_import_paths.js [polku/import.css]
+      node check_css_imports.js [polku/import.css]
    2) Tarkistus + automaattiset korjaukset:
-      node check_import_paths.js [polku/import.css] --fix-imports
+      node check_css_imports.js [polku/import.css] --fix-imports
       esim. juuressa:
       node .\frontend\css\check_css_imports.js .\frontend\css\imports.css --fix-imports
 

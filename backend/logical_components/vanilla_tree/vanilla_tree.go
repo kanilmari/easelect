@@ -1,6 +1,6 @@
-// File: get_tree_data.go
+// File: vanilla_tree.go
 
-package tree_data
+package vanilla_tree
 
 import (
 	"database/sql"

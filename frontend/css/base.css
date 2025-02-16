@@ -6,13 +6,13 @@
 }
 
 /* Yleiset perustyylit */
-body {
+.body_content {
     height: 100vh;
     font-family: Arial, sans-serif;
     display: grid;
     background-color: var(--bg_color);
     color: var(--text_color);
-    grid-template-columns: var(--navbar_width) 1fr;
+    grid-template-columns: auto 1fr;
     margin: 0;
 }
 
@@ -84,17 +84,25 @@ input {
 }
 
 .table_parts_container {
+    height: 100vh;
     display: grid;
-    grid-template-columns: 200px auto 450px;
+    grid-template-columns: auto 450px;
 }
 
 .table_parts_container>div {
-    height: 100vh;
+    /* height: 100vh; */
     overflow: auto;
     /* padding: 0 15px; */
 }
 
 
+
+
+
+
+.transparent {
+    opacity: 0;
+}
 
 
 
@@ -123,9 +131,14 @@ table {
 th,
 td {
     position: relative;
-    overflow: visible;
     overflow: hidden;
+
+    /* break word */
+    /* word-wrap: break-word; */
+    /* overflow: hidden; */
+
 }
+
 
 /* Ensimmäisen header-rivin solut jäävät tahmeiksi ruudun yläosaan */
 thead tr:first-child th {
@@ -310,4 +323,78 @@ summary {
     font-size: 16px;
     font-weight: bold;
     /* text-transform: uppercase; */
-  }
+}
+
+
+
+
+
+
+
+
+
+
+/* navbar */
+#navbar {
+    transition: width 0.3s ease;
+}
+
+#navbar.collapsed {
+    width: 0;
+    overflow: hidden;
+    padding: unset;
+}
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+#menuButton {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background-color: var(--button_bg_color);
+    color: var(--button_text_color);
+    border: 1px solid var(--border_color);
+    z-index: 10000;
+    cursor: pointer;
+}
+
+#menuButton:hover {
+    background-color: var(--button_hover_bg_color);
+    color: var(--button_hover_text_color);
+}
+
+.language-selection {
+    /* position: absolute; */
+    top: 10px;
+    left: 80px;
+    /* z-index: 10000; */
+}
+
+
+.top-button-bar {
+    /* display grid vierekkäisille napeille */
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+
+
+.content_div {
+    height: 100vh;
+}

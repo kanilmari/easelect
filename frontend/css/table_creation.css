@@ -20,7 +20,7 @@
     gap: 5px;
     margin-bottom: 10px; /* pientä tilaa riveille */
     border: 1px solid var(--table_border_color);
-    padding: 5px;
+    padding: 7px;
 }
 
 /* Pienet marginaalit kentille */
