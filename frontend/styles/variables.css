@@ -28,6 +28,7 @@
     --button_pressed_scale: 0.98;
 
     --blended_bg: rgb(0 0 0 / 15%);
+    --extreme_bg: rgb(255 255 255);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -49,5 +50,6 @@
         --button_active_border_color: #555;
 
         --blended_bg: rgb(255 255 255 / 20%);
+        --extreme_bg: rgb(0 0 0);
     }
 }

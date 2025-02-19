@@ -83,75 +83,52 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
   // Haetaan kommenttialueet
   const kommenttialueet = etsi_kommenttialueet(sisalto);
 
-// Kaksi erillistä regexiä:
-// 1) Nimetty import (esim. import { X } from 'polku';)
-const importKaavaNimetty = /import\s+[\w{}*$,\s]+\s+from\s+['"]([^'"]+)['"]/g;
+  // Kaksi erillistä regexiä:
+  // 1) Nimetty import (esim. import { X } from 'polku';)
+  const importKaavaNimetty = /import\s+[\w{}*$,\s]+\s+from\s+['"]([^'"]+)['"]/g;
 
-// 2) Sivuvaikutus‐import (esim. import 'polku';)
-const importKaavaSivuvaikutus = /import\s+['"]([^'"]+)['"]/g;
+  // 2) Sivuvaikutus‐import (esim. import 'polku';)
+  const importKaavaSivuvaikutus = /import\s+['"]([^'"]+)['"]/g;
 
-let match;
-const importit = [];
+  let match;
+  const importit = [];
 
-// Käydään läpi nimetyt importit
-while ((match = importKaavaNimetty.exec(sisalto)) !== null) {
-  // Jos import-lause on kommentissa, hypätään yli
-  if (onko_indeksi_kommentissa(match.index, kommenttialueet)) {
-    continue;
+  // Käydään läpi nimetyt importit
+  while ((match = importKaavaNimetty.exec(sisalto)) !== null) {
+    // Jos import-lause on kommentissa, hypätään yli
+    if (onko_indeksi_kommentissa(match.index, kommenttialueet)) {
+      continue;
+    }
+
+    const koko_import_lause = match[0];
+    const alkuperainen_polku = match[1];
+    importit.push({
+      match_index: match.index,
+      lause: koko_import_lause,
+      polku: alkuperainen_polku
+    });
   }
 
-  const koko_import_lause = match[0];
-  const alkuperainen_polku = match[1];
-  importit.push({
-    match_index: match.index,
-    lause: koko_import_lause,
-    polku: alkuperainen_polku
-  });
-}
+  // Käydään läpi sivuvaikutus‐importit
+  while ((match = importKaavaSivuvaikutus.exec(sisalto)) !== null) {
+    // Jos import-lause on kommentissa, hypätään yli
+    if (onko_indeksi_kommentissa(match.index, kommenttialueet)) {
+      continue;
+    }
 
-// Käydään läpi sivuvaikutus‐importit
-while ((match = importKaavaSivuvaikutus.exec(sisalto)) !== null) {
-  // Jos import-lause on kommentissa, hypätään yli
-  if (onko_indeksi_kommentissa(match.index, kommenttialueet)) {
-    continue;
+    const koko_import_lause = match[0];
+    const alkuperainen_polku = match[1];
+    importit.push({
+      match_index: match.index,
+      lause: koko_import_lause,
+      polku: alkuperainen_polku
+    });
   }
 
-  const koko_import_lause = match[0];
-  const alkuperainen_polku = match[1];
-  importit.push({
-    match_index: match.index,
-    lause: koko_import_lause,
-    polku: alkuperainen_polku
-  });
-}
-
-// Jos ei löytynyt lainkaan importteja, voidaan palata
-if (importit.length === 0) {
-  return;
-}
-
-  // // Yhdistetty regex, joka tunnistaa sekä
-  // // import something from 'polku'
-  // // että
-  // // import 'polku';
-  // const importKaava = /import\s+(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g;
-
-  // let match;
-  // const importit = [];
-  // while ((match = importKaava.exec(sisalto)) !== null) {
-  //   // Jos import-lause on kommentin sisällä, jätetään huomiotta
-  //   if (onko_indeksi_kommentissa(match.index, kommenttialueet)) {
-  //     continue;
-  //   }
-
-  //   const koko_import_lause = match[0];
-  //   const alkuperainen_polku = match[1];
-  //   importit.push({
-  //     match_index: match.index,
-  //     lause: koko_import_lause,
-  //     polku: alkuperainen_polku
-  //   });
-  // }
+  // Jos ei löytynyt lainkaan importteja, voidaan palata
+  if (importit.length === 0) {
+    return;
+  }
 
   if (importit.length === 0) {
     return; // ei importteja, ei muutettavaa, mutta tiedosto on nyt käsitelty
@@ -306,7 +283,7 @@ function paafunktio() {
   kasittele_tiedosto(path.resolve(entryPoint), korjaa_importit);
 
   // 2) Haetaan kaikki JS-tiedostot, paitsi ignore-listatut (sekä node_modules).
-  const kaikki_js_tiedostot = glob.sync('**/*.js', { 
+  const kaikki_js_tiedostot = glob.sync('**/*.js', {
     nodir: true,
     ignore: ignoreForAll
   });

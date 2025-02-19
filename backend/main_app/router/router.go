@@ -10,12 +10,12 @@ import (
 	"strings"
 
 	"easelect/backend/general_tables"
+	"easelect/backend/general_tables/core_workflows"
 	"easelect/backend/general_tables/gt_1_row_crud/gt_1_row_create"
 	"easelect/backend/general_tables/gt_1_row_crud/gt_1_row_delete"
 	"easelect/backend/general_tables/gt_1_row_crud/gt_1_row_read"
 	"easelect/backend/general_tables/gt_1_row_crud/gt_1_row_update"
 	gt_2_column_crud "easelect/backend/general_tables/gt_2_column_crud"
-	gt_3_table_crud_imports_handler "easelect/backend/general_tables/gt_3_table_crud"
 	"easelect/backend/general_tables/gt_3_table_crud/gt_3_table_delete"
 	"easelect/backend/general_tables/gt_3_table_crud/gt_3_table_read"
 	"easelect/backend/general_tables/table_folders"
@@ -86,7 +86,7 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/api/system_triggers/list", gt_triggers.GetTriggersHandler, "gt_triggers.GetTriggersHandler")
 	functionRegisterHandler("/api/system_triggers/create", gt_triggers.CreateTriggerHandler, "gt_triggers.CreateTriggerHandler")
 	functionRegisterHandler("/api/table_permissions", general_tables.PermissionsHandler, "general_tables.PermissionsHandler")
-	functionRegisterHandler("/api/modify-columns", gt_3_table_crud_imports_handler.ModifyColumnsHandler, "gt_2_column_crud.ModifyColumnsHandler")
+	functionRegisterHandler("/api/modify-columns", core_workflows.ModifyColumnsHandler, "gt_2_column_crud.ModifyColumnsHandler")
 
 	// --- OpenAI chat endpoint (päivitetty) ---
 	// functionRegisterHandler("/openai_chat_sql_handler", openai.OpenAIChatSQLHandler, "openai.OpenAIChatSQLHandler")
@@ -118,9 +118,9 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/delete_foreign_key", general_tables.DeleteForeignKeyHandler, "general_tables.DeleteForeignKeyHandler")
 
 	// Muita
-	functionRegisterHandler("/tables/system_db_tables/update_column_order", gt_3_table_crud_imports_handler.UpdateColumnOrderHandler, "general_tables.UpdateColumnOrderHandler")
+	functionRegisterHandler("/tables/system_db_tables/update_column_order", core_workflows.UpdateColumnOrderHandler, "general_tables.UpdateColumnOrderHandler")
 	functionRegisterHandler("/save-usergroup-right", backend.SaveUserGroupRight, "backend.SaveUserGroupRight")
-	functionRegisterHandler("/create_table", gt_3_table_crud_imports_handler.CreateTableHandler, "general_tables.CreateTableHandler")
+	functionRegisterHandler("/create_table", core_workflows.CreateTableHandler, "general_tables.CreateTableHandler")
 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
 	functionRegisterHandler("/api/table-default-sort-column/", gt_2_column_crud.GetTableDefaultSortColumnHandler, "general_tables.GetTableDefaultSortColumnHandler")
 	functionRegisterHandler("/api/drop-table", gt_3_table_delete.DropTableHandler, "general_tables.DropTableHandler")

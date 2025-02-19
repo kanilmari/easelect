@@ -35,39 +35,3 @@ func AddNewColumns(tx *sql.Tx, sanitizedTableName string, addedCols []gt_2_colum
 	}
 	return nil
 }
-
-// // column_create.go
-// package gt_2_column_create
-
-// import (
-// 	"database/sql"
-// 	"easelect/backend/general_tables/gt_2_column_crud/gt_2_column_update"
-// 	security "easelect/backend/main_app/security"
-// 	"fmt"
-// 	"strings"
-// )
-
-// func AddNewColumns(tx *sql.Tx, sanitizedTableName string, addedCols []gt_2_column_update.ModifiedCol) error {
-// 	fmt.Println("Lisätään uusia sarakkeita (jos on):", addedCols)
-// 	for _, acol := range addedCols {
-// 		fmt.Println("Lisätään sarake:", acol)
-// 		sNewName, err2 := security.SanitizeIdentifier(acol.NewName)
-// 		if err2 != nil {
-// 			return err2
-// 		}
-
-// 		newType := strings.ToUpper(acol.DataType)
-// 		if newType == "VARCHAR" && acol.Length != nil {
-// 			newType = fmt.Sprintf("VARCHAR(%d)", *acol.Length)
-// 		}
-
-// 		addStmt := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", sanitizedTableName, sNewName, newType)
-// 		fmt.Println("Suoritetaan:", addStmt)
-// 		_, err2 = tx.Exec(addStmt)
-// 		if err2 != nil {
-// 			fmt.Println("Virhe lisättäessä uutta saraketta:", err2)
-// 			return err2
-// 		}
-// 	}
-// 	return nil
-// }

@@ -92,27 +92,6 @@ export async function fetchContentTables() {
   }
 }
 
-// /**
-//  * Hakee olemassa olevat herätteet list-endpointista
-//  * (uusi GET /api/system_triggers/list)
-//  */
-// export async function fetchAllTriggers() {
-//   try {
-//     const response = await fetch('/api/system_triggers/list', {
-//       method: 'GET'
-//     });
-//     console.log('fetching triggers');
-//     if (!response.ok) {
-//       const errText = await response.text();
-//       throw new Error(`Virhe herätteiden haussa: ${errText}`);
-//     }
-//     return await response.json();
-//   } catch (err) {
-//     console.error('fetchAllTriggers error:', err);
-//     throw err;
-//   }
-// }
-
 /* ------------------------------------------------------------------
    DOM-rakenteen luontifunktiot
 ------------------------------------------------------------------ */
