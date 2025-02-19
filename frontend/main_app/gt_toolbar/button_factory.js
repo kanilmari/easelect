@@ -1,8 +1,8 @@
 // File: button_factory.js
 
 import { open_add_row_modal } from '../gt_crud/gt_create/add_row.js';
+import { load_table } from '../navigation/load_table.js';
 import { delete_selected_items } from '../gt_crud/gt_delete/delete_rows.js';
-import { load_table } from '../../main.js';
 import { createColumnVisibilityDropdown } from './column_visibility_dropdown.js';
 import { open_column_management_modal } from './column_management.js';
 

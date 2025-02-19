@@ -1,0 +1,59 @@
+@import url("./variables.css");
+
+@import url("./cards_big.css");
+
+/* tables.css */
+@import url("./tables.css");
+
+
+
+@import url("./navbar.css");
+
+/* filterbar */
+@import url("./filterbar.css");
+
+/* chat */
+@import url("./chat.css");
+
+/* import  logical_components  vanilla_tree vanilla_tree.css */
+
+@import url("../logical_components/vanilla_tree/vanilla_tree.css");
+
+/* import logical_components/windows/windows.css */
+
+@import url("../logical_components/windows/windows.css");
+
+/* /logical_components/vanilla_dropdown/vanilla_dropdown.css */
+
+@import url("../logical_components/vanilla_dropdown/vanilla_dropdown.css");
+
+/* /logical_components/notification_triggers/add_notification.css */
+
+@import url("../logical_components/notification_triggers/add_notification.css");
+
+/* /navbar/lang_panel/lang_panel.css */
+
+@import url("../logical_components/lang/lang_panel.css");
+
+
+
+@import url("./base.css");
+
+@import url("./buttons.css");
+
+@import url("./modals.css");
+
+@import url("./dropdowns.css");
+
+@import url("./form.css");
+
+@import url("./table_creation.css");
+
+
+
+
+/* @import url("../logical_components/table_views/card_view/cards.css"); */
+@import url("../logical_components/table_views/card_view/cards.css");
+@import url("../logical_components/table_views/table_view/cells.css");
+
+

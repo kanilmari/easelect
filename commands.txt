@@ -2,8 +2,8 @@
 npx eslint . --fix
 
 # Check JS imports with manual script
-node .\frontend\check_js_imports.js .\frontend\main.js --exclude=others/**,frontend/css/**,frontend/check_js_imports.js
-node .\frontend\check_js_imports.js .\frontend\main.js --exclude=others/**,frontend/css/**,frontend/check_js_imports.js --fix-imports
+node .\frontend\check_js_imports2.js .\frontend\main.js --exclude=others/**,frontend/styles/**,frontend/check_js_imports*.js
+node .\frontend\check_js_imports2.js .\frontend\main.js --exclude=others/**,frontend/styles/**,frontend/check_js_imports*.js --fix-imports
 
 # Check css imports with manual script
 node .\frontend\css\check_css_imports.js .\frontend\css\imports.css

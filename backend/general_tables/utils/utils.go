@@ -2,7 +2,7 @@
 package utils
 
 import (
-	"easelect/backend"
+	backend "easelect/backend/main_app"
 	"fmt"
 	"log"
 	"strings"

@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"database/sql"
+	backend "easelect/backend/main_app"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,8 +13,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"easelect/backend"
 
 	"github.com/sashabaranov/go-openai"
 )

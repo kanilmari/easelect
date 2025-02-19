@@ -1,4 +1,4 @@
-import { load_table } from "../../main.js";
+import { load_table } from "../navigation/load_table.js";
 
 /**
  * Luo kolme painiketta (Taulu, Kortti, Puu) suoraan näkyviin,

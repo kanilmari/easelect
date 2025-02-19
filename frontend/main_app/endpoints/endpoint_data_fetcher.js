@@ -2,11 +2,6 @@
 
 /**
  * Version 2.0
- * Hakee dataa /api/get-results -reitiltä, joka lukee:
- *  - table (pakollinen)
- *  - offset (vapaaehtoinen, jos > 0)
- *  - sort_column, sort_order (vapaaehtoiset)
- *  - muut parametrit tulkitaan filtteröinniksi
  *
  * @param {Object} options
  * @param {string} options.table_name  - taulun nimi (mapataan ?table=...)

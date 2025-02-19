@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"easelect/backend"
+	backend "easelect/backend/main_app"
 )
 
 // HandleUpdateFolder käsittelee POST /api/update-folder

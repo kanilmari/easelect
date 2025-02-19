@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"database/sql"
+	backend "easelect/backend/main_app"
 	"fmt"
 	"io"
 	"log"
@@ -10,8 +11,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"easelect/backend"
 
 	pgvector "github.com/pgvector/pgvector-go"
 	"github.com/sashabaranov/go-openai"

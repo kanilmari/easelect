@@ -3,7 +3,7 @@ package openai
 
 import (
 	"context"
-	"easelect/backend"
+	backend "easelect/backend/main_app"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -350,7 +350,7 @@ func do_semantic_search_in_file_structure(ctx context.Context, user_query string
 
 // import (
 // 	"context"
-// 	"easelect/backend"
+// 	"easelect/backend/main_app"
 // 	"encoding/json"
 // 	"fmt"
 // 	"log"
@@ -697,7 +697,7 @@ func do_semantic_search_in_file_structure(ctx context.Context, user_query string
 
 // // import (
 // // 	"context"
-// // 	"easelect/backend"
+// // 	"easelect/backend/main_app"
 // // 	"encoding/json"
 // // 	"fmt"
 // // 	"log"
@@ -1054,7 +1054,7 @@ func do_semantic_search_in_file_structure(ctx context.Context, user_query string
 
 // // // import (
 // // // 	"context"
-// // // 	"easelect/backend"
+// // // 	"easelect/backend/main_app"
 // // // 	"encoding/json"
 // // // 	"fmt"
 // // // 	"io"
@@ -1415,7 +1415,7 @@ func do_semantic_search_in_file_structure(ctx context.Context, user_query string
 
 // // // // import (
 // // // // 	"context"
-// // // // 	"easelect/backend"
+// // // // 	"easelect/backend/main_app"
 // // // // 	"encoding/json"
 // // // // 	"fmt"
 // // // // 	"io"

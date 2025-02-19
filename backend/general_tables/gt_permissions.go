@@ -3,7 +3,7 @@ package general_tables
 
 import (
 	"database/sql"
-	"easelect/backend"
+	backend "easelect/backend/main_app"
 	"encoding/json"
 	"fmt"
 	"log"

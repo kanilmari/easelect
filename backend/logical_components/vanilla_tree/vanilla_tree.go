@@ -4,11 +4,10 @@ package vanilla_tree
 
 import (
 	"database/sql"
+	backend "easelect/backend/main_app"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"easelect/backend"
 )
 
 // TreeNode edustaa puun solmua. db_id on varsinainen numeroinen ID tietokannassa,

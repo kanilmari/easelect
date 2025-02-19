@@ -2,7 +2,7 @@
 package gt_triggers
 
 import (
-	"easelect/backend"
+	backend "easelect/backend/main_app"
 	"encoding/json"
 	"fmt"
 	"log"

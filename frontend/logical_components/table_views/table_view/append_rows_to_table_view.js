@@ -8,11 +8,23 @@ import { createDataCell, createCheckboxCell } from './create_table_structure_and
 export function appendDataToTable(table, newData, columns, dataTypes) {
     const tbody = table.querySelector('tbody');
     const existingRows = tbody.rows.length;
+
     newData.forEach((item, index) => {
         const row = document.createElement('tr');
+
+        // Muodostetaan numerointisolu
+        const numbering_td = document.createElement('td');
+        numbering_td.style.textAlign = 'center';
+        numbering_td.style.verticalAlign = 'middle';
+        numbering_td.classList.add('table_row_numbering');
+        numbering_td.textContent = existingRows + index + 1; // 1-pohjainen laskuri
+        row.appendChild(numbering_td);
+
+        // Luodaan checkbox-solu
         const checkbox_td = createCheckboxCell(row, table.id.replace('_table', ''));
         row.appendChild(checkbox_td);
 
+        // Luodaan data-solut
         columns.forEach((column, colIndex) => {
             const td = createDataCell(item, column, columns, existingRows + index, colIndex);
             row.appendChild(td);
@@ -21,6 +33,7 @@ export function appendDataToTable(table, newData, columns, dataTypes) {
         tbody.appendChild(row);
     });
 
+    // Lisätään eventit soluihin
     const cells = tbody.querySelectorAll('td:not(:first-child)');
     cells.forEach(cell => {
         cell.addEventListener('click', (e) => {
