@@ -13,13 +13,21 @@ import (
 	// Sessioiden Store
 )
 
-// WithUserLogging kirjaa lokiin perustietoja HTTP-pyynnöistä.
+// WithUserLogging kirjaa lokiin perustietoja HTTP-pyynnöistä, jos debug on true.
 func WithUserLogging(original_handler http.HandlerFunc) http.HandlerFunc {
+	debug := false // Aseta tähän true tai false tarpeen mukaan
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Vältetään lokituksen spämmäystä staattisilla tiedostoilla
 		if strings.HasSuffix(r.URL.Path, ".css") ||
 			strings.HasSuffix(r.URL.Path, ".js") ||
 			strings.HasSuffix(r.URL.Path, ".ico") {
+			original_handler(w, r)
+			return
+		}
+
+		// Jos debug on false, ohitetaan lokitus ja kutsutaan alkuperäinen handler
+		if !debug {
 			original_handler(w, r)
 			return
 		}
@@ -68,12 +76,12 @@ func WithUserLogging(original_handler http.HandlerFunc) http.HandlerFunc {
 
 		// Haetaan ryhmät
 		rows, err_groups := backend.Db.Query(`
-			SELECT g.name
-			FROM auth_user_groups g
-			JOIN auth_user_group_memberships ug 
-				ON g.id = ug.group_id
-			WHERE ug.user_id = $1
-		`, user_id)
+            SELECT g.name
+            FROM auth_user_groups g
+            JOIN auth_user_group_memberships ug 
+                ON g.id = ug.group_id
+            WHERE ug.user_id = $1
+        `, user_id)
 		if err_groups != nil {
 			log_line += fmt.Sprintf(", user: %s, group fetch error: %v]", user_name, err_groups)
 			log.Println(log_line)
@@ -317,8 +325,8 @@ func WithFingerprintCheck(originalHandler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Lokitetaan debugina
-		log.Printf("[WithFingerprintCheck] sessFingerprint='%s', cookieFingerprint='%s'",
-			sessFingerprint, cookieFingerprint.Value)
+		// log.Printf("[WithFingerprintCheck] sessFingerprint='%s', cookieFingerprint='%s'",
+		// 	sessFingerprint, cookieFingerprint.Value)
 
 		// Verrataan sessiossa ja evästeessä olevaa fingerprintiä
 		if sessFingerprint != cookieFingerprint.Value {

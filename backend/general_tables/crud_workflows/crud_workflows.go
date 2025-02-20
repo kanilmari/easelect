@@ -205,7 +205,7 @@ func ModifyColumnsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() {
 		if err != nil {
-			fmt.Printf("Virhe tapahtui, rollbackataan: %v\n", err)
+			fmt.Printf("\033[31mvirhe tapahtui, rollbackataan: %v\033[0m\n", err)
 			_ = tx.Rollback()
 		} else {
 			cerr := tx.Commit()

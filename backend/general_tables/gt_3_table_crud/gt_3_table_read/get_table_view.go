@@ -40,8 +40,8 @@ func GetMetadata(response_writer http.ResponseWriter, request *http.Request) {
 		WHERE st.name = $1
 	`
 
-	log.Printf("suoritetaan kysely: %s", query)
-	log.Printf("parametrit (args): [%s]", table_name)
+	// log.Printf("suoritetaan kysely: %s", query) // säilytetään kommentoituna
+	// log.Printf("parametrit (args): [%s]", table_name) // säilytetään kommentoituna
 
 	rows_result, err := backend.Db.Query(query, table_name)
 	if err != nil {

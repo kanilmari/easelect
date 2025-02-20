@@ -9,7 +9,7 @@ var logout_icon_svg = `
 `;
 
 document.addEventListener('DOMContentLoaded', function() {
-  console.log("logout_svg.js: aloitetaan logout-painikkeen rakentaminen...");
+  // console.log("logout_svg.js: aloitetaan logout-painikkeen rakentaminen...");
 
   // Valitse elementti, johon haluat painikkeen laittaa
   // (tässä esimerkissä .logout-container-luokallinen div)
@@ -29,5 +29,5 @@ document.addEventListener('DOMContentLoaded', function() {
   // Asetetaan HTML containeriin
   logout_container.innerHTML = logout_button_html;
 
-  console.log("logout_svg.js: logout-painike lisätty DOMiin.");
+  // console.log("logout_svg.js: logout-painike lisätty DOMiin.");
 });

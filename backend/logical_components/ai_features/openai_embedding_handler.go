@@ -18,7 +18,7 @@ import (
 
 // OpenAIEmbeddingStreamHandler lukee kaikki sarakkeet jokaiselta riviltä,
 // kokoaa ne yhdeksi tekstilauseeksi ja generoi embeddingin openai_embedding-sarakkeeseen.
-func OpenAIEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
+func OpenaiEmbeddingStreamHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "only GET method allowed for SSE", http.StatusMethodNotAllowed)
 		return

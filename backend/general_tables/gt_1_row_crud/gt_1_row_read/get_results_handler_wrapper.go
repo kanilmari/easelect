@@ -2,7 +2,6 @@
 package gt_1_row_read
 
 import (
-	"log"
 	"net/http"
 )
 
@@ -19,6 +18,6 @@ func GetResultsHandlerWrapper(w http.ResponseWriter, r *http.Request) {
 	// suoraan requestista.
 	// Jos haluat välittää table_namen suoraan, muokkaa GetResults
 	// ottamaan parametrin vastaan, samaan tyyliin kuin AddRowHandler.
-	log.Printf("calling GetResults for table %s", table_name)
+	// log.Printf("calling GetResults for table %s", table_name) // säilytetään kommentoituna
 	GetResults(w, r)
 }

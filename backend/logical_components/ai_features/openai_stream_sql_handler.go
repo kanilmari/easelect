@@ -23,7 +23,7 @@ type ChatStreamRequest struct {
 }
 
 // OpenAIChatStreamHandler ...
-func OpenAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
+func OpenaiChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "only GET method allowed for SSE", http.StatusMethodNotAllowed)
 		return

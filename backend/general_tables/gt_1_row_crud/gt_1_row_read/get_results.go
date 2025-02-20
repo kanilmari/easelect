@@ -107,7 +107,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 
 	// Tulostetaan lopullinen SQL-kysely ja parametriarvot (kehityksen avuksi)
 	// log.Printf("sql-kysely: %s", query) // säilytetään kommentoituna
-	log.Printf("parametrit (args): %v", query_args)
+	// log.Printf("parametrit (args): %v", query_args) // säilytetään kommentoituna
 
 	rows_result, err := backend.Db.Query(query, query_args...)
 	if err != nil {

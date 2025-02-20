@@ -84,7 +84,7 @@ func sendSSEChunk(sendSSE func(string, string), eventName, chunk string) {
 // --------------------------------------------------------------------
 // Handler
 // --------------------------------------------------------------------
-func OpenAICodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
+func OpenaiCodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "only GET method allowed for SSE", http.StatusMethodNotAllowed)
 		return
@@ -100,16 +100,16 @@ func OpenAICodeEditorStreamHandler(w http.ResponseWriter, r *http.Request) {
 			if unmarshalErr := json.Unmarshal([]byte(decoded), &conversationHistory); unmarshalErr != nil {
 				log.Printf("error unmarshaling conversationHistory: %v", unmarshalErr)
 			} else {
-				log.Printf("[OpenAICodeEditorStreamHandler] conversationHistory parsed, length=%d", len(conversationHistory))
+				log.Printf("[OpenaiCodeEditorStreamHandler] conversationHistory parsed, length=%d", len(conversationHistory))
 			}
 		} else {
 			log.Printf("url.QueryUnescape error: %v", err)
 		}
 	} else {
-		log.Printf("[OpenAICodeEditorStreamHandler] no conversation param provided")
+		log.Printf("[OpenaiCodeEditorStreamHandler] no conversation param provided")
 	}
 
-	log.Printf("[OpenAICodeEditorStreamHandler] userMessage=%s, conversationHistoryLength=%d",
+	log.Printf("[OpenaiCodeEditorStreamHandler] userMessage=%s, conversationHistoryLength=%d",
 		userMessage, len(conversationHistory))
 
 	w.Header().Set("Content-Type", "text/event-stream")

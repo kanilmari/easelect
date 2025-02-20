@@ -1,3 +1,7 @@
+// Käsittele sekä taululliset että tauluttomat ryhmien funktio-oikeudet:
+// Käsittele sekä taululliset että tauluttomat ryhmien funktio-oikeudet:
+// Käsittele vain taululliset ryhmien funktio-oikeudet:
+
 // permissions.go
 package general_tables
 
@@ -32,11 +36,12 @@ func PermissionsHandler(w http.ResponseWriter, r *http.Request) {
 func Remove_non_existent_table_rights(db *sql.DB) error {
 	delete_query := `
 		DELETE FROM auth_group_table_func_rights
-		WHERE NOT EXISTS (
+		WHERE target_table_name <> ''
+		AND NOT EXISTS (
 			SELECT 1
 			FROM information_schema.tables
 			WHERE tables.table_schema = auth_group_table_func_rights.target_schema_name
-			  AND tables.table_name = auth_group_table_func_rights.target_table_name
+			AND tables.table_name   = auth_group_table_func_rights.target_table_name
 		)
 	`
 
@@ -58,9 +63,7 @@ func Remove_non_existent_table_rights(db *sql.DB) error {
 	return nil
 }
 
-func getPermissions(w http.ResponseWriter, r *http.Request) {
-	_ = r // Estetään käyttämättömän parametrin varoitus
-
+func getPermissions(w http.ResponseWriter, _ *http.Request) {
 	query := `
 		SELECT auth_user_group_id, function_id, target_schema_name, target_table_name
 		FROM auth_group_table_func_rights
@@ -101,7 +104,6 @@ func createPermissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Jos ei tule yhtään uutta oikeutta, ei tehdä mitään
 	if len(payload.Permissions) == 0 {
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(map[string]string{
@@ -110,57 +112,81 @@ func createPermissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Poistettu aiempi funktiopaketin tarkistus, sallitaan kaikki funktiot nyt.
-
 	tableName := payload.Permissions[0].TargetTableName
 	schemaName := payload.Permissions[0].TargetSchemaName
 
-	// Tarkistetaan, onko vanhoja oikeuksia olemassa
-	countQuery := `
-		SELECT COUNT(*) 
-		FROM auth_group_table_func_rights
-		WHERE target_schema_name = $1 AND target_table_name = $2
-	`
-	var count int
-	if err := backend.Db.QueryRow(countQuery, schemaName, tableName).Scan(&count); err != nil {
-		log.Printf("virhe laskettaessa olemassa olevia oikeuksia: %v", err)
-		http.Error(w, "virhe laskettaessa olemassa olevia oikeuksia", http.StatusInternalServerError)
-		return
-	}
-
-	if count > 0 {
-		delQuery := `
-			DELETE FROM auth_group_table_func_rights
-			WHERE target_schema_name = $1 AND target_table_name = $2
-		`
-		res, err := backend.Db.Exec(delQuery, schemaName, tableName)
+	if tableName == "" {
+		// *** Tauluton tapaus => Poistetaan entiset "table_name = ''" -rivimme ja lisätään uudet
+		deleteQuery := `
+            DELETE FROM auth_group_table_func_rights
+            WHERE target_schema_name = $1 
+              AND target_table_name = ''
+        `
+		res, err := backend.Db.Exec(deleteQuery, schemaName)
 		if err != nil {
-			log.Printf("virhe poistettaessa vanhoja oikeuksia: %v", err)
-			http.Error(w, "virhe poistettaessa vanhoja oikeuksia", http.StatusInternalServerError)
+			log.Printf("virhe poistettaessa vanhoja tauluttomia oikeuksia: %v", err)
+			http.Error(w, "virhe poistettaessa vanhoja tauluttomia oikeuksia", http.StatusInternalServerError)
 			return
 		}
 		rowsDeleted, _ := res.RowsAffected()
-		log.Printf("Poistettiin %d vanhaa oikeutta taulusta %s.%s", rowsDeleted, schemaName, tableName)
-	} else {
-		log.Printf("Ei vanhoja oikeuksia taulussa %s.%s, ei suoriteta DELETE-operaatiota", schemaName, tableName)
-	}
+		log.Printf("Poistettiin %d vanhaa taulutonta oikeutta skeemasta %s", rowsDeleted, schemaName)
 
-	// Lisätään uudet oikeudet
-	for _, perm := range payload.Permissions {
-		err := insertPermission(perm)
-		if err != nil {
-			log.Printf("virhe oikeuden tallennuksessa: %v", err)
-			http.Error(w, "virhe oikeuden tallennuksessa", http.StatusInternalServerError)
+		// Lisätään nyt uudet
+		for _, perm := range payload.Permissions {
+			if err := insertPermission(perm); err != nil {
+				log.Printf("virhe oikeuden tallennuksessa: %v", err)
+				http.Error(w, "virhe oikeuden tallennuksessa", http.StatusInternalServerError)
+				return
+			}
+		}
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"message": "kiinteät oikeudet tallennettu (vanhat poistettu, uudet lisätty)",
+		})
+		return
+
+	} else {
+		// *** Taulukohtainen tapaus
+		countQuery := `
+            SELECT COUNT(*) FROM auth_group_table_func_rights
+            WHERE target_schema_name = $1 AND target_table_name = $2
+        `
+		var count int
+		if err := backend.Db.QueryRow(countQuery, schemaName, tableName).Scan(&count); err != nil {
+			log.Printf("virhe laskettaessa olemassaolevia oikeuksia: %v", err)
+			http.Error(w, "virhe laskettaessa olemassaolevia oikeuksia", http.StatusInternalServerError)
 			return
 		}
+
+		if count > 0 {
+			delQuery := `
+                DELETE FROM auth_group_table_func_rights
+                WHERE target_schema_name = $1 AND target_table_name = $2
+            `
+			res, err := backend.Db.Exec(delQuery, schemaName, tableName)
+			if err != nil {
+				log.Printf("virhe poistettaessa vanhoja oikeuksia: %v", err)
+				http.Error(w, "virhe poistettaessa vanhoja oikeuksia", http.StatusInternalServerError)
+				return
+			}
+			rowsDeleted, _ := res.RowsAffected()
+			log.Printf("Poistettiin %d vanhaa oikeutta taulusta %s.%s", rowsDeleted, schemaName, tableName)
+		}
+
+		for _, perm := range payload.Permissions {
+			if err := insertPermission(perm); err != nil {
+				log.Printf("virhe oikeuden tallennuksessa: %v", err)
+				http.Error(w, "virhe oikeuden tallennuksessa", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"message": "oikeudet tallennettu onnistuneesti",
+		})
 	}
-
-	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"message": "oikeudet tallennettu onnistuneesti",
-	})
 }
-
 func insertPermission(p Permission) error {
 	query := `
         INSERT INTO auth_group_table_func_rights 

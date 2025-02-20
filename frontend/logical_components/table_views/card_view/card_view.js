@@ -114,7 +114,9 @@ export function appendDataToCardView(card_container, columns, data, table_name) 
         // Asetetaan cardiin data-id attribuutti
         if (item.id !== undefined && item.id !== null) {
             card.setAttribute('data-id', item.id);
-            console.log(`Lisätty kortti, data-id: ${item.id}`);
+            // console.log(`Lisätty kortti (appendDataToCardView), data-id: ${item.id}`);
+        } else {
+            console.log('ei data-id:tä');
         }
 
         // Valintaruutu
@@ -215,6 +217,13 @@ export async function create_card_view(columns, data, table_name) {
     for (const row_item of data) {
         const card = document.createElement('div');
         card.classList.add('card');
+
+        if (row_item.id !== undefined && row_item.id !== null) {
+            card.setAttribute('data-id', row_item.id);
+            // console.log('Lisätty kortti (create_card_view), data-id:', row_item.id);
+        } else {
+            console.log('ei data-id:tä');
+        }
 
         // Checkbox
         const checkbox = document.createElement('input');

@@ -53,13 +53,42 @@ async function fetchRowCount(table_name) {
  * 
  *  Lisäksi luodaan sisardivi (readOnlyContainer), johon varsinainen lukutoiminto/taulu sijoitetaan.
  */
+// // export function create_filter_bar(table_name, columns, data_types, current_view) {
+// //   // 0) Haetaan/luodaan yleiskontti (table_parts_container).
+// //   let table_parts_container = document.getElementById(`${table_name}_table_parts_container`);
+// //   if (!table_parts_container) {
+// //     table_parts_container = document.createElement('div');
+// //     table_parts_container.id = `${table_name}_table_parts_container`;
+// //     // Voit liittää suoraan bodyyn tai johonkin muuhun haluttuun elementtiin
+// //     document.body.appendChild(table_parts_container);
+// //   }
+
+// //   // 1) Luodaan filterBar, ellei sitä vielä ole.
+// //   let filter_bar = document.getElementById(`${table_name}_filterBar`);
+// //   if (!filter_bar) {
+// //     filter_bar = document.createElement('div');
+// //     filter_bar.id = `${table_name}_filterBar`;
+// //     filter_bar.classList.add('filterBar');
+
+// //     // 1a) Otsikko (esim. taulun nimi)
+// //     const table_name_element = document.createElement('div');
+// //     table_name_element.textContent = table_name;
+// //     table_name_element.style.fontWeight = 'bold';
+// //     table_name_element.style.fontSize = '20px';
+// //     //set attribute data-lang-key
+// //     table_name_element.setAttribute('data-lang-key', table_name);
+// //     // Print html title table_name
+// //     table_name_element.title = table_name;
+
+    
+
+// //     filter_bar.appendChild(table_name_element);
 export function create_filter_bar(table_name, columns, data_types, current_view) {
   // 0) Haetaan/luodaan yleiskontti (table_parts_container).
   let table_parts_container = document.getElementById(`${table_name}_table_parts_container`);
   if (!table_parts_container) {
     table_parts_container = document.createElement('div');
     table_parts_container.id = `${table_name}_table_parts_container`;
-    // Voit liittää suoraan bodyyn tai johonkin muuhun haluttuun elementtiin
     document.body.appendChild(table_parts_container);
   }
 
@@ -70,19 +99,30 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     filter_bar.id = `${table_name}_filterBar`;
     filter_bar.classList.add('filterBar');
 
-    // 1a) Otsikko (esim. taulun nimi)
-    const table_name_element = document.createElement('div');
-    table_name_element.textContent = table_name;
-    table_name_element.style.fontWeight = 'bold';
-    table_name_element.style.fontSize = '20px';
-    //set attribute data-lang-key
-    table_name_element.setAttribute('data-lang-key', table_name);
-    // Print html title table_name
-    table_name_element.title = table_name;
+// 1a) Luodaan otsikolle oma kontti
+const title_container = document.createElement('div');
 
-    
+// Luodaan data-lang-key -elementti (div) taulun nimelle
+const table_name_element = document.createElement('div');
+table_name_element.textContent = table_name;
+table_name_element.style.fontWeight = 'bold';
+table_name_element.style.fontSize = '20px';
+table_name_element.setAttribute('data-lang-key', table_name);
+table_name_element.title = table_name;
 
-    filter_bar.appendChild(table_name_element);
+// Luodaan erillinen span-elementti
+const table_name_span = document.createElement('span');
+// Laita span:iin haluamasi sisältö (tässä sama taulun nimi, tai jokin muu teksti)
+table_name_span.textContent = table_name; 
+// Voit muotoilla span:ia haluamallasi tavalla esim. classListilla
+// table_name_span.classList.add('omaSpanClass');
+
+// Lisätään molemmat uuteen div-konttiin
+title_container.appendChild(table_name_element);
+title_container.appendChild(table_name_span);
+
+// Lopuksi lisätään tämä kontti filter_bar-elementtiin
+filter_bar.appendChild(title_container);
 
     // const tooltip = document.createElement('span');
     // tooltip.classList.add('tooltip');
