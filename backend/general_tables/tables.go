@@ -2,7 +2,7 @@
 package general_tables
 
 import (
-	"easelect/backend/general_tables/core_workflows"
+	"easelect/backend/general_tables/crud_workflows"
 	"easelect/backend/general_tables/gt_2_column_crud/gt_2_column_update"
 	"easelect/backend/general_tables/models"
 	backend "easelect/backend/main_app"
@@ -60,7 +60,7 @@ func GetGroupedTables(response_writer http.ResponseWriter, http_request *http.Re
 }
 
 func HandleUpdateOidsAndTableNames(w http.ResponseWriter, r *http.Request) {
-	err := core_workflows.UpdateOidsAndTableNames()
+	err := crud_workflows.UpdateOidsAndTableNamesWithBridge()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error updating OID values and table names: %v", err), http.StatusInternalServerError)
 		return

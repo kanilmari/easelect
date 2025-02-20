@@ -12,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"easelect/backend/general_tables"
-	"easelect/backend/general_tables/core_workflows"
+	"easelect/backend/general_tables/crud_workflows"
 	backend "easelect/backend/main_app"
 	"easelect/backend/main_app/auth"
 	"easelect/backend/main_app/router"
@@ -36,7 +36,7 @@ func main() {
 	defer backend.CloseDB()
 
 	// 4) Päivitetään esim. OID-arvot
-	err = core_workflows.UpdateOidsAndTableNames()
+	err = crud_workflows.UpdateOidsAndTableNamesWithBridge()
 	if err != nil {
 		log.Fatalf("OID-päivitysvirhe: %v", err)
 	}

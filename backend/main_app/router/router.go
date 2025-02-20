@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"easelect/backend/general_tables"
-	"easelect/backend/general_tables/core_workflows"
+	"easelect/backend/general_tables/crud_workflows"
 	"easelect/backend/general_tables/gt_1_row_crud/gt_1_row_create"
 	"easelect/backend/general_tables/gt_1_row_crud/gt_1_row_delete"
 	"easelect/backend/general_tables/gt_1_row_crud/gt_1_row_read"
@@ -82,18 +82,18 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/api/tables", general_tables.GetGroupedTables, "general_tables.GetGroupedTables")
 	functionRegisterHandler("/api/table-columns/", gt_2_column_crud.GetTableColumnsHandler, "gt_2_column_crud.GetTableColumnsHandler")
 	functionRegisterHandler("/api/table-names", general_tables.GetTableNamesHandler, "general_tables.GetTableNamesHandler")
-	functionRegisterHandler("/api/tree_data", vanilla_tree.GetTreeDataHandler, "tree_data.GetTreeDataHandler")
+	functionRegisterHandler("/api/tree_data", vanilla_tree.GetTreeDataHandler, "vanilla_tree.GetTreeDataHandler")
 	functionRegisterHandler("/api/system_triggers/list", gt_triggers.GetTriggersHandler, "gt_triggers.GetTriggersHandler")
 	functionRegisterHandler("/api/system_triggers/create", gt_triggers.CreateTriggerHandler, "gt_triggers.CreateTriggerHandler")
 	functionRegisterHandler("/api/table_permissions", general_tables.PermissionsHandler, "general_tables.PermissionsHandler")
-	functionRegisterHandler("/api/modify-columns", core_workflows.ModifyColumnsHandler, "gt_2_column_crud.ModifyColumnsHandler")
+	functionRegisterHandler("/api/modify-columns", crud_workflows.ModifyColumnsHandler, "crud_workflows.ModifyColumnsHandler")
 
 	// --- OpenAI chat endpoint (päivitetty) ---
 	// functionRegisterHandler("/openai_chat_sql_handler", openai.OpenAIChatSQLHandler, "openai.OpenAIChatSQLHandler")
 	// functionRegisterHandler("/api/execute_gpt_sql", openai.ExecuteGPTSQLHandler, "openai.ExecuteGPTSQLHandler")
 
 	// CRUD
-	functionRegisterHandler("/api/get-row-count", gt_1_row_read.GetRowCountHandlerWrapper, "gt_read.GetRowCountHandlerWrapper")
+	functionRegisterHandler("/api/get-row-count", gt_1_row_read.GetRowCountHandlerWrapper, "gt_1_row_read.GetRowCountHandlerWrapper")
 
 	// SSE-stream reitti
 	functionRegisterHandler("/openai_chat_stream_handler", openai.OpenAIChatStreamHandler, "openai.OpenAIChatStreamHandler")
@@ -104,11 +104,11 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/api/refresh_file_structure", refresh_file_structure.RefreshFileStructureHandler, "refresh_file_structure.RefreshFileStructureHandler")
 
 	functionRegisterHandler("/api/add-row", gt_1_row_create.AddRowHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
-	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_read.GetResultsHandlerWrapper")
-	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_read.GetTableViewHandlerWrapper")
-	functionRegisterHandler("/api/fetch-dynamic-children", gt_1_row_read.GetDynamicChildItemsHandler, "gt_read.GetChildItemsHandler")
-	functionRegisterHandler("/api/update-row", gt_1_row_update.UpdateRowHandlerWrapper, "gt_update.UpdateRowHandlerWrapper")
-	functionRegisterHandler("/api/delete-rows", gt_1_row_delete.DeleteRowsHandlerWrapper, "gt_delete.DeleteRowsHandlerWrapper")
+	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_1_row_read.GetResultsHandlerWrapper")
+	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_3_table_read.GetTableViewHandlerWrapper")
+	functionRegisterHandler("/api/fetch-dynamic-children", gt_1_row_read.GetDynamicChildItemsHandler, "gt_1_row_read.GetDynamicChildItemsHandler")
+	functionRegisterHandler("/api/update-row", gt_1_row_update.UpdateRowHandlerWrapper, "gt_1_row_update.UpdateRowHandlerWrapper")
+	functionRegisterHandler("/api/delete-rows", gt_1_row_delete.DeleteRowsHandlerWrapper, "gt_1_row_delete.DeleteRowsHandlerWrapper")
 	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
 
 	// Foreign key -reitit
@@ -118,14 +118,90 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/delete_foreign_key", general_tables.DeleteForeignKeyHandler, "general_tables.DeleteForeignKeyHandler")
 
 	// Muita
-	functionRegisterHandler("/tables/system_db_tables/update_column_order", core_workflows.UpdateColumnOrderHandler, "general_tables.UpdateColumnOrderHandler")
+	functionRegisterHandler("/tables/system_db_tables/update_column_order", crud_workflows.UpdateColumnOrderHandler, "crud_workflows.UpdateColumnOrderHandler")
 	functionRegisterHandler("/save-usergroup-right", backend.SaveUserGroupRight, "backend.SaveUserGroupRight")
-	functionRegisterHandler("/create_table", core_workflows.CreateTableHandler, "general_tables.CreateTableHandler")
+	functionRegisterHandler("/create_table", crud_workflows.CreateTableHandler, "crud_workflows.CreateTableHandler")
 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
-	functionRegisterHandler("/api/table-default-sort-column/", gt_2_column_crud.GetTableDefaultSortColumnHandler, "general_tables.GetTableDefaultSortColumnHandler")
-	functionRegisterHandler("/api/drop-table", gt_3_table_delete.DropTableHandler, "general_tables.DropTableHandler")
-	functionRegisterHandler("/api/translations", vanilla_tree.GetTranslationsHandler, "tree_data.GetTranslationsHandler")
+	functionRegisterHandler("/api/table-default-sort-column/", gt_2_column_crud.GetTableDefaultSortColumnHandler, "gt_2_column_crud.GetTableDefaultSortColumnHandler")
+	functionRegisterHandler("/api/drop-table", gt_3_table_delete.DropTableHandler, "gt_3_table_delete.DropTableHandler")
+	functionRegisterHandler("/api/translations", vanilla_tree.GetTranslationsHandler, "vanilla_tree.GetTranslationsHandler")
 }
+
+// // RegisterRoutes tallentaa reittien määritykset.
+// func RegisterRoutes(frontendDir string, mediaPath string) {
+// 	localFrontendDir = frontendDir
+
+// 	// Otetaan mediaPath talteen
+// 	localMediaDir = mediaPath
+
+// 	// Rekisteröidään uusi "ServeMedia" -reitti
+// 	functionRegisterHandler("/media/", ServeMedia, "router.ServeMedia")
+// 	// Talletetaan frontendiä varten
+// 	localFrontendDir = frontendDir
+
+// 	// Käytetään erillistä functionRegisterHandler-kutsua faviconille
+// 	functionRegisterHandler("/favicon.ico", faviconHandler, "router.faviconHandler")
+
+// 	functionRegisterHandler("/tables/", tablesHandler, "router.tablesHandler")
+
+// 	// --- LISÄYS: Uusi reitti /frontend/ ---
+// 	functionRegisterHandler("/frontend/", handleFrontend, "router.handleFrontend") // <-- LISÄYS
+
+// 	// --- Julkiset reitit ---
+// 	functionRegisterHandler("/", rootHandler, "router.rootHandler")
+// 	functionRegisterHandler("/login", auth.LoginHandler, "auth.LoginHandler")
+// 	functionRegisterHandler("/logout", auth.LogoutHandler, "auth.LogoutHandler")
+// 	functionRegisterHandler("/register_ndYOyXV0INOK3F", auth.RegisterHandler, "auth.RegisterHandler")
+// 	functionRegisterHandler("/api/update-folder", table_folders.HandleUpdateFolder, "table_folders.HandleUpdateFolder")
+
+// 	// --- Access-kontrolloidut reitit ---
+// 	functionRegisterHandler("/api/tables", general_tables.GetGroupedTables, "general_tables.GetGroupedTables")
+// 	functionRegisterHandler("/api/table-columns/", gt_2_column_crud.GetTableColumnsHandler, "gt_2_column_crud.GetTableColumnsHandler")
+// 	functionRegisterHandler("/api/table-names", general_tables.GetTableNamesHandler, "general_tables.GetTableNamesHandler")
+// 	functionRegisterHandler("/api/tree_data", vanilla_tree.GetTreeDataHandler, "tree_data.GetTreeDataHandler")
+// 	functionRegisterHandler("/api/system_triggers/list", gt_triggers.GetTriggersHandler, "gt_triggers.GetTriggersHandler")
+// 	functionRegisterHandler("/api/system_triggers/create", gt_triggers.CreateTriggerHandler, "gt_triggers.CreateTriggerHandler")
+// 	functionRegisterHandler("/api/table_permissions", general_tables.PermissionsHandler, "general_tables.PermissionsHandler")
+// 	functionRegisterHandler("/api/modify-columns", crud_workflows.ModifyColumnsHandler, "gt_2_column_crud.ModifyColumnsHandler")
+
+// 	// --- OpenAI chat endpoint (päivitetty) ---
+// 	// functionRegisterHandler("/openai_chat_sql_handler", openai.OpenAIChatSQLHandler, "openai.OpenAIChatSQLHandler")
+// 	// functionRegisterHandler("/api/execute_gpt_sql", openai.ExecuteGPTSQLHandler, "openai.ExecuteGPTSQLHandler")
+
+// 	// CRUD
+// 	functionRegisterHandler("/api/get-row-count", gt_1_row_read.GetRowCountHandlerWrapper, "gt_read.GetRowCountHandlerWrapper")
+
+// 	// SSE-stream reitti
+// 	functionRegisterHandler("/openai_chat_stream_handler", openai.OpenAIChatStreamHandler, "openai.OpenAIChatStreamHandler")
+// 	functionRegisterHandler("/openai_code_editor_stream_handler", openai.OpenAICodeEditorStreamHandler, "openai.OpenAICodeEditorStreamHandler")
+// 	functionRegisterHandler("/openai_embedding_stream_handler", openai.OpenAIEmbeddingStreamHandler, "openai.OpenAIEmbeddingStreamHandler")
+// 	functionRegisterHandler("/api/get-results-vector", gt_1_row_read.GetResultsVector, "gt_1_row_read.GetResultsVector")
+
+// 	functionRegisterHandler("/api/refresh_file_structure", refresh_file_structure.RefreshFileStructureHandler, "refresh_file_structure.RefreshFileStructureHandler")
+
+// 	functionRegisterHandler("/api/add-row", gt_1_row_create.AddRowHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
+// 	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_read.GetResultsHandlerWrapper")
+// 	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_read.GetTableViewHandlerWrapper")
+// 	functionRegisterHandler("/api/fetch-dynamic-children", gt_1_row_read.GetDynamicChildItemsHandler, "gt_read.GetChildItemsHandler")
+// 	functionRegisterHandler("/api/update-row", gt_1_row_update.UpdateRowHandlerWrapper, "gt_update.UpdateRowHandlerWrapper")
+// 	functionRegisterHandler("/api/delete-rows", gt_1_row_delete.DeleteRowsHandlerWrapper, "gt_delete.DeleteRowsHandlerWrapper")
+// 	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
+
+// 	// Foreign key -reitit
+// 	functionRegisterHandler("/add_foreign_key", general_tables.AddForeignKeyHandler, "general_tables.AddForeignKeyHandler")
+// 	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
+// 	functionRegisterHandler("/foreign_keys", general_tables.GetForeignKeys, "general_tables.GetForeignKeys")
+// 	functionRegisterHandler("/delete_foreign_key", general_tables.DeleteForeignKeyHandler, "general_tables.DeleteForeignKeyHandler")
+
+// 	// Muita
+// 	functionRegisterHandler("/tables/system_db_tables/update_column_order", crud_workflows.UpdateColumnOrderHandler, "general_tables.UpdateColumnOrderHandler")
+// 	functionRegisterHandler("/save-usergroup-right", backend.SaveUserGroupRight, "backend.SaveUserGroupRight")
+// 	functionRegisterHandler("/create_table", crud_workflows.CreateTableHandler, "general_tables.CreateTableHandler")
+// 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
+// 	functionRegisterHandler("/api/table-default-sort-column/", gt_2_column_crud.GetTableDefaultSortColumnHandler, "general_tables.GetTableDefaultSortColumnHandler")
+// 	functionRegisterHandler("/api/drop-table", gt_3_table_delete.DropTableHandler, "general_tables.DropTableHandler")
+// 	functionRegisterHandler("/api/translations", vanilla_tree.GetTranslationsHandler, "tree_data.GetTranslationsHandler")
+// }
 
 // faviconHandler palvelee tiedoston "/favicon.ico"
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -244,6 +320,10 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 		"refresh_file_structure.RefreshFileStructureHandler": true,
 		"gt_read.GetDynamicChildItemsHandler":                true,
 		"router.tablesHandler":                               true,
+		"general_tables.PermissionsHandler":                  true,
+		"gt_1_row_read.GetResultsHandlerWrapper":             true,
+		"vanilla_tree.GetTreeDataHandler":                    true,
+		"vanilla_tree.GetTranslationsHandler":                true,
 	}
 
 	for _, rd := range routeDefinitions {

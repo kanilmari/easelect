@@ -3,9 +3,11 @@ package gt_2_column_update
 
 import (
 	"database/sql"
+	"strings"
 	// josta saa ModifiedCol
 	// BRIDGE
 	// gt_3_table_crud_imports_handler "easelect/backend/general_tables/gt_3_table_crud/gt_3_table_crud_imports_handler"
+	"easelect/backend/general_tables/gt_2_column_crud"
 	backend "easelect/backend/main_app"
 	"fmt"
 	"log"
@@ -202,6 +204,63 @@ func nilIfEmpty(ns sql.NullString) *string {
 	if ns.Valid {
 		s := ns.String
 		return &s
+	}
+	return nil
+}
+
+// UpdateColumns päivittää sarakkeiden nimen/tyypin annetussa taulussa.
+// Tämä on entinen "UpdateColumns(...)", siirretty erilliseen pakettiin.
+// Parametrina annetaan "sanitizeIdentifierFunc", jotta tämä paketti ei viittaa suoraan security-pakettiin.
+func UpdateColumns(
+	tx *sql.Tx,
+	sanitizedTableName string,
+	modifiedCols []gt_2_column_crud.ModifiedCol,
+	sanitizeIdentifierFunc func(string) (string, error),
+) error {
+	fmt.Println("Muokataan sarakkeita (jos on):", modifiedCols)
+
+	for _, mcol := range modifiedCols {
+		fmt.Println("Käsitellään muokkaus:", mcol)
+
+		sOrigName, err := sanitizeIdentifierFunc(mcol.OriginalName)
+		if err != nil {
+			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+			return err
+		}
+
+		sNewName, err := sanitizeIdentifierFunc(mcol.NewName)
+		if err != nil {
+			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+			return err
+		}
+
+		// Sarakkeen uudelleennimeäminen
+		if sOrigName != sNewName {
+			renameStmt := fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s",
+				sanitizedTableName, sOrigName, sNewName)
+			fmt.Println("Uudelleennimetään sarake:", renameStmt)
+
+			_, err = tx.Exec(renameStmt)
+			if err != nil {
+				fmt.Printf("\033[31mvirhe sarakkeen uudelleennimeämisessä: %s\033[0m\n", err.Error())
+				return err
+			}
+		}
+
+		// Sarakkeen tyypin muuttaminen
+		newType := strings.ToUpper(mcol.DataType)
+		if newType == "VARCHAR" && mcol.Length != nil {
+			newType = fmt.Sprintf("VARCHAR(%d)", *mcol.Length)
+		}
+		alterTypeStmt := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s TYPE %s",
+			sanitizedTableName, sNewName, newType)
+		fmt.Println("Muokataan sarakkeen tyyppiä:", alterTypeStmt)
+
+		_, err = tx.Exec(alterTypeStmt)
+		if err != nil {
+			fmt.Printf("\033[31mvirhe sarakkeen tyypin muuttamisessa: %s\033[0m\n", err.Error())
+			return err
+		}
 	}
 	return nil
 }

@@ -1,6 +1,6 @@
 // custom_views.js
 
-import { load_rights_management } from '../rights/rights_management.js';
+// import { load_rights_management } from '../rights/rights_management.js';
 import { load_table_based_permissions } from '../table_permissions/manage_table_permissions.js';
 import { load_trigger_management } from '../../logical_components/notification_triggers/notification_triggers.js';
 import { load_foreign_keys_view } from '../foreign_keys_view.js';
@@ -10,12 +10,12 @@ import { load_single_chat_view } from '../../logical_components/ai_features/proj
 
 // Huomaa, että group-arvo ("tools") toimii kieliavaimena navigaatiossa.
 export const custom_views = [
-    {
-        name: '▶ Oikeuksien hallinta',
-        loadFunction: load_rights_management,
-        containerId: 'rights_management_container',
-        group: 'tools'
-    },
+    // {
+    //     name: '▶ Oikeuksien hallinta',
+    //     loadFunction: load_rights_management,
+    //     containerId: 'rights_management_container',
+    //     group: 'tools'
+    // },
     {
         name: '▶ Taulukohtaiset oikeudet',
         loadFunction: load_table_based_permissions,
