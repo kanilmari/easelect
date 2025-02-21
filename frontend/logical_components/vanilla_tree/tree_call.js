@@ -2,9 +2,10 @@
 
 import { render_tree } from './vanilla_tree.js';
 // Jos haluat navigointifunktioita, esim.:
-import { get_load_info } from '../../main_app/navigation/nav_utils.js';
+// import { get_load_info } from '../../main_app/navigation/nav_utils.js';
 import {custom_views} from '../../main_app/main/custom_views.js';
-import { handle_navigation } from '../../main_app/navigation/navigation.js';
+import { handle_all_navigation } from '../../main_app/navigation/navigation.js';
+// import { handle_navigation } from '../../main_app/navigation/navigation.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -136,8 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   // Esim. klikatessa lehteä
                 //   console.log("Klikkasit solmua:", nodeData);
                   // Halutessasi ohjaa navigointiin:
-                  const { loadFunction, containerId } = get_load_info(nodeData.name, custom_views);
-                  await handle_navigation(nodeData.name, containerId, loadFunction);
+                //   const { loadFunction, containerId } = get_load_info(nodeData.name, custom_views);
+                //   await handle_navigation(nodeData.name, containerId, loadFunction);
+                  await handle_all_navigation(nodeData.name, custom_views);
                   localStorage.setItem('selected_table', nodeData.name);
               }
           });
