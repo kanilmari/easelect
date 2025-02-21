@@ -106,8 +106,8 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	)
 
 	// Tulostetaan lopullinen SQL-kysely ja parametriarvot (kehityksen avuksi)
-	// log.Printf("sql-kysely: %s", query) // säilytetään kommentoituna
-	// log.Printf("parametrit (args): %v", query_args) // säilytetään kommentoituna
+	log.Printf("sql-kysely: %s", query)             // säilytetään kommentoituna
+	log.Printf("parametrit (args): %v", query_args) // säilytetään kommentoituna
 
 	rows_result, err := backend.Db.Query(query, query_args...)
 	if err != nil {
@@ -445,8 +445,8 @@ func buildWhereClause(
 	var args []interface{}
 	argIdx := 1
 
-	// Käydään jokainen GET-parametri läpi
 	for param, values := range queryParams {
+		// ohitetaan tietyt parametrit
 		if param == "table" || param == "sort_column" || param == "sort_order" {
 			continue
 		}
@@ -454,45 +454,192 @@ func buildWhereClause(
 			continue
 		}
 
-		// Oletetaan, että käytät vain ensimmäistä hakumerkkijonoa
+		// Käytetään vain ensimmäistä param-arvoa
 		rawValue := values[0]
 
-		// Tarkistetaan, minkä sarakkeen expressionin haluamme
+		// Selvitetään, mikä sarake tai expression vastaa 'param'-nimistä kenttää
 		columnName := ""
 		if expr, ok := columnExpressions[param]; ok {
 			columnName = expr
 		} else if _, exists := columnsByName[param]; exists {
-			columnName = fmt.Sprintf("%s.%s", pq.QuoteIdentifier(tableName), pq.QuoteIdentifier(param))
+			columnName = fmt.Sprintf("%s.%s",
+				pq.QuoteIdentifier(tableName),
+				pq.QuoteIdentifier(param))
 		} else {
-			// tuntematon param => ohitetaan
+			// Tuntematon parametri => ohitetaan
 			continue
 		}
 
-		// Parsitaan rawValue => excludeWords, includeWords
-		excludeWords, includeWords := parseSearchString(rawValue)
-
-		// Rakennetaan NOT ILIKE -ehdot
-		for _, exWord := range excludeWords {
-			whereClauses = append(whereClauses,
-				fmt.Sprintf("%s::text NOT ILIKE $%d", columnName, argIdx))
-			args = append(args, "%"+exWord+"%")
-			argIdx++
+		// 1) Parsitaan syöte => tokenit
+		tokens := parseAdvancedSearch(rawValue)
+		if len(tokens) == 0 {
+			// ei ehtoa
+			continue
 		}
 
-		// Rakennetaan ILIKE -ehdot
-		for _, inWord := range includeWords {
-			whereClauses = append(whereClauses,
-				fmt.Sprintf("%s::text ILIKE $%d", columnName, argIdx))
-			args = append(args, "%"+inWord+"%")
-			argIdx++
+		// 2) Muodostetaan ehto tälle sarakkeelle
+		condition, condArgs, nextArgIdx := buildConditionForTokens(columnName, tokens, argIdx)
+		if condition != "" {
+			whereClauses = append(whereClauses, condition)
+			args = append(args, condArgs...)
+			argIdx = nextArgIdx
 		}
 	}
 
+	// Lopuksi liitetään kaikki "parametriehdot" AND-operaattorilla keskenään
 	whereClause := ""
 	if len(whereClauses) > 0 {
-		// Liitetään AND-logiikalla
 		whereClause = " WHERE " + strings.Join(whereClauses, " AND ")
 	}
 
 	return whereClause, args, nil
 }
+
+// buildConditionForTokens rakentaa yhdelle sarakkeelle (columnName)
+// SQL-ehtolauseen annettujen tokenien perusteella.
+//
+// argIndex on bind-parametrien laskuri (esim. $1, $2, ...).
+// Palauttaa:
+//   - ehto (string)
+//   - bind-arvot ([]interface{})
+//   - uusi argIndex
+
+// buildConditionForTokens rakentaa yhdelle sarakkeelle (columnName)
+// SQL-ehtolauseen annettujen tokenien perusteella.
+func buildConditionForTokens(
+	columnName string,
+	tokens []Token,
+	argIndex int,
+) (string, []interface{}, int) {
+
+	var exprParts []string
+	var args []interface{}
+
+	// Oletusarvoinen looginen operaattori (jos ei AND tai OR ole annettu)
+	currentOp := "AND"
+
+	for _, t := range tokens {
+		switch t.Type {
+		case TokenAnd:
+			currentOp = "AND"
+
+		case TokenOr:
+			currentOp = "OR"
+
+		case TokenAll:
+			// TokenAll = "*" => “kaikki” => laitetaan vain (TRUE)
+			exprParts = append(exprParts, currentOp, "TRUE")
+
+		case TokenExclude:
+			if t.Value == "" {
+				// != "" => sarake ei saa olla NULL eikä tyhjä
+				expr := fmt.Sprintf("(%s IS NOT NULL AND %s <> '')", columnName, columnName)
+				exprParts = append(exprParts, currentOp, expr)
+			} else {
+				// Esim. != "k*rhu" => korvataan * -> %
+				v := strings.ReplaceAll(t.Value, "*", "%")
+
+				// col NOT ILIKE '%k%rhu%'
+				expr := fmt.Sprintf("%s::text NOT ILIKE $%d", columnName, argIndex)
+				exprParts = append(exprParts, currentOp, expr)
+				args = append(args, "%"+v+"%")
+				argIndex++
+			}
+
+		case TokenInclude:
+			if t.Value == "" {
+				// "" => sarake on NULL TAI ''
+				expr := fmt.Sprintf("(%s IS NULL OR %s = '')", columnName, columnName)
+				exprParts = append(exprParts, currentOp, expr)
+			} else {
+				// Esim. k*rhu => k%rhu
+				v := strings.ReplaceAll(t.Value, "*", "%")
+
+				// col ILIKE '%k%rhu%'
+				expr := fmt.Sprintf("%s::text ILIKE $%d", columnName, argIndex)
+				exprParts = append(exprParts, currentOp, expr)
+				args = append(args, "%"+v+"%")
+				argIndex++
+			}
+		}
+	}
+
+	// Käsitellään, jos exprParts on tyhjä
+	if len(exprParts) == 0 {
+		// Ei ehtoja
+		return "", nil, argIndex
+	}
+
+	// Jos eka osa on AND/OR, poistetaan se
+	if exprParts[0] == "AND" || exprParts[0] == "OR" {
+		exprParts = exprParts[1:]
+	}
+
+	// Muodostetaan lopullinen ehto
+	finalExpr := "(" + strings.Join(exprParts, " ") + ")"
+
+	return finalExpr, args, argIndex
+}
+
+// func buildWhereClause(
+// 	queryParams url.Values,
+// 	tableName string,
+// 	columnsByName map[string]models.ColumnInfo,
+// 	columnExpressions map[string]string,
+// ) (string, []interface{}, error) {
+
+// 	var whereClauses []string
+// 	var args []interface{}
+// 	argIdx := 1
+
+// 	// Käydään jokainen GET-parametri läpi
+// 	for param, values := range queryParams {
+// 		if param == "table" || param == "sort_column" || param == "sort_order" {
+// 			continue
+// 		}
+// 		if len(values) == 0 {
+// 			continue
+// 		}
+
+// 		// Oletetaan, että käytät vain ensimmäistä hakumerkkijonoa
+// 		rawValue := values[0]
+
+// 		// Tarkistetaan, minkä sarakkeen expressionin haluamme
+// 		columnName := ""
+// 		if expr, ok := columnExpressions[param]; ok {
+// 			columnName = expr
+// 		} else if _, exists := columnsByName[param]; exists {
+// 			columnName = fmt.Sprintf("%s.%s", pq.QuoteIdentifier(tableName), pq.QuoteIdentifier(param))
+// 		} else {
+// 			// tuntematon param => ohitetaan
+// 			continue
+// 		}
+
+// 		// Parsitaan rawValue => excludeWords, includeWords
+// 		excludeWords, includeWords := parseSearchString(rawValue)
+
+// 		// Rakennetaan NOT ILIKE -ehdot
+// 		for _, exWord := range excludeWords {
+// 			whereClauses = append(whereClauses,
+// 				fmt.Sprintf("%s::text NOT ILIKE $%d", columnName, argIdx))
+// 			args = append(args, "%"+exWord+"%")
+// 			argIdx++
+// 		}
+
+// 		// Rakennetaan ILIKE -ehdot
+// 		for _, inWord := range includeWords {
+// 			whereClauses = append(whereClauses,
+// 				fmt.Sprintf("%s::text ILIKE $%d", columnName, argIdx))
+// 			args = append(args, "%"+inWord+"%")
+// 			argIdx++
+// 		}
+// 	}
+
+// 	whereClause := ""
+// 	if len(whereClauses) > 0 {
+// 		// Liitetään AND-logiikalla
+// 		whereClause = " WHERE " + strings.Join(whereClauses, " AND ")
+// 	}
+
+// 	return whereClause, args, nil
+// }

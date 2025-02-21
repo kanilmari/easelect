@@ -4,11 +4,12 @@
     grid-template-columns: 1fr;
     gap: 2px;
     background-color: var(--bg_color);
-    border-right: 1px solid var(--border_color);
+    border-right: 2px solid var(--border_color);
     grid-auto-rows: min-content;
     padding: var(--navbar_padding);
     /* height: 100vh; */
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 #navbar #navContainer button, #navbar #nav_tree button {
@@ -39,7 +40,7 @@
     outline: 2px solid var(--border_color);
 }
 
-#navbar button:active {
+#navContainer button:active, #nav_tree button:active {
     transform: scale(var(--button_pressed_scale));
 }
 

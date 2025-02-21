@@ -61,7 +61,7 @@ button:active {
     background-color: var(--button_active_bg_color);
     color: var(--button_active_text_color);
     border-color: var(--button_active_border_color);
-    transform: scale(var(--button_pressed_scale));
+    /* transform: scale(var(--button_pressed_scale)); */
 }
 
 button[type="submit"] {

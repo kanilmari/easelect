@@ -1,5 +1,5 @@
 // endpoint_router.js
-import { gather_browser_fingerprint_hash } from '../auth/login.js';
+// import { gather_browser_fingerprint_hash } from '../auth/login.js'; // säilytä tämä rivi
 
 // Keskitä kaikki reittikutsut tänne:
 // Yksinkertainen reititin, joka keskittää palvelimelle menevät pyynnöt
@@ -20,9 +20,9 @@ export async function endpoint_router(route_name, { method = 'GET', body_data = 
             throw new Error(`Tuntematon reitti: ${route_name}`);
         }
 
-        // Lasketaan sormenjälki ja tulostetaan se lokiin
-        const fingerprint_hash = await gather_browser_fingerprint_hash();
-        console.log('Selaimen sormenjälki:', fingerprint_hash);
+        // Lasketaan sormenjälki ja tulostetaan se lokiin // säilytä tämä rivi
+        // const fingerprint_hash = await gather_browser_fingerprint_hash(); // säilytä tämä rivi
+        // console.log('Selaimen sormenjälki:', fingerprint_hash); // säilytä tämä rivi
 
         const fetch_options = {
             method,

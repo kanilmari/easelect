@@ -405,7 +405,8 @@ summary {
 
 .body_wrapper {
     display: grid;
-    grid-template-columns: 1fr minmax(0, 2560px) 1fr;
+    /* grid-template-columns: 1fr minmax(0, 2560px) 1fr; */
+    grid-template-columns: 1fr minmax(0, 4000px) 1fr;
     /* background-color: var(--bg_color); */
     background-color: color-mix(in srgb, var(--bg_color) 50%, var(--extreme_bg) 50%);;
 }

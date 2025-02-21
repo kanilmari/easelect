@@ -64,6 +64,11 @@ export function create_navigation_buttons(custom_views) {
 }
 
 export async function handle_navigation(data_lang_key, container_id, load_function, groupName) {
+    // Printing all with explanations
+    console.log('Navigating to:', data_lang_key);
+    console.log('Container ID:', container_id);
+    console.log('Load function:', load_function);
+    console.log('Group name:', groupName);
     // 1) Poistetaan edelliseltä aktiiviselta nappilta .active
     const old_active_button = document.querySelector('.general_button_nav.active');
     if (old_active_button) {
