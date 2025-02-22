@@ -4,39 +4,6 @@ export function get_selected_ids(table_name) {
     const current_view = localStorage.getItem(`${table_name}_view`) || 'table';
     let ids = [];
 
-    // if (current_view === 'table') {
-    //     const selected_rows = document.querySelectorAll(`#${table_name}_table_body tr.selected`);
-    //     console.log("Löytyi valitut rivit (table):", selected_rows); // LOKITUS
-
-    //     if (selected_rows.length === 0) {
-    //         return [];
-    //     }
-
-    //     const table = document.querySelector(`#${table_name}_container table`);
-    //     if (!table) {
-    //         return [];
-    //     }
-    //     const columns = JSON.parse(table.dataset.columns);
-
-    //     const id_column_index = columns.indexOf('id');
-    //     if (id_column_index === -1) {
-    //         return [];
-    //     }
-    //     const id_cell_index = id_column_index + 1; 
-
-    //     selected_rows.forEach(row => {
-    //         const cells = row.querySelectorAll('td');
-    //         const id_cell = cells[id_cell_index];
-    //         if (id_cell) {
-    //             const id_text = id_cell.textContent;
-    //             const id_parsed = parseInt(id_text, 10);
-    //             if (id_parsed) {
-    //                 ids.push(id_parsed);
-    //             }
-    //         }
-    //     });
-    // } 
-    // 
     if (current_view === 'table') {
         const selected_rows = document.querySelectorAll(`#${table_name}_table_body tr.selected`);
         console.log("Löytyi valitut rivit (table):", selected_rows.length);
