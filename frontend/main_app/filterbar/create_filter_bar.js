@@ -15,6 +15,9 @@ import {
 } from '../gt_toolbar/button_factory.js';
 import { createColumnVisibilityDropdown } from '../gt_toolbar/column_visibility_dropdown.js';
 
+// TUODAAN MYÖS UUSI VIEW-SELECTOR:
+import { createNewViewSelector } from '../../logical_components/table_views/draw_view_selector_buttons.js';
+
 /**
  * Haetaan rivimäärä.
  */
@@ -47,9 +50,10 @@ async function fetchRowCount(table_name) {
  *  - Sarakenäkyvyysdropdown (vain table-näkymälle)
  *  - AI-Embedding -nappi
  *  - Näkymänapit (Taulu / Kortti / Puu)
+ *  - (UUSI) Kolme erilaista näkymää: normal, transposed, ticket
  *  - Hakukenttä
  *  - Suodatus+Järjestä / Chat -välilehdet
- * 
+ *
  * Lisäksi luodaan sisardivi (readOnlyContainer), johon taulu sijoitetaan.
  */
 export function create_filter_bar(table_name, columns, data_types, current_view) {
@@ -70,8 +74,6 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
 
     // 1a) Luodaan otsikolle oma kontti
     const title_container = document.createElement('div');
-
-    // Luodaan data-lang-key -elementti taulun nimelle
     const table_name_element = document.createElement('div');
     table_name_element.textContent = table_name;
     table_name_element.style.fontWeight = 'bold';
@@ -79,15 +81,11 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     table_name_element.setAttribute('data-lang-key', table_name);
     table_name_element.title = table_name;
 
-    // Luodaan erillinen span-elementti
     const table_name_span = document.createElement('span');
     table_name_span.textContent = table_name;
 
-    // Lisätään molemmat uuteen div-konttiin
     title_container.appendChild(table_name_element);
     title_container.appendChild(table_name_span);
-
-    // Lisätään tämä kontti filter_bar-elementtiin
     filter_bar.appendChild(title_container);
 
     // 2) Yläpuolen rivimäärä + napit (top_row)
@@ -97,8 +95,6 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     // 2a) Rivimäärä
     const row_count_element = document.createElement('span');
     row_count_element.textContent = "Rows: ...";
-
-    // Päivitetään rivimäärä, kun data on saatu
     fetchRowCount(table_name).then(count => {
       if (count !== null) {
         row_count_element.textContent = `Rows: ${count}`;
@@ -107,50 +103,53 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
       }
     });
 
-    // 2b) Nappisäiliö
+    // 2b) CRUD-napit
     const button_container_div = document.createElement('div');
     button_container_div.classList.add('filterBar-button-container');
-
-    // --- CRUD-napit ---
     button_container_div.appendChild(createAddRowButton(table_name));
     button_container_div.appendChild(createColumnManagementButton(table_name));
     button_container_div.appendChild(createDeleteSelectedButton(table_name, current_view));
 
-    console.log('tulostus 1...');
-    // --- Lisätään sarakenäkyvyysdropdown vain table-näkymälle ---
+    // Sarakenäkyvyysdropdown vain table-näkymälle
     if (current_view === 'table') {
-      console.log('tulostus 2...');
       const tableContainer = document.getElementById(`${table_name}_readOnlyContainer`);
       if (tableContainer) {
-        console.log('tulostus 3...');
         const columnVisibilityDropdown = createColumnVisibilityDropdown(tableContainer);
         if (columnVisibilityDropdown) {
-          console.log('tulostus 4...');
-          button_container_div.appendChild(columnVisibilityDropdown);
-           
-
           button_container_div.appendChild(columnVisibilityDropdown);
         }
       }
     }
 
-    // Luo välikontti ensimmäiselle riville
+    // Ylin rivi: rivimäärä + CRUD-napit
     const first_line_div = document.createElement('div');
     first_line_div.classList.add('top-row-first-line');
     first_line_div.appendChild(row_count_element);
     first_line_div.appendChild(button_container_div);
 
-    // *** Näkymänapit (Taulu, Kortti, Puu) omalle "riville" ***
+    // *** (Esimerkin mukaan) Luodaan myös vanhat "Taulu / Kortti / Puu" -näkymänapit
     const viewSelectorDiv = createViewSelectorButtons(table_name, current_view);
 
-    // Asetellaan nämä kaksi "riviä" top_row:iin
-    top_row.appendChild(first_line_div);  // -> grid-rivin 1
-    top_row.appendChild(viewSelectorDiv); // -> grid-rivin 2
+    // *** LISÄTÄÄN UUSI 3-OSAINEN VALITSIN (normal, transposed, ticket) ***
+    const newViewSelectorDiv = createNewViewSelector(table_name, current_view);
 
-    // Lopuksi liitetään top_row filter_bariin
+    // Rakennetaan top_row-kokonaisuus kahdesta rivistä:
+    // Rivi1: rivimäärä ja CRUD-napit
+    // Rivi2: vanhat napit + uudet napit
+    top_row.appendChild(first_line_div);
+
+    // Luodaan toinen "rivielementti" näkymäpainikkeille
+    const second_line_div = document.createElement('div');
+    second_line_div.classList.add('top-row-second-line');
+    // Laita vanhat napit + uudet napit samaan konttiin
+    second_line_div.appendChild(viewSelectorDiv);
+    second_line_div.appendChild(newViewSelectorDiv);
+
+    top_row.appendChild(second_line_div);
+
     filter_bar.appendChild(top_row);
 
-    // 3) Hakukenttä (omalla rivillään)
+    // 3) Hakukenttä
     const search_row = document.createElement('div');
     search_row.classList.add('filterBar-search-row');
     const global_search_input = document.createElement('input');
@@ -160,7 +159,7 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     search_row.appendChild(global_search_input);
     filter_bar.appendChild(search_row);
 
-    // 4) Tab-napit (Suodatus + Järjestä / Chat)
+    // 4) Tab-napit (Suodatus+Järjestä / Chat)
     const tabs_row = document.createElement('div');
     tabs_row.classList.add('filterBar-tabs-row');
     const tab_button_sortfilter = document.createElement('button');
@@ -181,7 +180,6 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     const sort_filter_section = document.createElement('div');
     sort_filter_section.classList.add('sort_filter_section');
 
-    // Yläosiot (sort ja filter)
     const top_sections = document.createElement('div');
     top_sections.classList.add('top-sections');
 
@@ -200,19 +198,16 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
       sort_options_container.appendChild(sort_button);
     });
     sort_container.appendChild(sort_options_container);
-
     const sort_collapsible = create_collapsible_section('Sorttaus', sort_container, true);
     top_sections.appendChild(sort_collapsible);
 
     // -- Filtterit --
     const filter_container = document.createElement('div');
     filter_container.classList.add('filterBar-section');
-
     columns.forEach((column) => {
       const filter_element = create_filter_element(column, data_types[column], table_name);
       filter_container.appendChild(filter_element);
     });
-
     const filter_collapsible = create_collapsible_section('Filtterit', filter_container, true);
     top_sections.appendChild(filter_collapsible);
 
@@ -223,7 +218,6 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     chat_section.classList.add('chat_section');
     chat_section.classList.add('hidden');
 
-    // Rakennetaan chat UI
     create_chat_ui(table_name, chat_section);
 
     // Alussa Suodatus+Järjestä -välilehti on aktiivinen
@@ -232,7 +226,6 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     sort_filter_section.classList.remove('hidden');
     chat_section.classList.add('hidden');
 
-    // Lisätään containerit
     tabs_content_container.appendChild(sort_filter_section);
     tabs_content_container.appendChild(chat_section);
     filter_bar.appendChild(tabs_content_container);
@@ -240,7 +233,7 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
     // 6) Liitetään filter_bar DOM:iin
     table_parts_container.appendChild(filter_bar);
 
-    // 7) Luodaan sisardivi readOnlyContainer taulun näyttöä varten (jos sitä ei jo ole)
+    // 7) readOnlyContainer
     let readOnlyContainer = document.getElementById(`${table_name}_readOnlyContainer`);
     if (!readOnlyContainer) {
       readOnlyContainer = document.createElement('div');
@@ -281,11 +274,11 @@ function create_filter_element(column, data_type, table_name) {
     dt_string = data_type.data_type.toLowerCase();
   }
 
-  // Jos sarake on openai_embedding, luodaan erikoiskenttä semanttiselle hakulauseelle
+  // Jos sarake on openai_embedding, luodaan erikoiskenttä
   if (column === 'openai_embedding') {
     const semantic_input = document.createElement('input');
     semantic_input.type = 'text';
-    semantic_input.placeholder = 'Anna semanttinen hakusana... (Esim. "Tiina leipoo")';
+    semantic_input.placeholder = 'Anna semanttinen hakusana...';
     semantic_input.id = `${table_name}_filter_semantic_${column}`;
     semantic_input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -294,16 +287,14 @@ function create_filter_element(column, data_type, table_name) {
     });
 
     container.appendChild(semantic_input);
-
     const label = document.createElement('label');
     label.setAttribute('for', semantic_input.id);
     label.textContent = 'Semantic vector search';
     container.appendChild(label);
-
     return container;
   }
 
-  // Normaali kenttä
+  // Normaali syötekenttä
   let input;
   switch (dt_string) {
     case 'integer':
@@ -317,28 +308,14 @@ function create_filter_element(column, data_type, table_name) {
     case 'boolean':
       input = document.createElement('select');
       container.classList.add('no-float');
-      {
-        const opt_all = document.createElement('option');
-        opt_all.value = '';
-        opt_all.textContent = 'All';
-        input.appendChild(opt_all);
-
-        const opt_true = document.createElement('option');
-        opt_true.value = 'true';
-        opt_true.textContent = 'True';
-        input.appendChild(opt_true);
-
-        const opt_false = document.createElement('option');
-        opt_false.value = 'false';
-        opt_false.textContent = 'False';
-        input.appendChild(opt_false);
-
-        // Lisätään "Empty"-vaihtoehto
-        const opt_empty = document.createElement('option');
-        opt_empty.value = 'empty';
-        opt_empty.textContent = 'Empty';
-        input.appendChild(opt_empty);
-      }
+      ['','true','false','empty'].forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val === '' ? 'All'
+                       : val === 'empty' ? 'Empty'
+                       : val.charAt(0).toUpperCase() + val.slice(1);
+        input.appendChild(opt);
+      });
       break;
     case 'date':
     case 'timestamp':
@@ -369,101 +346,6 @@ function create_filter_element(column, data_type, table_name) {
 
   return container;
 }
-
-// /**
-//  * Luodaan yksi suodatuskenttä saraketta kohden
-//  */
-// function create_filter_element(column, data_type, table_name) {
-//   const container = document.createElement('div');
-//   container.classList.add('input-group');
-
-//   let dt_string = 'text';
-//   if (data_type && data_type.data_type) {
-//     dt_string = data_type.data_type.toLowerCase();
-//   }
-
-//   // Jos sarake on openai_embedding, luodaan erikoiskenttä semanttiselle hakulauseelle
-//   if (column === 'openai_embedding') {
-//     const semantic_input = document.createElement('input');
-//     semantic_input.type = 'text';
-//     semantic_input.placeholder = 'Anna semanttinen hakusana... (Esim. "Tiina leipoo")';
-//     semantic_input.id = `${table_name}_filter_semantic_${column}`;
-//     semantic_input.addEventListener('keypress', (e) => {
-//       if (e.key === 'Enter') {
-//         do_semantic_search(table_name, semantic_input.value);
-//       }
-//     });
-
-//     container.appendChild(semantic_input);
-
-//     const label = document.createElement('label');
-//     label.setAttribute('for', semantic_input.id);
-//     label.textContent = 'Semantic vector search';
-//     container.appendChild(label);
-
-//     return container;
-//   }
-
-//   // Normaali kenttä
-//   let input;
-//   switch (dt_string) {
-//     case 'integer':
-//     case 'bigint':
-//     case 'smallint':
-//     case 'numeric':
-//       input = document.createElement('input');
-//       input.type = 'number';
-//       input.placeholder = ' ';
-//       break;
-//     case 'boolean':
-//       input = document.createElement('select');
-//       container.classList.add('no-float');
-//       {
-//         const opt_all = document.createElement('option');
-//         opt_all.value = '';
-//         opt_all.textContent = 'All';
-//         input.appendChild(opt_all);
-
-//         const opt_true = document.createElement('option');
-//         opt_true.value = 'true';
-//         opt_true.textContent = 'True';
-//         input.appendChild(opt_true);
-
-//         const opt_false = document.createElement('option');
-//         opt_false.value = 'false';
-//         opt_false.textContent = 'False';
-//         input.appendChild(opt_false);
-//       }
-//       break;
-//     case 'date':
-//     case 'timestamp':
-//     case 'timestamp without time zone':
-//     case 'timestamp with time zone':
-//       input = document.createElement('input');
-//       input.type = 'date';
-//       input.placeholder = ' ';
-//       break;
-//     default:
-//       input = document.createElement('input');
-//       input.type = 'text';
-//       input.placeholder = ' ';
-//   }
-
-//   input.id = `${table_name}_filter_${column}`;
-//   input.addEventListener('input', () => {
-//     filter_table(table_name);
-//     resetOffset();
-//   });
-
-//   container.appendChild(input);
-
-//   const label = document.createElement('label');
-//   label.setAttribute('for', input.id);
-//   label.textContent = column;
-//   container.appendChild(label);
-
-//   return container;
-// }
 
 /**
  * Kutsuu server-puoleista "vektorihakua" ja päivittää UI:n
@@ -511,6 +393,7 @@ function showReadOnlyTable(table_name, columns, data, types) {
   }
 }
 
+
 // // create_filter_bar.js
 
 // // 1) Tuodaan tarvittavat importit
@@ -521,16 +404,16 @@ function showReadOnlyTable(table_name, columns, data, types) {
 // import { create_chat_ui } from '../../logical_components/ai_features/table_chat/chat.js';
 // import { generate_table } from '../../logical_components/table_views/view_table.js';
 // import { createViewSelectorButtons } from './draw_view_selector_buttons.js';
-
 // import {
 //   createAddRowButton,
 //   createDeleteSelectedButton,
-// ///
 //   createColumnManagementButton
 // } from '../gt_toolbar/button_factory.js';
+// import { createColumnVisibilityDropdown } from '../gt_toolbar/column_visibility_dropdown.js';
+// import { createNewViewSelector } from '../../logical_components/table_views/draw_view_selector_buttons.js';
 
 // /**
-//  * Haetaan rivimäärä. (Sama funktio, jota käytit aiemmin toolbarissa.)
+//  * Haetaan rivimäärä.
 //  */
 // async function fetchRowCount(table_name) {
 //   try {
@@ -558,44 +441,14 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //  *  - Taulun nimi
 //  *  - Rivilaskuri
 //  *  - CRUD-napit
-//  *  - Sarakenäkyvyysnappi (optionaalisesti vain table-näkymälle)
+//  *  - Sarakenäkyvyysdropdown (vain table-näkymälle)
 //  *  - AI-Embedding -nappi
-//  *  - (Uudet) Näkymänapit (Taulu / Kortti / Puu) - suoraan esillä
+//  *  - Näkymänapit (Taulu / Kortti / Puu)
 //  *  - Hakukenttä
 //  *  - Suodatus+Järjestä / Chat -välilehdet
 //  * 
-//  *  Lisäksi luodaan sisardivi (readOnlyContainer), johon varsinainen lukutoiminto/taulu sijoitetaan.
+//  * Lisäksi luodaan sisardivi (readOnlyContainer), johon taulu sijoitetaan.
 //  */
-// // // export function create_filter_bar(table_name, columns, data_types, current_view) {
-// // //   // 0) Haetaan/luodaan yleiskontti (table_parts_container).
-// // //   let table_parts_container = document.getElementById(`${table_name}_table_parts_container`);
-// // //   if (!table_parts_container) {
-// // //     table_parts_container = document.createElement('div');
-// // //     table_parts_container.id = `${table_name}_table_parts_container`;
-// // //     // Voit liittää suoraan bodyyn tai johonkin muuhun haluttuun elementtiin
-// // //     document.body.appendChild(table_parts_container);
-// // //   }
-
-// // //   // 1) Luodaan filterBar, ellei sitä vielä ole.
-// // //   let filter_bar = document.getElementById(`${table_name}_filterBar`);
-// // //   if (!filter_bar) {
-// // //     filter_bar = document.createElement('div');
-// // //     filter_bar.id = `${table_name}_filterBar`;
-// // //     filter_bar.classList.add('filterBar');
-
-// // //     // 1a) Otsikko (esim. taulun nimi)
-// // //     const table_name_element = document.createElement('div');
-// // //     table_name_element.textContent = table_name;
-// // //     table_name_element.style.fontWeight = 'bold';
-// // //     table_name_element.style.fontSize = '20px';
-// // //     //set attribute data-lang-key
-// // //     table_name_element.setAttribute('data-lang-key', table_name);
-// // //     // Print html title table_name
-// // //     table_name_element.title = table_name;
-
-    
-
-// // //     filter_bar.appendChild(table_name_element);
 // export function create_filter_bar(table_name, columns, data_types, current_view) {
 //   // 0) Haetaan/luodaan yleiskontti (table_parts_container).
 //   let table_parts_container = document.getElementById(`${table_name}_table_parts_container`);
@@ -612,40 +465,31 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //     filter_bar.id = `${table_name}_filterBar`;
 //     filter_bar.classList.add('filterBar');
 
-// // 1a) Luodaan otsikolle oma kontti
-// const title_container = document.createElement('div');
+//     // 1a) Luodaan otsikolle oma kontti
+//     const title_container = document.createElement('div');
 
-// // Luodaan data-lang-key -elementti (div) taulun nimelle
-// const table_name_element = document.createElement('div');
-// table_name_element.textContent = table_name;
-// table_name_element.style.fontWeight = 'bold';
-// table_name_element.style.fontSize = '20px';
-// table_name_element.setAttribute('data-lang-key', table_name);
-// table_name_element.title = table_name;
+//     // Luodaan data-lang-key -elementti taulun nimelle
+//     const table_name_element = document.createElement('div');
+//     table_name_element.textContent = table_name;
+//     table_name_element.style.fontWeight = 'bold';
+//     table_name_element.style.fontSize = '20px';
+//     table_name_element.setAttribute('data-lang-key', table_name);
+//     table_name_element.title = table_name;
 
-// // Luodaan erillinen span-elementti
-// const table_name_span = document.createElement('span');
-// // Laita span:iin haluamasi sisältö (tässä sama taulun nimi, tai jokin muu teksti)
-// table_name_span.textContent = table_name; 
-// // Voit muotoilla span:ia haluamallasi tavalla esim. classListilla
-// // table_name_span.classList.add('omaSpanClass');
+//     // Luodaan erillinen span-elementti
+//     const table_name_span = document.createElement('span');
+//     table_name_span.textContent = table_name;
 
-// // Lisätään molemmat uuteen div-konttiin
-// title_container.appendChild(table_name_element);
-// title_container.appendChild(table_name_span);
+//     // Lisätään molemmat uuteen div-konttiin
+//     title_container.appendChild(table_name_element);
+//     title_container.appendChild(table_name_span);
 
-// // Lopuksi lisätään tämä kontti filter_bar-elementtiin
-// filter_bar.appendChild(title_container);
-
-//     // const tooltip = document.createElement('span');
-//     // tooltip.classList.add('tooltip');
-//     // tooltip.textContent = table_name;
-//     // table_name_element.appendChild(tooltip);
+//     // Lisätään tämä kontti filter_bar-elementtiin
+//     filter_bar.appendChild(title_container);
 
 //     // 2) Yläpuolen rivimäärä + napit (top_row)
 //     const top_row = document.createElement('div');
 //     top_row.classList.add('filterBar-top-row');
-//     // -> Toteutetaan CSS:llä 2-rivinen grid
 
 //     // 2a) Rivimäärä
 //     const row_count_element = document.createElement('span');
@@ -669,7 +513,25 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //     button_container_div.appendChild(createColumnManagementButton(table_name));
 //     button_container_div.appendChild(createDeleteSelectedButton(table_name, current_view));
 
-//     // Luo välikontti ensimmäiselle riville:
+//     console.log('tulostus 1...');
+//     // --- Lisätään sarakenäkyvyysdropdown vain table-näkymälle ---
+//     if (current_view === 'table') {
+//       console.log('tulostus 2...');
+//       const tableContainer = document.getElementById(`${table_name}_readOnlyContainer`);
+//       if (tableContainer) {
+//         console.log('tulostus 3...');
+//         const columnVisibilityDropdown = createColumnVisibilityDropdown(tableContainer);
+//         if (columnVisibilityDropdown) {
+//           console.log('tulostus 4...');
+//           button_container_div.appendChild(columnVisibilityDropdown);
+
+
+//           button_container_div.appendChild(columnVisibilityDropdown);
+//         }
+//       }
+//     }
+
+//     // Luo välikontti ensimmäiselle riville
 //     const first_line_div = document.createElement('div');
 //     first_line_div.classList.add('top-row-first-line');
 //     first_line_div.appendChild(row_count_element);
@@ -678,12 +540,13 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //     // *** Näkymänapit (Taulu, Kortti, Puu) omalle "riville" ***
 //     const viewSelectorDiv = createViewSelectorButtons(table_name, current_view);
 
-//     // Asetellaan nyt nämä kaksi ”riviä” top_row:iin
+//     // Asetellaan nämä kaksi "riviä" top_row:iin
 //     top_row.appendChild(first_line_div);  // -> grid-rivin 1
 //     top_row.appendChild(viewSelectorDiv); // -> grid-rivin 2
 
 //     // Lopuksi liitetään top_row filter_bariin
 //     filter_bar.appendChild(top_row);
+
 //     // 3) Hakukenttä (omalla rivillään)
 //     const search_row = document.createElement('div');
 //     search_row.classList.add('filterBar-search-row');
@@ -722,9 +585,6 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //     // -- Sorttaus --
 //     const sort_container = document.createElement('div');
 //     sort_container.classList.add('filterBar-section');
-//     // const sort_label = document.createElement('label');
-//     // sort_label.textContent = 'Sort by column:';
-//     // sort_container.appendChild(sort_label);
 
 //     const sort_options_container = document.createElement('div');
 //     columns.forEach((column) => {
@@ -758,7 +618,6 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //     // 5b) Chat-section
 //     const chat_section = document.createElement('div');
 //     chat_section.classList.add('chat_section');
-//     // Piilotetaan chat tab oletuksena
 //     chat_section.classList.add('hidden');
 
 //     // Rakennetaan chat UI
@@ -810,9 +669,6 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //   }
 // }
 
-// /**
-//  * Luodaan yksi suodatuskenttä saraketta kohden
-//  */
 // function create_filter_element(column, data_type, table_name) {
 //   const container = document.createElement('div');
 //   container.classList.add('input-group');
@@ -873,6 +729,12 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //         opt_false.value = 'false';
 //         opt_false.textContent = 'False';
 //         input.appendChild(opt_false);
+
+//         // Lisätään "Empty"-vaihtoehto
+//         const opt_empty = document.createElement('option');
+//         opt_empty.value = 'empty';
+//         opt_empty.textContent = 'Empty';
+//         input.appendChild(opt_empty);
 //       }
 //       break;
 //     case 'date':
@@ -906,7 +768,7 @@ function showReadOnlyTable(table_name, columns, data, types) {
 // }
 
 // /**
-//  * Kutsuu server-puoleista "vektorihakua" (esimerkkinä) ja päivittää UI:n
+//  * Kutsuu server-puoleista "vektorihakua" ja päivittää UI:n
 //  */
 // async function do_semantic_search(table_name, user_query) {
 //   console.log("Semanttinen haku, user_query:", user_query);
@@ -928,7 +790,6 @@ function showReadOnlyTable(table_name, columns, data, types) {
 
 // /**
 //  * update_table_ui: päivittää taulun samaan tapaan kuin getResults
-//  * - Tässä esimerkissä generoidaan taulu readOnlyContaineriin
 //  */
 // export function update_table_ui(table_name, result) {
 //   const { columns, data, types } = result;
@@ -944,15 +805,32 @@ function showReadOnlyTable(table_name, columns, data, types) {
 //     console.error('Virhe: readOnlyContainer puuttuu!');
 //     return;
 //   }
-//   // Tyhjennetään ennen uutta dataa
 //   readOnlyContainer.innerHTML = '';
 
-//   // Luo tauluelementti generate_table-funktiolla.
-//   // Riippuen generate_tablen toteutuksesta, varmista että se joko
-//   // palauttaa itse tauluelementin tai manipuloi readOnlyContaineria suoraan.
-//   // Tässä oletuksena, että se palauttaa taulun:
 //   const tableEl = generate_table(table_name, columns, data, types);
 //   if (tableEl) {
 //     readOnlyContainer.appendChild(tableEl);
 //   }
+// }
+
+
+
+
+
+
+
+
+
+
+// const tableName = 'oma_taulun_nimi'; // vaihda omaksi taulun nimeksi
+// // Haetaan nykyinen näkymä esim. localStoragesta (oletus 'normal')
+// const currentView = localStorage.getItem(`${tableName}_view`) || 'normal';
+
+// // Luodaan uusi näkymävalitsin
+// const newViewSelector = createNewViewSelector(tableName, currentView);
+
+// // Lisätään uusi näkymävalitsin esimerkiksi olemassa olevaan konttiin
+// const targetDiv = document.getElementById(`${tableName}_readOnlyContainer`); // tai muu sopiva div
+// if (targetDiv) {
+//   targetDiv.prepend(newViewSelector);
 // }

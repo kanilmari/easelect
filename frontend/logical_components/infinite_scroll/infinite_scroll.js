@@ -17,38 +17,74 @@ export function updateOffset(newOffset) {
     offset += newOffset;
 }
 
-export function initializeInfiniteScroll(table_name) {
-    // 1. Katsotaan, kumpi näkymä on aktiivinen
-    const current_view = localStorage.getItem(`${table_name}_view`) || 'table'; 
-    // Vaihtoehdot: 'table' tai 'card'.
+// export function initializeInfiniteScroll(table_name) {
+//     // 1. Katsotaan, kumpi näkymä on aktiivinen
+//     const current_view = localStorage.getItem(`${table_name}_view`) || 'table'; 
+//     // Vaihtoehdot: 'table' tai 'card'.
 
-    // 2. Rakennetaan container-id dynaamisesti
-    const container_id = `${table_name}_${current_view}_view_container`;
+//     // 2. Rakennetaan container-id dynaamisesti
+//     const container_id = `${table_name}_${current_view}_view_container`;
     
-    // 3. Haetaan kontti
-    const container = document.getElementById(container_id);
+//     // 3. Haetaan kontti
+//     const container = document.getElementById(container_id);
 
+//     if (!container) {
+//         console.error(`Container element not found: #${container_id}`);
+//         return;
+//     }
+
+//     // Jos meillä on jo vanha handleScroll tallessa, poistetaan se
+//     if (handleScroll) {
+//         container.removeEventListener('scroll', handleScroll);
+//     }
+
+//     // 4. Määritellään handleScroll
+//     handleScroll = function() {
+//         if (isLoading) return;
+
+//         // Kun kontti scrollataan melkein alas asti, ladataan lisää dataa
+//         if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+//             fetchMoreData(table_name);
+//         }
+//     };
+
+//     // 5. Lisätään scroll-listener
+//     container.addEventListener('scroll', handleScroll);
+// }
+
+export function initializeInfiniteScroll(table_name, orientation = 'vertical') {
+    const current_view = localStorage.getItem(`${table_name}_view`) || 'table';
+    let container_id;
+    // Jos kyseessä on uudet näkymät, käytä aina table_view_container
+    if (['normal', 'transposed', 'ticket'].includes(current_view)) {
+         container_id = `${table_name}_table_view_container`;
+    } else {
+         container_id = `${table_name}_${current_view}_view_container`;
+    }
+    const container = document.getElementById(container_id);
     if (!container) {
         console.error(`Container element not found: #${container_id}`);
         return;
     }
 
-    // Jos meillä on jo vanha handleScroll tallessa, poistetaan se
     if (handleScroll) {
         container.removeEventListener('scroll', handleScroll);
     }
 
-    // 4. Määritellään handleScroll
     handleScroll = function() {
         if (isLoading) return;
 
-        // Kun kontti scrollataan melkein alas asti, ladataan lisää dataa
-        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-            fetchMoreData(table_name);
+        if (orientation === 'vertical') {
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+                fetchMoreData(table_name);
+            }
+        } else if (orientation === 'horizontal') {
+            if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 100) {
+                fetchMoreData(table_name);
+            }
         }
     };
 
-    // 5. Lisätään scroll-listener
     container.addEventListener('scroll', handleScroll);
 }
 

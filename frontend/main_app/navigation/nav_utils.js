@@ -1,4 +1,4 @@
-// navigation_utils.js
+// nav_utils.js
 
 import { load_table } from './load_table.js';
 
