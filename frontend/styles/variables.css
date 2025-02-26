@@ -31,6 +31,30 @@
     --extreme_bg: rgb(255 255 255);
 }
 
+/* WebKit (Chrome, Safari) */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Firefox */
+* {
+    /* Voit myös käyttää * jos haluat globaalin vaikutuksen */
+    scrollbar-color: #888 #f1f1f1;
+}
+
+
 @media (prefers-color-scheme: dark) {
     :root {
         --bg_color: #1a1a1a;
@@ -51,5 +75,28 @@
 
         --blended_bg: rgb(255 255 255 / 20%);
         --extreme_bg: rgb(0 0 0);
+    }
+
+    /* WebKit (Chrome, Safari) */
+    ::-webkit-scrollbar {
+        width: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #2b2b2b;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #555;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #777;
+    }
+
+    /* Firefox */
+    * {
+        /* Suositeltavaa käyttää luokkaa, jotta ei vaikuta kaikkien elementtien scrollbaareihin */
+        scrollbar-color: #555 #2b2b2b;
     }
 }

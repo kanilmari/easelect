@@ -8,7 +8,7 @@
     display: table-row;
 }
 
-.cell {
+/* .cell {
     display: table-cell;
     padding: 20px;
     border-width: 3px;
@@ -25,6 +25,60 @@
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+
+    min-height: 100px;
+    min-width: 100px;
+    
+    max-width: 300px;
+    max-height: 200px;
+    
+
+    width: 250px;
+    height: 150px;
+    
+    resize: both;
+    overflow: auto;
+    
+    border: 2px solid #333;
+    padding: 10px;
+    box-sizing: border-box;
+    
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+} */
+
+
+  
+
+.cell {
+    display: table-cell;
+    vertical-align: middle;
+    box-sizing: border-box;
+    /* padding: 7px 0; */
+    min-width: 80px;
+    max-width: 300px;
+    width: 250px;
+
+    overflow: hidden;
+    position: relative;
+    border-bottom: 0.5px solid color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%);
+    /*color mix border*/
+    border-right: 0.5px solid color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    padding: 15px;
+}
+
+.cell-content {
+    max-height: 150px;
+    width: 100%;
+    overflow: auto;
+    padding-right: 5px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
 }
 
 .header {
@@ -105,7 +159,7 @@
 /* Korostus: käytetään mukautettuja värejä */
 .cell.selected {
     color: white;
-    background-color: var(--bg_color);
+    background-color: var(--bg_color_2);
     text-shadow: var(--text_shadow);
     transition: all 0.15s ease;
     outline: 3px solid var(--outline_color);

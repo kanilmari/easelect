@@ -54,6 +54,9 @@ export class TableComponent {
         this.rootElement = document.createElement('div');
         this.rootElement.classList.add('table-component-root');
 
+        // Tallenna instanssi elementtiin
+        this.rootElement.tableComponentInstance = this;
+
         // Valikko valittujen solujen kopioimiseen
         this.selectionMenu = document.createElement('div');
         this.selectionMenu.className = 'selection-menu';
@@ -102,6 +105,104 @@ export class TableComponent {
     setData(newData) {
         this.data = newData;
         this.render();
+    }
+
+    /**
+     * Liittää uutta dataa olemassa olevaan dataan ja päivittää näkymän.
+     * @param {Array<Object>} newData - Uusi data liitettäväksi
+     */
+    appendData(newData) {
+        if (!Array.isArray(newData)) {
+            console.error('appendData: newData ei ole taulukko');
+            return;
+        }
+        this.data = this.data.concat(newData);
+        this.updateViewWithNewData(newData);
+    }
+
+    /**
+     * Päivittää näkymän uudella datalla riippuen siitä, mikä näkymä on valittuna.
+     * @param {Array<Object>} newData - Uusi data liitettäväksi
+     * @private
+     */
+    updateViewWithNewData(newData) {
+        if (this.currentView === 'normal') {
+            this.appendToNormalView(newData);
+        } else if (this.currentView === 'transposed') {
+            this.appendToTransposedView(newData);
+        } else if (this.currentView === 'ticket') {
+            this.appendToTicketView(newData);
+        }
+    }
+
+    /**
+     * Liittää uutta dataa normal-näkymään.
+     * @param {Array<Object>} newData - Uusi data liitettäväksi
+     * @private
+     */
+
+    appendToNormalView(newData) {
+        // Haetaan se "table" = <div class="table">, ei <table>!
+        const tableDiv = this.rootElement.querySelector('.table');
+        if (!tableDiv) {
+            console.error('Div-based table (".table") not found');
+            return;
+        }
+    
+        // Selvitetään, kuinka monta data-riviä jo on
+        // (poissulkien otsikkorivin, jos se on .row.header tms.)
+        const existingRows = tableDiv.querySelectorAll('.row:not(.header)');
+        const currentRowCount = existingRows.length;
+    
+        // Lisätään uudet rivit
+        newData.forEach((rowData, idx) => {
+            const row = document.createElement('div');
+            row.classList.add('row');
+    
+            this.headers.forEach((header, colIndex) => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                // dataset-row = juokseva index + entisten perään ( +1 jos haluat header = 0)
+                cell.dataset.row = (currentRowCount + idx + 1).toString();
+                cell.dataset.col = colIndex.toString();
+                cell.textContent = rowData[header.key] ?? '';
+                row.appendChild(cell);
+            });
+            tableDiv.appendChild(row);
+        });
+    }
+    
+    /**
+     * Liittää uutta dataa transposed-näkymään.
+     * @param {Array<Object>} newData - Uusi data liitettäväksi
+     * @private
+     */
+    appendToTransposedView() {
+        // Transposed-näkymässä uudet rivit lisätään sarakkeina, joten piirretään koko taulu uudelleen yksinkertaisuuden vuoksi
+        this.render();
+    }
+
+    /**
+     * Liittää uutta dataa ticket-näkymään.
+     * @param {Array<Object>} newData - Uusi data liitettäväksi
+     * @private
+     */
+    appendToTicketView(newData) {
+        const ticketContainer = this.rootElement.querySelector('.ticket-container');
+        if (!ticketContainer) {
+            console.error('Ticket container not found');
+            return;
+        }
+        newData.forEach(rowData => {
+            const ticket = document.createElement('div');
+            ticket.classList.add('ticket');
+            this.headers.forEach(header => {
+                const p = document.createElement('p');
+                p.textContent = `${header.label}: ${rowData[header.key] || ''}`;
+                ticket.appendChild(p);
+            });
+            ticketContainer.appendChild(ticket);
+        });
     }
 
     /**

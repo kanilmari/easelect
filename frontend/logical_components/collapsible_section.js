@@ -20,16 +20,19 @@ export function create_collapsible_section(title_text, content_element, start_op
     content_element.classList.add('collapsible-content');
     if (!start_open) {
       content_element.classList.add('hidden');
+      header.classList.add('collapsed');
     }
   
     let is_open = start_open;
     toggle_button.addEventListener('click', () => {
       if (is_open) {
         content_element.classList.add('hidden');
+        header.classList.add('collapsed');
         toggle_button.textContent = 'Avaa';
         is_open = false;
       } else {
         content_element.classList.remove('hidden');
+        header.classList.remove('collapsed');
         toggle_button.textContent = 'Sulje';
         is_open = true;
       }

@@ -68,16 +68,18 @@
     cursor: pointer;
 }
 
-.node-row .toggle {
+.node-row > .toggle {
+    /* transform: rotate(0deg) translateX(-2px); */
     transform: rotate(0deg);
     /* transition: transform 0.2s ease; */
-    /* margin-right: 5px; */
+    margin-top: 2px;
+    margin-right: 2px;
     transform-origin: center;
 }
 
-.node-row .toggle.rotated {
-    /* transform: rotate(90deg) -5px; */
-    transform: rotate(90deg) translateX(-2.5px);
+.node-row > .toggle.rotated {
+    /* transform: rotate(90deg); */
+    transform: rotate(90deg) translateX(-2.5px) translateY(0);
 
 }
 
