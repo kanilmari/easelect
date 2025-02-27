@@ -3,7 +3,7 @@
     background: none;
     border: none;
     padding: 0;
-    margin: 0 4px;
+    margin: 0 3px;
     position: relative;
   }
   /* .navtablinks.active {
@@ -15,7 +15,7 @@
   }
   .tab_button_text {
     position: absolute;
-    left: 60px;
-    top: 16px;
-    font-size: 14px;
+    left: 50px;
+    top: 21px;
+    font-size: 16px;
   }

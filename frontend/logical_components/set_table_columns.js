@@ -133,34 +133,35 @@ async function display_table_columns(table_name, columnsContainer) {
 }
 
 async function saveColumnOrder(table_name) {
-    try {
-        const listItems = document.querySelectorAll('#sortable_columns li');
-        // Poimitaan column_uid:t
-        const newOrder = Array.from(listItems)
-            .map(item => parseInt(item.dataset.columnId, 10))
-            .filter(colId => !isNaN(colId));
+    console.error('Deprecated function, remove this function from the codebase. Table: ', table_name);
+    // try {
+    //     const listItems = document.querySelectorAll('#sortable_columns li');
+    //     // Poimitaan column_uid:t
+    //     const newOrder = Array.from(listItems)
+    //         .map(item => parseInt(item.dataset.columnId, 10))
+    //         .filter(colId => !isNaN(colId));
 
-        // Lähetetään uusi järjestys taustapalvelulle
-        const response = await fetch(`/tables/system_db_tables/update_column_order`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                table_name: table_name,
-                new_order: newOrder
-            })
-        });
+    //     // Lähetetään uusi järjestys taustapalvelulle
+    //     const response = await fetch(`/tables/system_db_tables/update_column_order`, {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         },
+    //         body: JSON.stringify({
+    //             table_name: table_name,
+    //             new_order: newOrder
+    //         })
+    //     });
 
-        if (response.ok) {
-            alert('Sarakkeiden järjestys tallennettu onnistuneesti!');
-        } else {
-            const errorData = await response.json();
-            alert(`Virhe tallennettaessa järjestystä: ${errorData.message || 'Tuntematon virhe.'}`);
-        }
+    //     if (response.ok) {
+    //         alert('Sarakkeiden järjestys tallennettu onnistuneesti!');
+    //     } else {
+    //         const errorData = await response.json();
+    //         alert(`Virhe tallennettaessa järjestystä: ${errorData.message || 'Tuntematon virhe.'}`);
+    //     }
 
-    } catch (error) {
-        console.error('Virhe tallennettaessa sarakkeiden järjestystä:', error);
-        alert('Virhe tallennettaessa sarakkeiden järjestystä.');
-    }
+    // } catch (error) {
+    //     console.error('Virhe tallennettaessa sarakkeiden järjestystä:', error);
+    //     alert('Virhe tallennettaessa sarakkeiden järjestystä.');
+    // }
 }

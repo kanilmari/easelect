@@ -257,40 +257,40 @@ func ModifyColumnsHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": "Muutokset tallennettu onnistuneesti"})
 }
 
-func UpdateColumnOrderHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Metodi ei ole sallittu", http.StatusMethodNotAllowed)
-		return
-	}
+// func UpdateColumnOrderHandler(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodPost {
+// 		http.Error(w, "Metodi ei ole sallittu", http.StatusMethodNotAllowed)
+// 		return
+// 	}
 
-	var requestData struct {
-		TableName string `json:"table_name"`
-		NewOrder  []int  `json:"new_order"`
-	}
+// 	var requestData struct {
+// 		TableName string `json:"table_name"`
+// 		NewOrder  []int  `json:"new_order"`
+// 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		log.Printf("\033[31mUpdateColumnOrderHandler: virhe datan dekoodauksessa: %s\033[0m\n", err.Error())
-		http.Error(w, "Virheellinen data", http.StatusBadRequest)
-		return
-	}
+// 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+// 		log.Printf("\033[31mUpdateColumnOrderHandler: virhe datan dekoodauksessa: %s\033[0m\n", err.Error())
+// 		http.Error(w, "Virheellinen data", http.StatusBadRequest)
+// 		return
+// 	}
 
-	if requestData.TableName == "" || len(requestData.NewOrder) == 0 {
-		http.Error(w, "Taulun nimi tai uusi järjestys puuttuu", http.StatusBadRequest)
-		return
-	}
+// 	if requestData.TableName == "" || len(requestData.NewOrder) == 0 {
+// 		http.Error(w, "Taulun nimi tai uusi järjestys puuttuu", http.StatusBadRequest)
+// 		return
+// 	}
 
-	// KUTSUU BRIDGE-FUNKTIOA
-	if err := UpdateColumnOrderWithBridge(requestData.TableName, requestData.NewOrder); err != nil {
-		log.Printf("virhe UpdateColumnOrderWithBridge: %v\n", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	// KUTSUU BRIDGE-FUNKTIOA
+// 	if err := UpdateColumnOrderWithBridge(requestData.TableName, requestData.NewOrder); err != nil {
+// 		log.Printf("virhe UpdateColumnOrderWithBridge: %v\n", err)
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"message": "Sarakkeiden järjestys tallennettu onnistuneesti",
-	})
-}
+// 	w.WriteHeader(http.StatusOK)
+// 	_ = json.NewEncoder(w).Encode(map[string]string{
+// 		"message": "Sarakkeiden järjestys tallennettu onnistuneesti",
+// 	})
+// }
 
 // package crud_workflows
 

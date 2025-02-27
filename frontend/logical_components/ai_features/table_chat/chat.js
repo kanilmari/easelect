@@ -138,7 +138,7 @@ function start_gpt_stream(table_name, user_message) {
     if (errMsg.includes("select_only")) {
       // Käyttäjä yritti INSERT/UPDATE/DELETE, mutta config on read only
       append_chat_message(table_name, "error", 
-        "Tämä chat on vain lukutilassa. Kirjoitusoikeuksia ei ole.", 
+        "Unfortunately, we couldn't process your request. Please try again later.", 
         ""
       );
     } else {

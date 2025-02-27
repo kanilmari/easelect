@@ -118,7 +118,7 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/delete_foreign_key", general_tables.DeleteForeignKeyHandler, "general_tables.DeleteForeignKeyHandler")
 
 	// Muita
-	functionRegisterHandler("/tables/system_db_tables/update_column_order", crud_workflows.UpdateColumnOrderHandler, "crud_workflows.UpdateColumnOrderHandler")
+	// functionRegisterHandler("/tables/system_db_tables/update_column_order", crud_workflows.UpdateColumnOrderHandler, "crud_workflows.UpdateColumnOrderHandler")
 	functionRegisterHandler("/save-usergroup-right", backend.SaveUserGroupRight, "backend.SaveUserGroupRight")
 	functionRegisterHandler("/create_table", crud_workflows.CreateTableHandler, "crud_workflows.CreateTableHandler")
 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")

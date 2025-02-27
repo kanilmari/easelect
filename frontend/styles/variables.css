@@ -29,6 +29,8 @@
 
     --blended_bg: rgb(0 0 0 / 15%);
     --extreme_bg: rgb(255 255 255);
+    --blended_bg_2: color-mix(in srgb, var(--bg_color) 80%, var(--extreme_bg) 20%);
+    
 }
 
 /* WebKit (Chrome, Safari) */
@@ -75,6 +77,8 @@
 
         --blended_bg: rgb(255 255 255 / 20%);
         --extreme_bg: rgb(0 0 0);
+        --blended_bg_2: color-mix(in srgb, var(--bg_color) 80%, var(--extreme_bg) 20%);
+        
     }
 
     /* WebKit (Chrome, Safari) */

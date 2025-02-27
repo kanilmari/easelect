@@ -75,7 +75,7 @@ async function generate_trigger_creation_form(container) {
 ------------------------------------------------------------------ */
 
 /**
- * Hakee kaikki taulut /api/tables -endpointista
+ * Hakee kaikki taulut api tables -endpointista
  */
 export async function fetchContentTables() {
   try {

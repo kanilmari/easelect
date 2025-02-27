@@ -4,7 +4,8 @@
     grid-template-columns: 1fr;
     gap: 2px;
     background-color: var(--bg_color);
-    border-right: 2px solid var(--border_color);
+    /* border-right: 2px solid var(--border_color); */
+    box-shadow: inset -2px 0 0 0 var(--border_color);
     grid-auto-rows: min-content;
     padding: var(--navbar_padding);
     /* height: 100vh; */
@@ -28,14 +29,15 @@
     margin-top: 5px !important;
 }
 
-#navbar button:hover {
+#navContainer button:hover,
+#nav_tree button:hover {
     background-color: color-mix(in srgb, var(--button_bg_color) 50%, var(--button_hover_bg_color) 50%);
     /* outline: 2px solid color-mix(in srgb, var(--button_bg_color) 50%, var(--button_hover_bg_color) 50%); */
     border: none;
     color: var(--button_hover_text_color);
 }
 
-#navbar button.active {
+#nav_tree button.active, #navContainer button.active {
     background-color: rgb(0 70 255 / 0.2);
     color: var(--button_active_text_color);
     outline: 2px solid var(--border_color);
