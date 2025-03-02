@@ -3,9 +3,7 @@ package gt_3_table_create
 
 import (
 	"database/sql"
-	"easelect/backend/general_tables/gt_2_column_crud/gt_2_column_read"
 	backend "easelect/backend/main_app"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -131,27 +129,13 @@ func InsertNewTables() error {
 	}
 
 	for _, table := range newTables {
-		// Hakee taulun sarakkeet
-		columns, err := gt_2_column_read.GetColumnsForTable(table.TableName)
-		if err != nil {
-			log.Printf("Error fetching columns for table %s: %v", table.TableName, err)
-			continue
-		}
-
-		// Muuntaa sarakkeet JSON-muotoon
-		columnsJSON, err := json.Marshal(columns)
-		if err != nil {
-			log.Printf("Error marshalling columns for table %s: %v", table.TableName, err)
-			continue
-		}
-
-		// Lisää system_db_tables-tauluun
+		// Lisää system_db_tables-tauluun ilman columns-saraketta
 		insertQuery := `
-            INSERT INTO system_db_tables (cached_oid, table_name, columns)
-            VALUES ($1, $2, $3)
+            INSERT INTO system_db_tables (cached_oid, table_name)
+            VALUES ($1, $2)
         `
 
-		_, err = backend.Db.Exec(insertQuery, table.OID, table.TableName, string(columnsJSON))
+		_, err = backend.Db.Exec(insertQuery, table.OID, table.TableName)
 		if err != nil {
 			log.Printf("Error inserting table %s into system_db_tables: %v", table.TableName, err)
 			continue
@@ -160,3 +144,67 @@ func InsertNewTables() error {
 
 	return nil
 }
+
+
+// // InsertNewTables lisää system_db_tables-tauluun uudet taulut
+// func InsertNewTables() error {
+// 	// Hakee kaikki taulut public-skeemasta, joita ei vielä ole system_db_tables-taulussa
+// 	tablesQuery := `
+//         SELECT c.oid, c.relname AS table_name
+//         FROM pg_class c
+//         JOIN pg_namespace n ON n.oid = c.relnamespace
+//         WHERE n.nspname = 'public'
+//             AND c.relkind = 'r' -- Vain normaalit taulut
+//             AND c.oid NOT IN (SELECT cached_oid FROM system_db_tables)
+//     `
+// 	rows, err := backend.Db.Query(tablesQuery)
+// 	if err != nil {
+// 		return fmt.Errorf("error fetching new tables: %v", err)
+// 	}
+// 	defer rows.Close()
+
+// 	type TableInfo struct {
+// 		OID       int
+// 		TableName string
+// 	}
+
+// 	var newTables []TableInfo
+
+// 	for rows.Next() {
+// 		var table TableInfo
+// 		if err := rows.Scan(&table.OID, &table.TableName); err != nil {
+// 			return fmt.Errorf("error scanning table info: %v", err)
+// 		}
+// 		newTables = append(newTables, table)
+// 	}
+
+// 	for _, table := range newTables {
+// 		// Hakee taulun sarakkeet
+// 		columns, err := gt_2_column_read.GetColumnsForTable(table.TableName)
+// 		if err != nil {
+// 			log.Printf("Error fetching columns for table %s: %v", table.TableName, err)
+// 			continue
+// 		}
+
+// 		// Muuntaa sarakkeet JSON-muotoon
+// 		columnsJSON, err := json.Marshal(columns)
+// 		if err != nil {
+// 			log.Printf("Error marshalling columns for table %s: %v", table.TableName, err)
+// 			continue
+// 		}
+
+// 		// Lisää system_db_tables-tauluun
+// 		insertQuery := `
+//             INSERT INTO system_db_tables (cached_oid, table_name, columns)
+//             VALUES ($1, $2, $3)
+//         `
+
+// 		_, err = backend.Db.Exec(insertQuery, table.OID, table.TableName, string(columnsJSON))
+// 		if err != nil {
+// 			log.Printf("Error inserting table %s into system_db_tables: %v", table.TableName, err)
+// 			continue
+// 		}
+// 	}
+
+// 	return nil
+// }

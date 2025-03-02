@@ -12,6 +12,9 @@ import { open_column_management_modal } from './column_management.js';
 export function createAddRowButton(table_name) {
     const button = document.createElement('button');
     button.textContent = 'Lisää Rivi';
+    // add data attribute data_lang_key
+    button.setAttribute('data-lang-key', 'add_row_'+table_name);
+    button.setAttribute('data-lang-key-fallback', 'add_row');
     button.classList.add('add_row_button');
     button.style.backgroundColor = 'var(--button_bg_color)';
     button.style.color = 'var(--button_text_color)';

@@ -519,12 +519,12 @@ export async function create_card_view(columns, data, table_name) {
                     // Tallennetaan teksti data-lang-key:hin
                     detail_item.setAttribute('data-lang-key', detailObj.text);
                 } else {
-                    // Jos teksti on pidempi kuin 160 merkkiä, käytä <details>-elementtiä
-                    if (detailObj.text.length > 160) {
+                    // Jos teksti on pidempi kuin n merkkiä, käytä <details>-elementtiä
+                    if (detailObj.text.length > 80) {
                         const details_element = document.createElement('details');
                         const summary_element = document.createElement('summary');
-                        summary_element.textContent = detailObj.text.slice(0, 160);
-                        const rest_of_text = detailObj.text.slice(160);
+                        summary_element.textContent = detailObj.text.slice(0, 80);
+                        const rest_of_text = detailObj.text.slice(80);
 
                         details_element.appendChild(summary_element);
                         details_element.appendChild(document.createTextNode(rest_of_text));

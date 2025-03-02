@@ -1,4 +1,4 @@
-// load_tables.js
+// load_tables.js (eri kuin load_table.js)
 
 import { create_navigation_buttons, handle_all_navigation } from '../navigation/navigation.js';
 import { custom_views } from './custom_views.js';

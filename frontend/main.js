@@ -12,6 +12,7 @@ import './logical_components/vanilla_tree/tree_call.js';
 import './logical_components/table_views/table_view/table_column_resizer.js';
 import './logical_components/print_svgs/logout_svg.js';
 import './main_app/navigation/tabs.js';
+import './logical_components/theme.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const current_path = window.location.pathname; 

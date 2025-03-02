@@ -14,51 +14,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// // GetGroupedTables palauttaa ryhmitellyt taulut ilman tietotyyppejä sarakkeissa
-// func GetGroupedTables(response_writer http.ResponseWriter, http_request *http.Request) {
-// 	select_tables_query := `SELECT id, table_name, columns FROM system_db_tables ORDER BY table_name`
-// 	query_rows, query_error := backend.Db.Query(select_tables_query)
-// 	if query_error != nil {
-// 		log.Printf("virhe taulujen hakemisessa: %v", query_error)
-// 		http.Error(response_writer, "virhe taulujen hakemisessa", http.StatusInternalServerError)
-// 		return
-// 	}
-// 	defer query_rows.Close()
-
-// 	var tables_list []models.Table
-// 	for query_rows.Next() {
-// 		var single_table models.Table
-// 		var columns_json_string string
-
-// 		scan_error := query_rows.Scan(&single_table.ID, &single_table.TableName, &columns_json_string)
-// 		if scan_error != nil {
-// 			log.Printf("virhe taulujen käsittelyssä: %v", scan_error)
-// 			http.Error(response_writer, "virhe taulujen käsittelyssä", http.StatusInternalServerError)
-// 			return
-// 		}
-
-// 		unmarshal_error := json.Unmarshal([]byte(columns_json_string), &single_table.Columns)
-// 		if unmarshal_error != nil {
-// 			log.Printf("virhe columns-sarakkeen purkamisessa taululle %s: %v", single_table.TableName, unmarshal_error)
-// 			http.Error(response_writer, "virhe taulujen käsittelyssä", http.StatusInternalServerError)
-// 			return
-// 		}
-
-// 		tables_list = append(tables_list, single_table)
-// 	}
-
-// 	response_map := map[string]interface{}{
-// 		"tables": tables_list,
-// 	}
-
-// 	response_writer.Header().Set("Content-Type", "application/json")
-// 	encode_error := json.NewEncoder(response_writer).Encode(response_map)
-// 	if encode_error != nil {
-// 		log.Printf("virhe vastauksen enkoodauksessa: %v", encode_error)
-// 		http.Error(response_writer, "virhe vastauksen enkoodauksessa", http.StatusInternalServerError)
-// 	}
-// }
-
 func GetGroupedTables(response_writer http.ResponseWriter, http_request *http.Request) {
 	select_tables_query := `SELECT id, table_name FROM system_db_tables ORDER BY table_name`
 	query_rows, query_error := backend.Db.Query(select_tables_query)
@@ -141,7 +96,7 @@ func GetColumnIDsForTable(tableName string) ([]int, error) {
         SELECT column_uid
         FROM system_column_details
         WHERE table_name = $1
-        ORDER BY attnum
+        ORDER BY co_number
     `
 	rows, err := backend.Db.Query(query, tableName)
 	if err != nil {

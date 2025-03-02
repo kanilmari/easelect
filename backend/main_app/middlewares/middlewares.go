@@ -141,122 +141,396 @@ func WithLoginCheck(original_handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// WithAccessControl tarkistaa, onko käyttäjällä oikeus kutsua annettua handler_namea
-// (function-level) sekä valinnaisesti tauluun (table-level).
-func WithAccessControl(handler_name string, original_handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+// Yhdistetty tarkistusfunktio: tarkistaa sekä function-level että (tarvittaessa) table-level -oikeudet.
+func userHasFunctionPermission(userID int, functionName, tableName string) bool {
+	var query string
+	var dummy int
+	var err error
 
-		// // --- Yksinkertainen request-dump (ei JSON-käsittelyä) --- Huom! Säästä tämä kommentti myöhempää käyttöä varten! ---
-		// log.Printf("== Request Dump == method: %s, url: %s, headers: %v",
-		// 	r.Method,
-		// 	r.URL.String(),
-		// 	r.Header,
-		// )
-
-		// --- Session ja käyttäjätarkistus ---
-		store := e_sessions.GetStore()
-		session, err := store.Get(r, "session")
-		if err != nil {
-			log.Printf("[WithAccessControl][%s] session haku epäonnistui: %v", handler_name, err)
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		user_id_val, ok := session.Values["user_id"]
-		if !ok {
-			log.Printf("[WithAccessControl][%s] anonyymi käyttäjä -> uudelleenohjaus login-sivulle", handler_name)
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		user_id, ok2 := user_id_val.(int)
-		if !ok2 {
-			log.Printf("[WithAccessControl][%s] user_id ei ole int -> ei oikeuksia", handler_name)
-			http.Error(w, "403 - Forbidden", http.StatusForbidden)
-			return
-		}
-
-		// 1) Usean taulun pyyntö ?tables=...
-		tables_param := r.URL.Query().Get("tables")
-		if tables_param != "" {
-			table_list := strings.Split(tables_param, ",")
-			for i := range table_list {
-				table_list[i] = strings.TrimSpace(table_list[i])
-			}
-			for _, tbl := range table_list {
-				if !userHasTablePermission(user_id, handler_name, tbl) {
-					log.Printf("\033[31m[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta\033[0m: %s",
-						handler_name, user_id, tbl)
-					http.Error(w, "403 - Forbidden (multiple tables)", http.StatusForbidden)
-					return
-				}
-			}
-		} else {
-			// 2) Yhden taulun pyyntö ?table=...
-			table_name := r.URL.Query().Get("table")
-			if table_name != "" {
-				if !userHasTablePermission(user_id, handler_name, table_name) {
-					log.Printf("\033[31m[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta\033[0m: %s",
-						handler_name, user_id, table_name)
-					http.Error(w, "403 - Forbidden (single table)", http.StatusForbidden)
-					return
-				}
-			}
-		}
-
-		// 3) Function-level -oikeus
-		query_str := `
+	// Jos kutsussa ei ole taulua, pitää löytyä tauluton rivi (target_table_name = '' tai IS NULL).
+	if tableName == "" {
+		query = `
 			SELECT 1
 			FROM auth_group_table_func_rights gf
 			JOIN functions f ON gf.function_id = f.id
 			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
 			WHERE f.name = $1
 			  AND ug.user_id = $2
+			  AND (gf.target_table_name = '' OR gf.target_table_name IS NULL)
 			LIMIT 1
 		`
-		var dummy int
-		err_query := backend.Db.QueryRow(query_str, handler_name, user_id).Scan(&dummy)
-		if err_query == sql.ErrNoRows {
-			log.Printf("[WithAccessControl][%s] käyttäjällä id=%d ei function-oikeutta", handler_name, user_id)
-			http.Error(w, "403 - Forbidden (function-level)", http.StatusForbidden)
-			return
-		} else if err_query != nil {
-			log.Printf("[WithAccessControl][%s] tietokantavirhe: %v", handler_name, err_query)
-			http.Error(w, "500 - DB error", http.StatusInternalServerError)
+		err = backend.Db.QueryRow(query, functionName, userID).Scan(&dummy)
+	} else {
+		// Jos taulunimi on annettu, pitää löytyä täsmälleen sama taulu
+		query = `
+			SELECT 1
+			FROM auth_group_table_func_rights gf
+			JOIN functions f ON gf.function_id = f.id
+			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
+			WHERE f.name = $1
+			  AND ug.user_id = $2
+			  AND gf.target_table_name = $3
+			LIMIT 1
+		`
+		err = backend.Db.QueryRow(query, functionName, userID, tableName).Scan(&dummy)
+	}
+
+	if err == sql.ErrNoRows {
+		log.Printf("\033[31m[userHasFunctionPermission] Ei löytynyt oikeusriviä funktiolle='%s', taululle='%s' (userID=%d)\033[0m",
+			functionName, tableName, userID)
+		return false
+	} else if err != nil {
+		log.Printf("\033[31m[userHasFunctionPermission] Tietokantavirhe: %v\033[0m", err)
+		return false
+	}
+
+	log.Printf("\033[32m[userHasFunctionPermission] OK - Löytyi oikeus funktiolle='%s', taululle='%s' (userID=%d)\033[0m",
+		functionName, tableName, userID)
+	return true
+}
+
+func WithAccessControl(handlerName string, originalHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// --- Session ja käyttäjätarkistus ---
+		store := e_sessions.GetStore()
+		session, err := store.Get(r, "session")
+		if err != nil {
+			log.Printf("\033[31m[WithAccessControl][%s] session-haku epäonnistui: %v\033[0m", handlerName, err)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		// Kaikki ok -> suoritetaan varsinainen handler
-		original_handler(w, r)
+		userIDVal, ok := session.Values["user_id"]
+		if !ok {
+			log.Printf("\033[31m[WithAccessControl][%s] Anonyymi käyttäjä -> uudelleenohjaus login-sivulle\033[0m", handlerName)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		userID, ok2 := userIDVal.(int)
+		if !ok2 {
+			log.Printf("\033[31m[WithAccessControl][%s] user_id ei ole int -> ei oikeuksia\033[0m", handlerName)
+			http.Error(w, "403 - Forbidden", http.StatusForbidden)
+			return
+		}
+
+		// Hae käyttäjänimi lokitusta varten
+		var username string
+		err = backend.Db.QueryRow("SELECT username FROM auth_users WHERE id = $1", userID).Scan(&username)
+		if err != nil {
+			log.Printf("\033[31m[WithAccessControl][%s] Käyttäjänimen haku epäonnistui, userID=%d: %v\033[0m",
+				handlerName, userID, err)
+			username = fmt.Sprintf("id:%d", userID) // fallback
+		}
+
+		// --- Tarkista, mitä tauluja (jos mitään) parametreissa on ---
+		tablesParam := r.URL.Query().Get("tables")
+		if tablesParam != "" {
+			// Usean taulun pyyntö: ?tables=table1,table2
+			tableList := strings.Split(tablesParam, ",")
+			for i := range tableList {
+				tableList[i] = strings.TrimSpace(tableList[i])
+			}
+
+			for _, tbl := range tableList {
+				// log.Printf("[WithAccessControl][%s] Tarkistetaan käyttäjän %s (id=%d) oikeus funktiolle='%s' tauluun='%s'",
+				// 	handlerName, username, userID, handlerName, tbl)
+
+				if !userHasFunctionPermission(userID, handlerName, tbl) {
+					// log.Printf("\033[31m[WithAccessControl][%s] EI oikeutta -> 403\033[0m", handlerName)
+					http.Error(w, "403 - Forbidden (multiple tables)", http.StatusForbidden)
+					return
+				}
+			}
+
+		} else {
+			// Yhden taulun pyyntö ?table=...
+			tableName := r.URL.Query().Get("table")
+
+			// Jos taulunimi on annettu, tarkistetaan oikeus sille
+			if tableName != "" {
+				// log.Printf("[WithAccessControl][%s] Tarkistetaan käyttäjän %s (id=%d) oikeus funktiolle='%s' tauluun='%s'",
+				// 	handlerName, username, userID, handlerName, tableName)
+
+				if !userHasFunctionPermission(userID, handlerName, tableName) {
+					// log.Printf("\033[31m[WithAccessControl][%s] EI oikeutta -> 403\033[0m", handlerName)
+					http.Error(w, "403 - Forbidden (single table)", http.StatusForbidden)
+					return
+				}
+			} else {
+				// Ei taulunimeä ollenkaan = "tauluton" kutsu
+				// log.Printf("[WithAccessControl][%s] Tarkistetaan käyttäjän %s (id=%d) tauluton oikeus funktiolle='%s'",
+				// 	handlerName, username, userID, handlerName)
+
+				if !userHasFunctionPermission(userID, handlerName, "") {
+					// log.Printf("\033[31m[WithAccessControl][%s] EI oikeutta (tauluton) -> 403\033[0m", handlerName)
+					http.Error(w, "403 - Forbidden (function-level)", http.StatusForbidden)
+					return
+				}
+			}
+		}
+
+		// // Kaikki ok -> lokitetaan onnistuminen ja suoritetaan varsinainen handler
+		// log.Printf("\033[32m[WithAccessControl][%s] Käyttöoikeustarkastus onnistui käyttäjälle %s (id=%d)\033[0m",
+		// 	handlerName, username, userID)
+		originalHandler(w, r)
 	}
 }
 
-// userHasTablePermission tarkistaa, onko userID:llä tauluoikeus
-// pyydettyyn tauluun & funktioon. Yksinkertainen esimerkki:
-func userHasTablePermission(user_id int, function_name, table_name string) bool {
-	if table_name == "" {
-		return true
-	}
-	query := `
-		SELECT 1
-		FROM auth_group_table_func_rights gf
-		JOIN functions f ON gf.function_id = f.id
-		JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
-		WHERE f.name = $1
-		  AND ug.user_id = $2
-		  AND gf.target_table_name = $3
-		LIMIT 1
-	`
-	var dummy int
-	err := backend.Db.QueryRow(query, function_name, user_id, table_name).Scan(&dummy)
-	if err == sql.ErrNoRows {
-		return false
-	} else if err != nil {
-		log.Printf("DB virhe userHasTablePermission: %v", err)
-		return false
-	}
-	return true
-}
+
+
+// // Yhdistetty tarkistusfunktio: tarkistaa sekä function-level että (tarvittaessa) table-level -oikeudet.
+// func userHasFunctionPermission(userID int, functionName, tableName string) bool {
+// 	var query string
+// 	var dummy int
+// 	var err error
+
+// 	// Jos kutsussa ei ole taulua, pitää löytyä tauluton rivi (target_table_name = '' tai IS NULL).
+// 	if tableName == "" {
+// 		query = `
+// 			SELECT 1
+// 			FROM auth_group_table_func_rights gf
+// 			JOIN functions f ON gf.function_id = f.id
+// 			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
+// 			WHERE f.name = $1
+// 			  AND ug.user_id = $2
+// 			  AND (gf.target_table_name = '' OR gf.target_table_name IS NULL)
+// 			LIMIT 1
+// 		`
+// 		err = backend.Db.QueryRow(query, functionName, userID).Scan(&dummy)
+// 	} else {
+// 		// Jos taulunimi on annettu, pitää löytyä täsmälleen sama taulu
+// 		query = `
+// 			SELECT 1
+// 			FROM auth_group_table_func_rights gf
+// 			JOIN functions f ON gf.function_id = f.id
+// 			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
+// 			WHERE f.name = $1
+// 			  AND ug.user_id = $2
+// 			  AND gf.target_table_name = $3
+// 			LIMIT 1
+// 		`
+// 		err = backend.Db.QueryRow(query, functionName, userID, tableName).Scan(&dummy)
+// 	}
+
+// 	if err == sql.ErrNoRows {
+// 		log.Printf("[userHasFunctionPermission] Ei löytynyt oikeusriviä funktiolle='%s', taululle='%s' (userID=%d)",
+// 			functionName, tableName, userID)
+// 		return false
+// 	} else if err != nil {
+// 		log.Printf("[userHasFunctionPermission] Tietokantavirhe: %v", err)
+// 		return false
+// 	}
+
+// 	log.Printf("[userHasFunctionPermission] OK - Löytyi oikeus funktiolle='%s', taululle='%s' (userID=%d)",
+// 		functionName, tableName, userID)
+// 	return true
+// }
+
+// func WithAccessControl(handlerName string, originalHandler http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+
+// 		// --- Session ja käyttäjätarkistus ---
+// 		store := e_sessions.GetStore()
+// 		session, err := store.Get(r, "session")
+// 		if err != nil {
+// 			log.Printf("[WithAccessControl][%s] session-haku epäonnistui: %v", handlerName, err)
+// 			http.Redirect(w, r, "/login", http.StatusSeeOther)
+// 			return
+// 		}
+
+// 		userIDVal, ok := session.Values["user_id"]
+// 		if !ok {
+// 			log.Printf("[WithAccessControl][%s] Anonyymi käyttäjä -> uudelleenohjaus login-sivulle", handlerName)
+// 			http.Redirect(w, r, "/login", http.StatusSeeOther)
+// 			return
+// 		}
+
+// 		userID, ok2 := userIDVal.(int)
+// 		if !ok2 {
+// 			log.Printf("[WithAccessControl][%s] user_id ei ole int -> ei oikeuksia", handlerName)
+// 			http.Error(w, "403 - Forbidden", http.StatusForbidden)
+// 			return
+// 		}
+
+// 		// Hae käyttäjänimi lokitusta varten
+// 		var username string
+// 		err = backend.Db.QueryRow("SELECT username FROM auth_users WHERE id = $1", userID).Scan(&username)
+// 		if err != nil {
+// 			log.Printf("[WithAccessControl][%s] Käyttäjänimen haku epäonnistui, userID=%d: %v",
+// 				handlerName, userID, err)
+// 			username = fmt.Sprintf("id:%d", userID) // fallback
+// 		}
+
+// 		// --- Tarkista, mitä tauluja (jos mitään) parametreissa on ---
+// 		tablesParam := r.URL.Query().Get("tables")
+// 		if tablesParam != "" {
+// 			// Usean taulun pyyntö: ?tables=table1,table2
+// 			tableList := strings.Split(tablesParam, ",")
+// 			for i := range tableList {
+// 				tableList[i] = strings.TrimSpace(tableList[i])
+// 			}
+
+// 			for _, tbl := range tableList {
+// 				log.Printf("[WithAccessControl][%s] Tarkistetaan käyttäjän %s (id=%d) oikeus funktiolle='%s' tauluun='%s'",
+// 					handlerName, username, userID, handlerName, tbl)
+
+// 				if !userHasFunctionPermission(userID, handlerName, tbl) {
+// 					log.Printf("[WithAccessControl][%s] EI oikeutta -> 403", handlerName)
+// 					http.Error(w, "403 - Forbidden (multiple tables)", http.StatusForbidden)
+// 					return
+// 				}
+// 			}
+
+// 		} else {
+// 			// Yhden taulun pyyntö ?table=...
+// 			tableName := r.URL.Query().Get("table")
+
+// 			// Jos taulunimi on annettu, tarkistetaan oikeus sille
+// 			if tableName != "" {
+// 				log.Printf("[WithAccessControl][%s] Tarkistetaan käyttäjän %s (id=%d) oikeus funktiolle='%s' tauluun='%s'",
+// 					handlerName, username, userID, handlerName, tableName)
+
+// 				if !userHasFunctionPermission(userID, handlerName, tableName) {
+// 					log.Printf("[WithAccessControl][%s] EI oikeutta -> 403", handlerName)
+// 					http.Error(w, "403 - Forbidden (single table)", http.StatusForbidden)
+// 					return
+// 				}
+// 			} else {
+// 				// Ei taulunimeä ollenkaan = "tauluton" kutsu
+// 				log.Printf("[WithAccessControl][%s] Tarkistetaan käyttäjän %s (id=%d) tauluton oikeus funktiolle='%s'",
+// 					handlerName, username, userID, handlerName)
+
+// 				if !userHasFunctionPermission(userID, handlerName, "") {
+// 					log.Printf("[WithAccessControl][%s] EI oikeutta (tauluton) -> 403", handlerName)
+// 					http.Error(w, "403 - Forbidden (function-level)", http.StatusForbidden)
+// 					return
+// 				}
+// 			}
+// 		}
+
+// 		// Kaikki ok -> suoritetaan varsinainen handler
+// 		originalHandler(w, r)
+// 	}
+// }
+
+// // WithAccessControl tarkistaa, onko käyttäjällä oikeus kutsua annettua handler_namea
+// // (function-level) sekä valinnaisesti tauluun (table-level).
+// func WithAccessControl(handler_name string, original_handler http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+
+// 		// // --- Yksinkertainen request-dump (ei JSON-käsittelyä) --- Huom! Säästä tämä kommentti myöhempää käyttöä varten! ---
+// 		// log.Printf("== Request Dump == method: %s, url: %s, headers: %v",
+// 		// 	r.Method,
+// 		// 	r.URL.String(),
+// 		// 	r.Header,
+// 		// )
+
+// 		// --- Session ja käyttäjätarkistus ---
+// 		store := e_sessions.GetStore()
+// 		session, err := store.Get(r, "session")
+// 		if err != nil {
+// 			log.Printf("[WithAccessControl][%s] session haku epäonnistui: %v", handler_name, err)
+// 			http.Redirect(w, r, "/login", http.StatusSeeOther)
+// 			return
+// 		}
+
+// 		user_id_val, ok := session.Values["user_id"]
+// 		if !ok {
+// 			log.Printf("[WithAccessControl][%s] anonyymi käyttäjä -> uudelleenohjaus login-sivulle", handler_name)
+// 			http.Redirect(w, r, "/login", http.StatusSeeOther)
+// 			return
+// 		}
+
+// 		user_id, ok2 := user_id_val.(int)
+// 		if !ok2 {
+// 			log.Printf("[WithAccessControl][%s] user_id ei ole int -> ei oikeuksia", handler_name)
+// 			http.Error(w, "403 - Forbidden", http.StatusForbidden)
+// 			return
+// 		}
+
+// 		// 1) Usean taulun pyyntö ?tables=...
+// 		tables_param := r.URL.Query().Get("tables")
+// 		if tables_param != "" {
+// 			table_list := strings.Split(tables_param, ",")
+// 			for i := range table_list {
+// 				table_list[i] = strings.TrimSpace(table_list[i])
+// 			}
+// 			for _, tbl := range table_list {
+// 				if !userHasTablePermission(user_id, handler_name, tbl) {
+// 					log.Printf("\033[31m[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta\033[0m: %s",
+// 						handler_name, user_id, tbl)
+// 					http.Error(w, "403 - Forbidden (multiple tables)", http.StatusForbidden)
+// 					return
+// 				}
+// 			}
+// 		} else {
+// 			// 2) Yhden taulun pyyntö ?table=...
+// 			table_name := r.URL.Query().Get("table")
+// 			if table_name != "" {
+// 				if !userHasTablePermission(user_id, handler_name, table_name) {
+// 					log.Printf("\033[31m[WithAccessControl][%s] käyttäjällä id=%d ei tauluoikeutta\033[0m: %s",
+// 						handler_name, user_id, table_name)
+// 					http.Error(w, "403 - Forbidden (single table)", http.StatusForbidden)
+// 					return
+// 				}
+// 			}
+// 		}
+
+// 		// 3) Function-level -oikeus
+// 		query_str := `
+// 			SELECT 1
+// 			FROM auth_group_table_func_rights gf
+// 			JOIN functions f ON gf.function_id = f.id
+// 			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
+// 			WHERE f.name = $1
+// 			  AND ug.user_id = $2
+// 			LIMIT 1
+// 		`
+// 		var dummy int
+// 		err_query := backend.Db.QueryRow(query_str, handler_name, user_id).Scan(&dummy)
+// 		if err_query == sql.ErrNoRows {
+// 			log.Printf("[WithAccessControl][%s] käyttäjällä id=%d ei function-oikeutta", handler_name, user_id)
+// 			http.Error(w, "403 - Forbidden (function-level)", http.StatusForbidden)
+// 			return
+// 		} else if err_query != nil {
+// 			log.Printf("[WithAccessControl][%s] tietokantavirhe: %v", handler_name, err_query)
+// 			http.Error(w, "500 - DB error", http.StatusInternalServerError)
+// 			return
+// 		}
+
+// 		// Kaikki ok -> suoritetaan varsinainen handler
+// 		original_handler(w, r)
+// 	}
+// }
+
+// // userHasTablePermission tarkistaa, onko userID:llä tauluoikeus
+// // pyydettyyn tauluun & funktioon. Yksinkertainen esimerkki:
+// func userHasTablePermission(user_id int, function_name, table_name string) bool {
+// 	if table_name == "" {
+// 		return true
+// 	}
+// 	query := `
+// 		SELECT 1
+// 		FROM auth_group_table_func_rights gf
+// 		JOIN functions f ON gf.function_id = f.id
+// 		JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
+// 		WHERE f.name = $1
+// 		  AND ug.user_id = $2
+// 		  AND gf.target_table_name = $3
+// 		LIMIT 1
+// 	`
+// 	var dummy int
+// 	err := backend.Db.QueryRow(query, function_name, user_id, table_name).Scan(&dummy)
+// 	if err == sql.ErrNoRows {
+// 		return false
+// 	} else if err != nil {
+// 		log.Printf("DB virhe userHasTablePermission: %v", err)
+// 		return false
+// 	}
+// 	return true
+// }
 
 // WithDeviceIDCheck varmistaa, että sessionin device_id vastaa device_id-evästettä.
 func WithDeviceIDCheck(originalHandler http.HandlerFunc) http.HandlerFunc {

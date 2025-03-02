@@ -139,81 +139,29 @@ func getAddRowColumnsWithTypes(tableName string, schemaName string) ([]models.Ad
 	return columns, nil
 }
 
-// func GetAddRowColumnsOrdered(tableName string) ([]models.ColumnInfo, error) {
-// 	// Step 1: Fetch col_display_order from system_db_tables
-// 	var colDisplayOrderStr sql.NullString
-// 	colDisplayOrderQuery := `SELECT col_display_order FROM system_db_tables WHERE table_name = $1`
-// 	err := backend.Db.QueryRow(colDisplayOrderQuery, tableName).Scan(&colDisplayOrderStr)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("error fetching col_display_order for table %s: %v", tableName, err)
-// 	}
-
-// 	var colDisplayOrder []int // Tämä sisältää column_uid-arvot
-// 	if colDisplayOrderStr.Valid && colDisplayOrderStr.String != "" {
-// 		if err := json.Unmarshal([]byte(colDisplayOrderStr.String), &colDisplayOrder); err != nil {
-// 			return nil, fmt.Errorf("error unmarshalling col_display_order for table %s: %v", tableName, err)
-// 		}
-// 	}
-
-// 	// Step 2: Get column details from system_column_details
-// 	columnsMap, err := gt_2_column_read.GetColumnsMapForTable(tableName)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("error fetching columns for table %s: %v", tableName, err)
-// 	}
-
-// 	// Step 3: Determine the order of columns
-// 	var orderedColumns []models.ColumnInfo
-// 	if len(colDisplayOrder) > 0 {
-// 		// Use col_display_order, ensuring columns exist
-// 		for _, colUid := range colDisplayOrder {
-// 			if colInfo, exists := columnsMap[colUid]; exists {
-// 				orderedColumns = append(orderedColumns, colInfo)
-// 			}
-// 		}
-// 		// Add any new columns not in col_display_order
-// 		for colUid, colInfo := range columnsMap {
-// 			if !containsColumnUid(orderedColumns, colUid) {
-// 				orderedColumns = append(orderedColumns, colInfo)
-// 			}
-// 		}
-// 	} else {
-// 		// Use default order (attnum)
-// 		columns := make([]models.ColumnInfo, 0, len(columnsMap))
-// 		for _, colInfo := range columnsMap {
-// 			columns = append(columns, colInfo)
-// 		}
-// 		sort.Slice(columns, func(i, j int) bool {
-// 			return columns[i].Attnum < columns[j].Attnum
-// 		})
-// 		orderedColumns = columns
-// 	}
-
-// 	return orderedColumns, nil
-// }
-
 func GetAddRowColumnsOrdered(tableName string) ([]models.ColumnInfo, error) {
-    // Huom: käytetään esimerkin vuoksi suoraan "SELECT ... ORDER BY attnum"
+    // Huom: käytetään esimerkin vuoksi suoraan "SELECT ... ORDER BY co_number"
     query := `
         SELECT
             scd.column_uid,
             scd.column_name,
-            scd.attnum
+            scd.co_number
         FROM system_column_details scd
         JOIN system_db_tables sdt ON sdt.table_uid = scd.table_uid
         WHERE sdt.table_name = $1
-        ORDER BY scd.attnum
+        ORDER BY scd.co_number
     `
 
     rows, err := backend.Db.Query(query, tableName)
     if err != nil {
-        return nil, fmt.Errorf("error querying columns by attnum: %v", err)
+        return nil, fmt.Errorf("error querying columns by co_number: %v", err)
     }
     defer rows.Close()
 
     var columns []models.ColumnInfo
     for rows.Next() {
         var col models.ColumnInfo
-        err := rows.Scan(&col.ColumnUid, &col.ColumnName, &col.Attnum)
+        err := rows.Scan(&col.ColumnUid, &col.ColumnName, &col.CoNumber)
         if err != nil {
             return nil, fmt.Errorf("error scanning column info: %v", err)
         }
@@ -226,14 +174,3 @@ func GetAddRowColumnsOrdered(tableName string) ([]models.ColumnInfo, error) {
 
     return columns, nil
 }
-
-
-// Helper function to check if a column_uid exists in the slice
-// func containsColumnUid(columns []models.ColumnInfo, columnUid int) bool {
-// 	for _, col := range columns {
-// 		if col.ColumnUid == columnUid {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }

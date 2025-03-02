@@ -11,10 +11,10 @@
     cursor: pointer;
 }
 
-.select-selected svg,
+/* .select-selected svg,
 .select-items svg {
 	transform: translateY(1px);
-}
+} */
 
 .text-and-arrow {
 	display: flex;

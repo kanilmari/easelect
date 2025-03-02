@@ -52,12 +52,12 @@ func GetTableColumnsWithTypesAndIDs(tableName string) ([]map[string]interface{},
 
 	// Hae saraketiedot liittymällä system_column_details ja information_schema.columns
 	query := `
-        SELECT cd.column_uid, cd.column_name, c.data_type, cd.attnum
+        SELECT cd.column_uid, cd.column_name, c.data_type, cd.co_number
         FROM system_column_details cd
         JOIN information_schema.columns c
           ON c.table_name = $1 AND c.column_name = cd.column_name
         WHERE cd.table_uid = $2
-        ORDER BY cd.attnum
+        ORDER BY cd.co_number
     `
 	rows, err := backend.Db.Query(query, tableName, tableUID)
 	if err != nil {
@@ -71,16 +71,16 @@ func GetTableColumnsWithTypesAndIDs(tableName string) ([]map[string]interface{},
 			columnUid  int
 			columnName string
 			dataType   string
-			attnum     int
+			coNmuber     int
 		)
-		if err := rows.Scan(&columnUid, &columnName, &dataType, &attnum); err != nil {
+		if err := rows.Scan(&columnUid, &columnName, &dataType, &coNmuber); err != nil {
 			return nil, err
 		}
 		columnInfo := map[string]interface{}{
 			"column_uid":  columnUid,
 			"column_name": columnName,
 			"data_type":   dataType,
-			"attnum":      attnum,
+			"co_number":      coNmuber,
 		}
 		columns = append(columns, columnInfo)
 	}

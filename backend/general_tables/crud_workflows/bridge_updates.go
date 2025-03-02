@@ -35,39 +35,5 @@ func UpdateOidsAndTableNamesWithBridge() error {
 		backend.Db,
 		gt_3_table_delete.DeleteRemovedTables, // Poistetut taulut
 		gt_3_table_create.InsertNewTables,     // Uudet taulut
-		// func() error {
-		// 	// Oikea callback UpdateColumnsForExistingTablesWithBridge
-		// 	return UpdateColumnsForExistingTablesWithBridge()
-		// },
 	)
 }
-
-// UpdateColumnsForExistingTablesWithBridge on bridge-funktio, joka kutsuu
-// gt_3_table_update.UpdateColumnsForExistingTables(...) ja siirtää callback-funktiot parametrina.
-func UpdateColumnsForExistingTablesWithBridge() error {
-	return nil
-	// gt_3_table_update.UpdateColumnsForExistingTables(
-	// 	backend.Db,
-	// 	gt_2_column_read.GetColumnIDsForTableUID,
-	// 	gt_3_table_update.UpdateColDisplayOrder,
-	// )
-}
-
-// // UpdateColumnOrderWithBridge
-// // Sanitizes tableName ja kutsuu gt_3_table_update.UpdateColumnOrder
-// func UpdateColumnOrderWithBridge(
-// 	tableName string,
-// 	newOrder []int,
-// ) error {
-// 	// Voidaan halutessa validoida tableName täällä:
-// 	sName, err := security.SanitizeIdentifier(tableName)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return gt_3_table_update.UpdateColumnOrder(
-// 		backend.Db,
-// 		sName,
-// 		newOrder,
-// 	)
-// }

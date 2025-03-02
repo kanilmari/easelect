@@ -128,10 +128,11 @@ input[type="checkbox"], input[type="radio"] {
 .editing {
     background-color: rgb(128 128 0 / 0.5);
     padding: 0;
+    overflow: auto !important;
+    width: 300px;
 }
 
 .editing input {
-    width: 100%;
     border: none;
     outline: none;
     padding: 0;

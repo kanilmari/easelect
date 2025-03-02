@@ -6,8 +6,6 @@ import "database/sql"
 type Table struct {
 	ID              int    `json:"id"`
 	TableName       string `json:"table_name"`
-	Columns         []int  `json:"columns"`
-	ColDisplayOrder []int  `json:"col_display_order"`
 }
 
 type GroupedTables struct {
@@ -23,7 +21,7 @@ type ColumnInfo struct {
 	ColumnUid     int
 	ColumnName    string
 	DataType      string
-	Attnum        int
+	CoNumber      int
 	IsNullable    string
 	IsIdentity    string
 	ColumnDefault sql.NullString

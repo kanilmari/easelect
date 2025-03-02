@@ -25,7 +25,7 @@ func GetColumnsMapForTable(tableName string) (map[int]models.ColumnInfo, error) 
         SELECT cd.column_uid,
                cd.column_name,
                c.data_type,
-               cd.attnum,
+               cd.co_number,
                c.is_nullable,
                c.is_identity,
                c.column_default,
@@ -34,7 +34,7 @@ func GetColumnsMapForTable(tableName string) (map[int]models.ColumnInfo, error) 
         JOIN information_schema.columns c
           ON c.table_name = $1 AND c.column_name = cd.column_name
         WHERE cd.table_uid = $2
-        ORDER BY cd.attnum
+        ORDER BY cd.co_number
     `
 	rows, err := backend.Db.Query(query, tableName, tableUID)
 	if err != nil {
@@ -49,7 +49,7 @@ func GetColumnsMapForTable(tableName string) (map[int]models.ColumnInfo, error) 
 			&colInfo.ColumnUid,
 			&colInfo.ColumnName,
 			&colInfo.DataType,
-			&colInfo.Attnum,
+			&colInfo.CoNumber,
 			&colInfo.IsNullable,
 			&colInfo.IsIdentity,
 			&colInfo.ColumnDefault,
@@ -92,7 +92,7 @@ func GetColumnIDsForTableUID(tableUID int) ([]int, error) {
         SELECT column_uid
         FROM system_column_details
         WHERE table_uid = $1
-        ORDER BY attnum
+        ORDER BY co_number
     `
 	rows, err := backend.Db.Query(query, tableUID)
 	if err != nil {

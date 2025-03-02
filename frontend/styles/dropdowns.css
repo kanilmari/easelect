@@ -85,12 +85,13 @@
     padding: 5px;
 }
 
+/* Tärkeää - Lista vaihtoehdoista, kun muokataan solua */
 .dropdown-options-list {
     position: absolute;
     z-index: 1000;
     background: var(--bg_color);
     border: 1px solid var(--border_color);
-    max-height: 200px;
+    max-height: 600px;
     overflow-y: auto;
     width: 100%;
     box-sizing: border-box;

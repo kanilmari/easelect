@@ -9,15 +9,84 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/joho/godotenv"
-
 	"easelect/backend/general_tables"
 	"easelect/backend/general_tables/crud_workflows"
 	backend "easelect/backend/main_app"
 	"easelect/backend/main_app/auth"
+	"easelect/backend/main_app/middlewares"
 	"easelect/backend/main_app/router"
 	e_sessions "easelect/backend/main_app/sessions"
+
+	"github.com/joho/godotenv"
 )
+
+// func main() {
+// 	// Ei .env-latausta -- Compose asettaa jo nämä ympäristömuuttujat
+
+// 	// 1) Sessioiden init
+// 	e_sessions.InitSessionStore()
+
+// 	// 2) Tietokantayhteys pienen retry-logiikan kanssa
+// 	const maxRetries = 10
+// 	var dbInitErr error
+// 	for i := 1; i <= maxRetries; i++ {
+// 		dbInitErr = backend.InitDB()
+// 		if dbInitErr == nil {
+// 			break
+// 		}
+// 		log.Printf("\033[31mvirhe: db-yhteys epäonnistui: %v (yritys %d/%d). odotetaan...\033[0m", dbInitErr, i, maxRetries)
+// 		time.Sleep(2 * time.Second)
+// 	}
+// 	if dbInitErr != nil {
+// 		log.Fatalf("\033[31mvirhe: db-yhteys epäonnistui lopullisesti: %v\033[0m", dbInitErr)
+// 	}
+// 	defer backend.CloseDB()
+
+// 	// 3) Tehdään alustus
+// 	if err := crud_workflows.UpdateOidsAndTableNamesWithBridge(); err != nil {
+// 		log.Fatalf("\033[31mvirhe: oid-päivitys epäonnistui: %v\033[0m", err)
+// 	}
+
+// 	// 4) Polkujen selvittäminen (frontend, media, jne.)
+// 	exePath, err := os.Executable()
+// 	if err != nil {
+// 		log.Fatalf("\033[31mvirhe: executable-polun haku: %v\033[0m", err)
+// 	}
+// 	exeDir := filepath.Dir(exePath)
+// 	frontendDir := filepath.Join(exeDir, "frontend")
+// 	mediaPath := filepath.Join(exeDir, "media")
+
+// 	// 5) Authin init
+// 	auth.InitAuth(e_sessions.GetStore(), frontendDir)
+
+// 	// 6) Reittien rekisteröinti
+// 	router.RegisterRoutes(frontendDir, mediaPath)
+// 	if err := router.RegisterAllRoutesAndUpdateFunctions(backend.Db); err != nil {
+// 		log.Printf("\033[31mvirhe: reittien rekisteröinti/päivitys: %v\033[0m", err)
+// 	}
+
+// 	// 7) Funktioiden synkronointi
+// 	if err := router.SyncFunctions(backend.Db); err != nil {
+// 		log.Printf("\033[31mvirhe: funktioiden synkronointi: %v\033[0m", err)
+// 	}
+
+// 	if err := general_tables.Remove_non_existent_table_rights(backend.Db); err != nil {
+// 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+// 	}
+
+// 	// 8) Käynnistetään palvelin
+// 	wrappedHandler := middlewares.WithCSP(http.DefaultServeMux)
+// 	port := os.Getenv("EASELECT_PORT")
+// 	if port == "" {
+// 		port = "8082"
+// 	}
+// 	log.Printf("[INFO] server running on port %s...", port)
+
+// 	addr := "0.0.0.0:" + port
+// 	if err := http.ListenAndServe(addr, wrappedHandler); err != nil {
+// 		log.Fatalf("\033[31mvirhe: palvelinvirhe: %v\033[0m\n", err)
+// 	}
+// }
 
 func main() {
 	// 1) Ladataan .env
@@ -74,13 +143,14 @@ func main() {
 	if err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 	}
-
 	// 9) Käynnistetään palvelin
+	wrappedHandler := middlewares.WithCSP(http.DefaultServeMux)
+
 	log.Println("[INFO] Server running on port 8082...")
 
 	osType := os.Getenv("OS_TYPE")
 	if osType == "windows" {
-		if err := http.ListenAndServe("0.0.0.0:8082", nil); err != nil {
+		if err := http.ListenAndServe("0.0.0.0:8082", wrappedHandler); err != nil {
 			log.Fatalf("Palvelinvirhe: %v", err)
 		}
 	} else if osType == "linux" {
@@ -88,7 +158,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Kuunteluvirhe: %v", err)
 		}
-		if err := http.Serve(listener, nil); err != nil {
+		if err := http.Serve(listener, wrappedHandler); err != nil {
 			log.Fatalf("Palvelinvirhe: %v", err)
 		}
 	} else {
