@@ -222,7 +222,6 @@ func getUserIDFromSession(r *http.Request) (int, error) {
 	return userID, nil
 }
 
-
 // ensureAndFetchUserColumnSettings hakee käyttäjän sarakeasetukset kyseiselle taululle.
 // Jos asetuksia ei löydy user_column_settings -taulusta, palautetaan oletusarvot system_column_details -taulusta.
 func ensureAndFetchUserColumnSettings(userID int, tableName string) ([]UserColumnSetting, error) {
@@ -656,13 +655,13 @@ func buildConditionForTokens(
 // 	// 3) Haetaan lopullinen lista.
 // 	// Jos user_column_settings.sort_order on NULL tai 0, käytetään system_column_details.co_number-arvoa.
 // 	query := `
-//         SELECT 
-//             u.column_name, 
-//             CASE 
-//                 WHEN u.sort_order IS NULL OR u.sort_order = 0 THEN scd.co_number 
-//                 ELSE u.sort_order 
+//         SELECT
+//             u.column_name,
+//             CASE
+//                 WHEN u.sort_order IS NULL OR u.sort_order = 0 THEN scd.co_number
+//                 ELSE u.sort_order
 //             END AS effective_sort_order,
-//             u.column_width_px, 
+//             u.column_width_px,
 //             u.is_hidden
 //         FROM user_column_settings u
 //         LEFT JOIN system_db_tables sdt ON sdt.table_name = u.table_name
@@ -696,9 +695,9 @@ func buildConditionForTokens(
 // // getColumnNames hakee sarakkeet (public-skeema) ordinal_position-järjestyksessä.
 // func getColumnNames(tableName string) ([]string, error) {
 // 	q := `
-//         SELECT column_name 
-//         FROM information_schema.columns 
-//         WHERE table_name = $1 
+//         SELECT column_name
+//         FROM information_schema.columns
+//         WHERE table_name = $1
 //           AND table_schema = 'public'
 //         ORDER BY ordinal_position
 //     `

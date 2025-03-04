@@ -11,6 +11,7 @@ import (
 
 	"easelect/backend/general_tables"
 	"easelect/backend/general_tables/crud_workflows"
+	"easelect/backend/general_tables/foreign_keys"
 	backend "easelect/backend/main_app"
 	"easelect/backend/main_app/auth"
 	"easelect/backend/main_app/middlewares"
@@ -108,6 +109,18 @@ func main() {
 	err = crud_workflows.UpdateOidsAndTableNamesWithBridge()
 	if err != nil {
 		log.Fatalf("OID-päivitysvirhe: %v", err)
+	}
+
+	// Tässä kohtaa voimme kutsua CheckFKReferences,
+	// kun tietokanta on jo alustettu:
+	err = foreign_keys.SyncOneToManyFKConstraints(backend.Db)
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+	}
+
+	err = foreign_keys.SyncManyToManyFKConstraints(backend.Db)
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 	}
 
 	// 5) Selvitetään frontendiin polku

@@ -1,6 +1,5 @@
 easelect
 easelect.exe
-others/
 node_modules/
 .env
 easelect.code-workspace

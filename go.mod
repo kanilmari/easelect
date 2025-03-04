@@ -1,6 +1,8 @@
 module easelect
 
-go 1.23.0
+go 1.23
+
+toolchain go1.24.0
 
 //	github.com/Knetic/govaluate v3.0.0+incompatible
 require github.com/lib/pq v1.10.9
