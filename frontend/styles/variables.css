@@ -2,7 +2,7 @@
 
 /*     max-width: calc(var(--navbar_width) - var(--navbar_padding) * 2); */
 :root {
-    --navbar_padding: 10px;
+    --navbar_padding: 8px;
     --navbar_width: 300px;
     --border_radius: 7px;
     --border_radius_small: 4px;

@@ -4,8 +4,8 @@ package models
 import "database/sql"
 
 type Table struct {
-	ID              int    `json:"id"`
-	TableName       string `json:"table_name"`
+	ID        int    `json:"id"`
+	TableName string `json:"table_name"`
 }
 
 type GroupedTables struct {
@@ -39,4 +39,5 @@ type AddRowColumnInfo struct {
 	ForeignTableSchema   string `json:"foreign_table_schema,omitempty"`
 	ForeignTableName     string `json:"foreign_table_name,omitempty"`
 	ForeignColumnName    string `json:"foreign_column_name,omitempty"`
+	UdtName              string `json:"udt_name"`
 }

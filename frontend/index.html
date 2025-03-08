@@ -1,31 +1,29 @@
 <!-- index.html -->
 <!DOCTYPE html>
 <html lang="fi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
 
-    <!-- Tell mobile browsers to use the device's full width and scale -->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-    <!-- Disable automatic phone number detection for better design control -->
-    <meta name="format-detection" content="telephone=no" />
+  <!-- Tell mobile browsers to use the device's full width and scale -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Add to home screen for Safari on iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <!-- Disable automatic phone number detection for better design control -->
+  <meta name="format-detection" content="telephone=no" />
 
-    <!-- Add to home screen for Chrome on Android -->
-    <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Add to home screen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 
-    <!-- Content Security Policy (CSP) - Suositus:
+  <!-- Add to home screen for Chrome on Android -->
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Content Security Policy (CSP) - Suositus:
          - Rajaa ulkopuoliset resurssit vain tunnetuille lähteille (tässä esimerkissä cdn.jsdelivr.net käytössä).
          - Mieti, voitko välttää 'unsafe-inline' ja käyttää nonce/hashi-tapaa inline-koodille.
          - Pidä domain-luettelo mahdollisimman suppeana ja kiristä tarvittaessa.-->
-    <!-- <meta
+  <!-- <meta
       http-equiv="Content-Security-Policy"
       content="
          default-src 'self';
@@ -40,17 +38,18 @@
          frame-ancestors 'self';
      "
     /> -->
-    <title>Easelect</title>
-    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-    <link rel="stylesheet" href="/styles/imports.css" />
-  </head>
+  <title>Easelect</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="/styles/imports.css" />
+</head>
 
-  <body>
-    <div class="body_wrapper">
-      <div id="overlay"></div>
-      <!-- Sisältö -->
-      <div class="body_content">
-        <button id="menuButton">☰</button>
+<body>
+  <div class="body_wrapper">
+    <div id="overlay"></div>
+    <!-- Sisältö -->
+    <div class="body_content">
+      <button id="menuButton">☰</button>
+      <!-- <div class="vertical-nav"> -->
         <div id="navbar">
           <div class="top-button-bar">
             <div class="menu-button-placeholder transparent">placeholder</div>
@@ -66,15 +65,17 @@
             <div id="navmenu" class="navtabs"></div>
           </div>
         </div>
+      <!-- </div> -->
 
-        <div id="tabs_container">
-          <!-- Dynaamisesti generoidut taulukot ja näkymät tulevat tänne -->
-        </div>
-        <div id="add_row_modal_overlay" class="modal_overlay hidden">
-          <div id="add_row_modal" class="modal"></div>
-        </div>
+      <div id="tabs_container">
+        <!-- Dynaamisesti generoidut taulukot ja näkymät tulevat tänne -->
+      </div>
+      <div id="add_row_modal_overlay" class="modal_overlay hidden">
+        <div id="add_row_modal" class="modal"></div>
       </div>
     </div>
-    <script type="module" src="/frontend/main.js"></script>
-  </body>
+  </div>
+  <script type="module" src="/frontend/main.js"></script>
+</body>
+
 </html>

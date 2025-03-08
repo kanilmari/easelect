@@ -100,6 +100,8 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	// functionRegisterHandler("/api/get-referencing-tables", gt_1_row_create.GetReferencingTablesHandlerWrapper, "gt_1_row_create.GetReferencingTablesHandlerWrapper")
 	functionRegisterHandler("/api/get-many-to-many", gt_1_row_create.GetManyToManyTablesHandlerWrapper, "gt_1_row_create.GetManyToManyTablesHandlerWrapper")
 	functionRegisterHandler("/api/get-1m-relations", gt_1_row_create.GetOneToManyRelationsHandlerWrapper, "gt_1_row_create.GetOneToManyRelationsHandlerWrapper")
+	// lisää reitti gt_1_row_create.GeocodeAddressHandler
+	functionRegisterHandler("/api/geocode-address", gt_1_row_create.GeocodeAddressHandler, "gt_1_row_create.GeocodeAddressHandler")
 
 	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_3_table_read.GetTableViewHandlerWrapper")
 	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_1_row_read.GetResultsHandlerWrapper")

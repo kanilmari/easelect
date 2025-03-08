@@ -68,7 +68,8 @@ func getAddRowColumnsWithTypes(tableName string, schemaName string) ([]models.Ad
             c.generation_expression,
             fk_info.foreign_table_schema,
             fk_info.foreign_table_name,
-            fk_info.foreign_column_name
+            fk_info.foreign_column_name,
+            c.udt_name
         FROM
             information_schema.columns c
         LEFT JOIN (
@@ -111,6 +112,7 @@ func getAddRowColumnsWithTypes(tableName string, schemaName string) ([]models.Ad
 		var foreignTableSchema sql.NullString
 		var foreignTableName sql.NullString
 		var foreignColumnName sql.NullString
+		var udtName string
 
 		if err := rows.Scan(
 			&col.ColumnName,
@@ -122,16 +124,24 @@ func getAddRowColumnsWithTypes(tableName string, schemaName string) ([]models.Ad
 			&foreignTableSchema,
 			&foreignTableName,
 			&foreignColumnName,
+			&udtName, // <-- luetaan
 		); err != nil {
 			return nil, err
 		}
 
-		// Käsittele mahdolliset NULL-arvot
 		col.ColumnDefault = columnDefault.String
 		col.GenerationExpression = generationExpression.String
 		col.ForeignTableSchema = foreignTableSchema.String
 		col.ForeignTableName = foreignTableName.String
 		col.ForeignColumnName = foreignColumnName.String
+		col.UdtName = udtName
+
+		// "Korjaus": jos data_type == "USER-DEFINED" ja udt_name == "geometry",
+		// niin muutetaan col.DataType = "geometry",
+		// jotta frontin ei tarvitse arpoa
+		if strings.ToLower(col.DataType) == "user-defined" && strings.ToLower(col.UdtName) == "geometry" {
+			col.DataType = "geometry"
+		}
 
 		columns = append(columns, col)
 	}
@@ -140,8 +150,8 @@ func getAddRowColumnsWithTypes(tableName string, schemaName string) ([]models.Ad
 }
 
 func GetAddRowColumnsOrdered(tableName string) ([]models.ColumnInfo, error) {
-    // Huom: käytetään esimerkin vuoksi suoraan "SELECT ... ORDER BY co_number"
-    query := `
+	// Huom: käytetään esimerkin vuoksi suoraan "SELECT ... ORDER BY co_number"
+	query := `
         SELECT
             scd.column_uid,
             scd.column_name,
@@ -152,25 +162,25 @@ func GetAddRowColumnsOrdered(tableName string) ([]models.ColumnInfo, error) {
         ORDER BY scd.co_number
     `
 
-    rows, err := backend.Db.Query(query, tableName)
-    if err != nil {
-        return nil, fmt.Errorf("error querying columns by co_number: %v", err)
-    }
-    defer rows.Close()
+	rows, err := backend.Db.Query(query, tableName)
+	if err != nil {
+		return nil, fmt.Errorf("error querying columns by co_number: %v", err)
+	}
+	defer rows.Close()
 
-    var columns []models.ColumnInfo
-    for rows.Next() {
-        var col models.ColumnInfo
-        err := rows.Scan(&col.ColumnUid, &col.ColumnName, &col.CoNumber)
-        if err != nil {
-            return nil, fmt.Errorf("error scanning column info: %v", err)
-        }
-        columns = append(columns, col)
-    }
+	var columns []models.ColumnInfo
+	for rows.Next() {
+		var col models.ColumnInfo
+		err := rows.Scan(&col.ColumnUid, &col.ColumnName, &col.CoNumber)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning column info: %v", err)
+		}
+		columns = append(columns, col)
+	}
 
-    if err = rows.Err(); err != nil {
-        return nil, fmt.Errorf("row iteration error: %v", err)
-    }
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %v", err)
+	}
 
-    return columns, nil
+	return columns, nil
 }

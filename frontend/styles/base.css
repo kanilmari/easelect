@@ -365,8 +365,8 @@ summary {
 
 #menuButton {
     position: absolute;
-    top: 10px;
-    left: 10px;
+    top: var(--navbar_padding);
+    left: var(--navbar_padding);
     background-color: var(--button_bg_color);
     color: var(--button_text_color);
     border: 1px solid var(--border_color);

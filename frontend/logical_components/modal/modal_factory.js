@@ -1,6 +1,6 @@
 // modal_factory.js
 
-export function createModal({ titleDataLangKey, tableName, contentElements, width = '600px' }) {
+export function createModal({ titleDataLangKey, titleDataLangKeyFallback, tableName, contentElements, width = '600px' }) {
     // Luo modalin taustalla oleva overlay-elementti
     let modal_overlay = document.getElementById('custom_modal_overlay');
     if (!modal_overlay) {
@@ -48,6 +48,12 @@ export function createModal({ titleDataLangKey, tableName, contentElements, widt
         }
 
         modal_title.setAttribute('data-lang-key', combined_key);
+
+        // Jos titleDataLangKeyFallback on annettu, lisätään myös fallback-attribuutti
+        if (titleDataLangKeyFallback) {
+            modal_title.setAttribute('data-lang-key-fallback', titleDataLangKeyFallback);
+        }
+
         modal.appendChild(modal_title);
     }
 
@@ -61,6 +67,7 @@ export function createModal({ titleDataLangKey, tableName, contentElements, widt
 
     return { modal_overlay, modal };
 }
+
 
 export function showModal() {
     const modal_overlay = document.getElementById('custom_modal_overlay');
