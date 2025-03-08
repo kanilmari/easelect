@@ -4,7 +4,7 @@ import { filter_table } from '../../../main_app/filterbar/filter.js';
 import { toggle_select_all, update_row_selection } from './selection.js';
 import { initializeInfiniteScroll } from '../../infinite_scroll/infinite_scroll.js';
 import { addEventListenersToCells } from './add_listeners_to_table_cells.js';
-import { handleSortClick } from '../../../main_app/gt_crud/gt_read/handle_sort_and_search.js';
+import { handleSortClick } from '../../../main_app/general_tables/gt_crud/gt_read/handle_sort_and_search.js';
 import { initialize_column_resizing } from './column_resizing.js';
 
 // Pääfunktio, joka luo taulun rakenteen ja asettaa datan

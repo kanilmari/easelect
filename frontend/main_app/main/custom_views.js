@@ -4,7 +4,7 @@
 import { load_permissions } from '../table_permissions/manage_permissions.js';
 import { load_trigger_management } from '../../logical_components/notification_triggers/notification_triggers.js';
 import { load_foreign_keys_view } from '../foreign_keys_view.js';
-import { load_table_creation } from '../table_crud/create_table.js';
+import { load_table_creation } from '../general_tables/table_crud/create_table.js';
 import { load_single_chat_view } from '../../logical_components/ai_features/project_chat/load_single_chat_view.js';
 
 // Huomaa, että group-arvo ("tools") toimii kieliavaimena navigaatiossa.

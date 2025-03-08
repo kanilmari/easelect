@@ -29,7 +29,7 @@ input {
 @media (prefers-color-scheme: dark) {
     input {
         background-color: var(--input_bg_color);
-        color: #fff;
+        color: var(--text_color);
         height: 36px;
     }
 }

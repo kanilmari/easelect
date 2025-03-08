@@ -1,7 +1,7 @@
 // lisaa_tapahtumat_soluihin.js
 
 import { selectCell } from './table_content_utils.js';
-import { editCell } from '../../../main_app/gt_crud/gt_update/edit_cell.js';
+import { editCell } from '../../../main_app/general_tables/gt_crud/gt_update/edit_cell.js';
 
 export function addEventListenersToCells(table, columns, data, dataTypes, table_name) {
     const cells = table.querySelectorAll('tbody td:not(:first-child)');

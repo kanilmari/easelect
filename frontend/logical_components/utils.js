@@ -1,4 +1,4 @@
-// utils.js
+// utilities.js
 
 export function getOrCreateContainer(containerId) {
     let container = document.getElementById(containerId);

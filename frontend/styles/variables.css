@@ -128,6 +128,7 @@ body.light-mode {
     --blended_bg: rgb(0 0 0 / 15%);
     --extreme_bg: rgb(255 255 255);
     --blended_bg_2: color-mix(in srgb, var(--bg_color) 80%, var(--extreme_bg) 20%);
+    --add_row_form_box_shadow: 0 2px 60px 30px rgb(0 0 0 / 30%);
   }
   
   /* Tumma teema */
@@ -151,4 +152,5 @@ body.light-mode {
     --blended_bg: rgb(255 255 255 / 20%);
     --extreme_bg: rgb(0 0 0);
     --blended_bg_2: color-mix(in srgb, var(--bg_color) 80%, var(--extreme_bg) 20%);
+    --add_row_form_box_shadow: 0 2px 60px 30px rgb(0 0 0 / 100%);
   }

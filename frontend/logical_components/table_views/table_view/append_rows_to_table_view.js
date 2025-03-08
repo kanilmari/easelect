@@ -1,7 +1,7 @@
 // append_rows_to_table_view.js
 
 import { selectCell } from './table_content_utils.js';
-import { editCell } from '../../../main_app/gt_crud/gt_update/edit_cell.js';
+import { editCell } from '../../../main_app/general_tables/gt_crud/gt_update/edit_cell.js';
 import { handleKeyDown } from './add_listeners_to_table_cells.js';
 import { createDataCell, createCheckboxCell } from './create_table_structure_and_data.js';
 

@@ -2,7 +2,7 @@
 
 // 1) Tuodaan tarvittavat importit
 import { resetOffset } from '../../logical_components/infinite_scroll/infinite_scroll.js';
-import { applySort } from '../gt_crud/gt_read/apply_sort.js';
+import { applySort } from '../general_tables/gt_crud/gt_read/apply_sort.js';
 import { filter_table } from './filter.js';
 import { create_collapsible_section } from '../../logical_components/collapsible_section.js';
 import { create_chat_ui } from '../../logical_components/ai_features/table_chat/chat.js';
@@ -12,8 +12,8 @@ import {
   createAddRowButton,
   createDeleteSelectedButton,
   createColumnManagementButton
-} from '../gt_toolbar/button_factory.js';
-import { createColumnVisibilityDropdown } from '../gt_toolbar/column_visibility_dropdown.js';
+} from '../general_tables/gt_toolbar/button_factory.js';
+import { createColumnVisibilityDropdown } from '../general_tables/gt_toolbar/column_visibility_dropdown.js';
 
 // TUODAAN MYÖS UUSI VIEW-SELECTOR (halutessasi voit käyttää tätä tai jättää pois):
 import { createNewViewSelector } from '../../logical_components/table_views/draw_view_selector_buttons.js';

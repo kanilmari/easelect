@@ -22,7 +22,7 @@
     width: 100%;
     max-width: 700px;
     box-sizing: border-box;
-    box-shadow: 0 2px 30px 30px rgb(0 0 0 / 60%);
+    box-shadow: var(--add_row_form_box_shadow);
     max-height: 95vh;
     overflow-y: auto;
     position: relative;
