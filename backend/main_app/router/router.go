@@ -89,7 +89,7 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/foreign_keys", foreign_keys.GetForeignKeys, "general_tables.GetForeignKeys")
 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
 
-	// gt_-funktiot ja muut, mutta järjestetään ensin reitit, joita add_row.js kutsuu:
+	// järjestetään reitit, joita add_row.js kutsuu:
 	// --------------------------------------------------------------
 	// Reitit (JS add_row.js) allekkain, samassa järjestyksessä kuin tiedostossa
 	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
