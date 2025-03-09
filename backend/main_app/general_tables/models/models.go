@@ -29,6 +29,9 @@ type ColumnInfo struct {
 	// showKeyOnCard bool
 }
 
+// col.AllowFormInsertionOnSource = allowFormInsertionOnSource
+// col.InputMethodOnSource = inputMethodOnSource.String
+
 type AddRowColumnInfo struct {
 	ColumnName           string `json:"column_name"`
 	DataType             string `json:"data_type"`
@@ -40,5 +43,6 @@ type AddRowColumnInfo struct {
 	ForeignTableName     string `json:"foreign_table_name,omitempty"`
 	ForeignColumnName    string `json:"foreign_column_name,omitempty"`
 	UdtName              string `json:"udt_name"`
-	InputSpecs           string `json:"input_specs"`
+	// Poistettu: AllowFormInsertionOnSource sql.NullBool `json:"allow_form_insertion_on_source"`
+	// InputMethodOnSource string `json:"input_method_on_source"`
 }

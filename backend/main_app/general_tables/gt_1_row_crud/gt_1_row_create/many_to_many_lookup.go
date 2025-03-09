@@ -18,8 +18,7 @@ type ManyToManyInfo struct {
 }
 
 // GetManyToManyTablesHandlerWrapper hakee many-to-many -suhteet
-// dedikoidusta taulusta, joissa päätauluna on annettu main_table_name
-// JA joissa allow_form_insertion on true.
+// dedikoidusta taulusta, joissa päätauluna on annettu main_table_name.
 func GetManyToManyTablesHandlerWrapper(w http.ResponseWriter, r *http.Request) {
 	tableName := r.URL.Query().Get("table")
 	if tableName == "" {
@@ -51,9 +50,9 @@ func GetManyToManyTablesHandler(w http.ResponseWriter, mainTable string) error {
 			ELSE table_a_column 
 		END AS third_table_fk_column
 	FROM foreign_key_relations_m_m
-	WHERE (table_a_name = $1 OR table_b_name = $1)
-	AND allow_form_insertion = true;
+	WHERE (table_a_name = $1 OR table_b_name = $1);
 	`
+
 	rows, err := backend.Db.Query(query, mainTable)
 	if err != nil {
 		return err

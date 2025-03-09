@@ -16,11 +16,10 @@ type OneToManyRelation struct {
 	TargetTableName    string `json:"target_table_name"`
 	TargetColumnName   string `json:"target_column_name"`
 	ReferenceDirection string `json:"reference_direction"`
-	AllowFormInsertion bool   `json:"allow_form_insertion"`
 }
 
 // GetOneToManyRelationsHandlerWrapper hakee foreign_key_relations_1_m -taulusta
-// kaikki 1->m-suhteet, joissa (target_table_name = annettu taulu) AND (allow_form_insertion = true).
+// kaikki 1->m-suhteet, joissa target_table_name = annettu taulu.
 func GetOneToManyRelationsHandlerWrapper(w http.ResponseWriter, r *http.Request) {
 	tableName := r.URL.Query().Get("table")
 	if tableName == "" {
@@ -41,11 +40,9 @@ func GetOneToManyRelationsHandler(w http.ResponseWriter, mainTableName string) e
 			source_column_name,
 			target_table_name,
 			target_column_name,
-			reference_direction,
-			allow_form_insertion
+			reference_direction
 		FROM foreign_key_relations_1_m
 		WHERE target_table_name = $1
-		  AND allow_form_insertion = true
 	`
 
 	rows, err := backend.Db.Query(query, mainTableName)
@@ -63,7 +60,6 @@ func GetOneToManyRelationsHandler(w http.ResponseWriter, mainTableName string) e
 			&rel.TargetTableName,
 			&rel.TargetColumnName,
 			&rel.ReferenceDirection,
-			&rel.AllowFormInsertion,
 		); err != nil {
 			return err
 		}

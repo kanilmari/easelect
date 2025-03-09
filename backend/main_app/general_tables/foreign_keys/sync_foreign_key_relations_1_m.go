@@ -1,3 +1,4 @@
+// sync_foreign_key_relations_1_m.go
 package foreign_keys
 
 import (
@@ -84,18 +85,16 @@ func SyncOneToManyFKConstraints(db *sql.DB) error {
 			source_table_name,
 			source_column_name,
 			target_table_name,
-			target_column_name,
-			allow_form_insertion
+			target_column_name
 		FROM foreign_key_relations_1_m
 	`
 
 	type existingRelation struct {
-		ID                 int64
-		SourceTable        string
-		SourceColumn       string
-		TargetTable        string
-		TargetColumn       string
-		AllowFormInsertion bool
+		ID           int64
+		SourceTable  string
+		SourceColumn string
+		TargetTable  string
+		TargetColumn string
 	}
 
 	rows2, err := db.Query(qryAllCustom)
@@ -114,7 +113,6 @@ func SyncOneToManyFKConstraints(db *sql.DB) error {
 			&er.SourceColumn,
 			&er.TargetTable,
 			&er.TargetColumn,
-			&er.AllowFormInsertion,
 		); err != nil {
 			return fmt.Errorf("cannot scan row from foreign_key_relations_1_m: %w", err)
 		}
@@ -146,15 +144,14 @@ func SyncOneToManyFKConstraints(db *sql.DB) error {
 	for _, c := range toInsert {
 		_, err := db.Exec(`
             INSERT INTO foreign_key_relations_1_m
-            (source_table_name, source_column_name, target_table_name, target_column_name, reference_direction, allow_form_insertion)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            (source_table_name, source_column_name, target_table_name, target_column_name, reference_direction)
+            VALUES ($1, $2, $3, $4, $5)
         `,
 			c.SourceTable,
 			c.SourceColumn,
 			c.TargetTable,
 			c.TargetColumn,
 			fmt.Sprintf("%s->%s", c.SourceTable, c.TargetTable),
-			false, // oletusarvo
 		)
 		if err != nil {
 			return fmt.Errorf(
@@ -233,7 +230,7 @@ func hasSingleColumnPK(db *sql.DB, tableName string) (bool, error) {
 // // and syncs them with the foreign_key_relations_1_m table:
 // //  1. Inserts new rows for any FK constraints that do not exist in the table
 // //  2. Removes rows from the table that no longer exist as a real FK in the DB
-// //  3. Preserves user-managed fields (like allow_form_insertion) on existing rows
+// //  3. Preserves user-managed fields (like allow_form_insertion_on_target) on existing rows
 // //
 // // N.B.: This is a simplified example. In a real-world case, you might want
 // // to do extra checks, e.g. ensure the referenced column is a PRIMARY KEY or UNIQUE
@@ -300,7 +297,7 @@ func hasSingleColumnPK(db *sql.DB, tableName string) (bool, error) {
 // 			source_column_name,
 // 			target_table_name,
 // 			target_column_name,
-// 			allow_form_insertion
+// 			allow_form_insertion_on_target
 // 		FROM foreign_key_relations_1_m
 // 	`
 // 	type existingRelation struct {
@@ -362,10 +359,10 @@ func hasSingleColumnPK(db *sql.DB, tableName string) (bool, error) {
 // 	// 4. Perform the inserts & deletes.
 // 	//    You may want to do this in a transaction. For simplicity, we do it directly.
 // 	for _, c := range toInsert {
-// 		// For new constraints, we might default allow_form_insertion to false (or true).
+// 		// For new constraints, we might default allow_form_insertion_on_target to false (or true).
 // 		_, err := db.Exec(`
 //             INSERT INTO foreign_key_relations_1_m
-//             (source_table_name, source_column_name, target_table_name, target_column_name, reference_direction, allow_form_insertion)
+//             (source_table_name, source_column_name, target_table_name, target_column_name, reference_direction, allow_form_insertion_on_target)
 //             VALUES ($1, $2, $3, $4, $5, $6)
 //         `,
 // 			c.SourceTable, c.SourceColumn,

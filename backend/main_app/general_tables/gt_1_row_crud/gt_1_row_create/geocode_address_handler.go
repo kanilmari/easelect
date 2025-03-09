@@ -4,7 +4,7 @@ package gt_1_row_create
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -62,7 +62,7 @@ func GeocodeAddressHandler(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body)
 		log.Printf("\033[31mvirhe: HERE geocoding not OK: %d, body: %s\033[0m\n",
 			resp.StatusCode, string(bodyBytes))
 		http.Error(w, "Geocoding request failed", http.StatusBadGateway)

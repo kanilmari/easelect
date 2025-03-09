@@ -22,7 +22,7 @@ type mmConstraint struct {
 // SyncManyToManyFKConstraints finds bridging tables (that have exactly two foreign
 // key constraints referencing two distinct tables) and synchronizes them with
 // the foreign_key_relations_m_m table by inserting new relationships and removing
-// obsolete ones. The only user-controlled field here is allow_form_insertion.
+// obsolete ones.
 //
 // Extra filters added here:
 //  1. table name must contain any of: _relation, _join, _liitos, _assoc
@@ -32,7 +32,6 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 	log.Println("[INFO] Synchronizing many-to-many constraints...")
 
 	// 1) Find all tables that have exactly two foreign keys referencing two distinct tables.
-	//    We'll do that by grouping the constraints in JSON, then filtering to exactly 2 entries.
 	query := `
 	WITH all_fk_info AS (
 		SELECT
@@ -97,8 +96,6 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 			return fmt.Errorf("cannot parse bridging fks JSON: %w", err)
 		}
 		if len(fks) != 2 {
-			// Shouldn't happen due to WHERE json_array_length(fks)=2,
-			// but just in case:
 			log.Printf("[INFO] Table %s was skipped because it does not have exactly 2 foreign keys. Found: %d", bridgingTable, len(fks))
 			continue
 		}
@@ -113,7 +110,6 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 			ColBRef:       fks[1].ForeignCol,
 		}
 
-		// Run our extra checks: name, PK columns, total columns, etc.
 		qualified, reason, err2 := isLikelyM2MBridgingTable(db, mm)
 		if err2 != nil {
 			return fmt.Errorf("error checking bridging table %s: %w", bridgingTable, err2)
@@ -134,16 +130,16 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 
 	// 2) Compare with existing rows in foreign_key_relations_m_m
 	type existingRow struct {
-		ID                 int64
-		BridgingTableName  string
-		BridgingColA       string
-		BridgingColB       string
-		TableAName         string
-		TableAColumn       string
-		TableBName         string
-		TableBColumn       string
-		AllowFormInsertion bool
+		ID                int64
+		BridgingTableName string
+		BridgingColA      string
+		BridgingColB      string
+		TableAName        string
+		TableAColumn      string
+		TableBName        string
+		TableBColumn      string
 	}
+
 	getExistingQuery := `
 	SELECT
 		id,
@@ -153,10 +149,10 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 		table_a_name,
 		table_a_column,
 		table_b_name,
-		table_b_column,
-		allow_form_insertion
+		table_b_column
 	FROM foreign_key_relations_m_m
 	`
+
 	rows2, err := db.Query(getExistingQuery)
 	if err != nil {
 		return fmt.Errorf("cannot query foreign_key_relations_m_m: %w", err)
@@ -175,7 +171,6 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 			&er.TableAColumn,
 			&er.TableBName,
 			&er.TableBColumn,
-			&er.AllowFormInsertion,
 		)
 		if err != nil {
 			return fmt.Errorf("cannot scan row from foreign_key_relations_m_m: %w", err)
@@ -208,7 +203,6 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 
 	// 4) Insert new bridging relationships
 	for _, mm := range toInsert {
-		// Default allow_form_insertion = false (change if you prefer)
 		_, err := db.Exec(`
 			INSERT INTO foreign_key_relations_m_m (
 				bridging_table_name,
@@ -217,10 +211,9 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 				table_a_name,
 				table_a_column,
 				table_b_name,
-				table_b_column,
-				allow_form_insertion
+				table_b_column
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 		`,
 			mm.BridgingTable,
 			mm.ColA,
@@ -229,7 +222,6 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 			mm.ColARef,
 			mm.TableB,
 			mm.ColBRef,
-			false,
 		)
 		if err != nil {
 			return fmt.Errorf("insert failed for bridging table %s (colA=%s, colB=%s): %w",
@@ -257,9 +249,9 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 
 // isLikelyM2MBridgingTable checks a bridging table against your 3 extra conditions:
 //
-//	(1) bridging table name contains _relation / _join / _liitos / _assoc
-//	(2) exactly 2 foreign keys that match the entire primary key (the two bridging columns)
-//	(3) max 6 columns total
+//  1. bridging table name contains _relation / _join / _liitos / _assoc
+//  2. exactly 2 foreign keys that match the entire primary key (the two bridging columns)
+//  3. max 6 columns total
 //
 // It returns (bool: qualified, string: reason, error).
 // If qualified==false, reason describes why we skipped it.
@@ -356,7 +348,7 @@ func getPrimaryKeyCols(db *sql.DB, tableName string) ([]string, error) {
 // // SyncManyToManyFKConstraints finds bridging tables (that have exactly two foreign
 // // key constraints referencing two distinct tables) and synchronizes them with
 // // the foreign_key_relations_m_m table by inserting new relationships and removing
-// // obsolete ones. The only user-controlled field here is allow_form_insertion.
+// // obsolete ones. The only user-controlled field here is allow_form_insertion_on_target.
 // //
 // // Adjust as needed for your schema.
 // func SyncManyToManyFKConstraints(db *sql.DB) error {
@@ -485,7 +477,7 @@ func getPrimaryKeyCols(db *sql.DB, tableName string) ([]string, error) {
 // 		table_a_column,
 // 		table_b_name,
 // 		table_b_column,
-// 		allow_form_insertion
+// 		allow_form_insertion_on_target
 // 	FROM foreign_key_relations_m_m
 // 	`
 
@@ -545,7 +537,7 @@ func getPrimaryKeyCols(db *sql.DB, tableName string) ([]string, error) {
 
 // 	// 4) Insert new bridging relationships
 // 	for _, mm := range toInsert {
-// 		// By default, set allow_form_insertion = false (or true if you prefer).
+// 		// By default, set allow_form_insertion_on_target = false (or true if you prefer).
 // 		_, err := db.Exec(`
 // 			INSERT INTO foreign_key_relations_m_m (
 // 				bridging_table_name,
@@ -555,7 +547,7 @@ func getPrimaryKeyCols(db *sql.DB, tableName string) ([]string, error) {
 // 				table_a_column,
 // 				table_b_name,
 // 				table_b_column,
-// 				allow_form_insertion
+// 				allow_form_insertion_on_target
 // 			)
 // 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 // 		`,

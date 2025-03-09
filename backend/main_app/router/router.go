@@ -9,6 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	openai "easelect/backend/logical_components/ai_features"
+	"easelect/backend/logical_components/refresh_file_structure"
+	"easelect/backend/logical_components/vanilla_tree"
+	backend "easelect/backend/main_app"
+	"easelect/backend/main_app/auth"
 	"easelect/backend/main_app/general_tables"
 	"easelect/backend/main_app/general_tables/crud_workflows"
 	"easelect/backend/main_app/general_tables/foreign_keys"
@@ -21,11 +26,6 @@ import (
 	"easelect/backend/main_app/general_tables/gt_3_table_crud/gt_3_table_read"
 	"easelect/backend/main_app/general_tables/table_folders"
 	gt_triggers "easelect/backend/main_app/general_tables/triggers"
-	openai "easelect/backend/logical_components/ai_features"
-	"easelect/backend/logical_components/refresh_file_structure"
-	"easelect/backend/logical_components/vanilla_tree"
-	backend "easelect/backend/main_app"
-	"easelect/backend/main_app/auth"
 	"easelect/backend/main_app/middlewares"
 	e_sessions "easelect/backend/main_app/sessions"
 )
@@ -52,7 +52,7 @@ func tablesHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
 }
 
-// RegisterRoutes tallentaa reittien määritykset.
+// RegisterRoutes tallentaa reittien määritykset
 func RegisterRoutes(frontendDir string, mediaPath string) {
 	localFrontendDir = frontendDir
 
@@ -89,20 +89,21 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/foreign_keys", foreign_keys.GetForeignKeys, "general_tables.GetForeignKeys")
 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
 
-	// gt_-funktiot aakkosjärjestyksessä
+	// gt_-funktiot ja muut, mutta järjestetään ensin reitit, joita add_row.js kutsuu:
+	// --------------------------------------------------------------
+	// Reitit (JS add_row.js) allekkain, samassa järjestyksessä kuin tiedostossa
+	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
+	functionRegisterHandler("/api/get-1m-relations", gt_1_row_create.GetOneToManyRelationsHandlerWrapper, "gt_1_row_create.GetOneToManyRelationsHandlerWrapper")
+	functionRegisterHandler("/api/get-many-to-many", gt_1_row_create.GetManyToManyTablesHandlerWrapper, "gt_1_row_create.GetManyToManyTablesHandlerWrapper")
+	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
 	functionRegisterHandler("/api/add-row", gt_1_row_create.AddRowHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
+	functionRegisterHandler("/api/geocode-address", gt_1_row_create.GeocodeAddressHandler, "gt_1_row_create.GeocodeAddressHandler")
+	// --------------------------------------------------------------
+
+	// gt_-funktiot aakkosjärjestyksessä (muu sisältö)
 	functionRegisterHandler("/api/delete-rows", gt_1_row_delete.DeleteRowsHandlerWrapper, "gt_1_row_delete.DeleteRowsHandlerWrapper")
 	functionRegisterHandler("/api/drop-table", gt_3_table_delete.DropTableHandler, "gt_3_table_delete.DropTableHandler")
 	functionRegisterHandler("/api/fetch-dynamic-children", gt_1_row_read.GetDynamicChildItemsHandler, "gt_1_row_read.GetDynamicChildItemsHandler")
-	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
-
-	// Referencing tables -reitit
-	// functionRegisterHandler("/api/get-referencing-tables", gt_1_row_create.GetReferencingTablesHandlerWrapper, "gt_1_row_create.GetReferencingTablesHandlerWrapper")
-	functionRegisterHandler("/api/get-many-to-many", gt_1_row_create.GetManyToManyTablesHandlerWrapper, "gt_1_row_create.GetManyToManyTablesHandlerWrapper")
-	functionRegisterHandler("/api/get-1m-relations", gt_1_row_create.GetOneToManyRelationsHandlerWrapper, "gt_1_row_create.GetOneToManyRelationsHandlerWrapper")
-	// lisää reitti gt_1_row_create.GeocodeAddressHandler
-	functionRegisterHandler("/api/geocode-address", gt_1_row_create.GeocodeAddressHandler, "gt_1_row_create.GeocodeAddressHandler")
-
 	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_3_table_read.GetTableViewHandlerWrapper")
 	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_1_row_read.GetResultsHandlerWrapper")
 	functionRegisterHandler("/api/get-results-vector", gt_1_row_read.GetResultsVector, "gt_1_row_read.GetResultsVector")
@@ -111,7 +112,6 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/api/system_triggers/list", gt_triggers.GetTriggersHandler, "gt_triggers.GetTriggersHandler")
 	functionRegisterHandler("/api/table-columns/", gt_2_column_crud.GetTableColumnsHandler, "gt_2_column_crud.GetTableColumnsHandler")
 	functionRegisterHandler("/api/update-row", gt_1_row_update.UpdateRowHandlerWrapper, "gt_1_row_update.UpdateRowHandlerWrapper")
-	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
 
 	// Muut reitit aakkosjärjestyksessä
 	functionRegisterHandler("/api/modify-columns", crud_workflows.ModifyColumnsHandler, "crud_workflows.ModifyColumnsHandler")
@@ -375,48 +375,47 @@ func getPackageNameFromHandler(handlerName string) string {
 // 	functionRegisterHandler("/api/update-folder", table_folders.HandleUpdateFolder, "table_folders.HandleUpdateFolder")
 
 // 	// --- Access-kontrolloidut reitit ---
-// 	functionRegisterHandler("/api/tables", general_tables.GetGroupedTables, "general_tables.GetGroupedTables")
-// 	functionRegisterHandler("/api/table-columns/", gt_2_column_crud.GetTableColumnsHandler, "gt_2_column_crud.GetTableColumnsHandler")
-// 	functionRegisterHandler("/api/table-names", general_tables.GetTableNamesHandler, "general_tables.GetTableNamesHandler")
-// 	functionRegisterHandler("/api/tree_data", vanilla_tree.GetTreeDataHandler, "vanilla_tree.GetTreeDataHandler")
-// 	functionRegisterHandler("/api/system_triggers/list", gt_triggers.GetTriggersHandler, "gt_triggers.GetTriggersHandler")
-// 	functionRegisterHandler("/api/system_triggers/create", gt_triggers.CreateTriggerHandler, "gt_triggers.CreateTriggerHandler")
+// 	// general_tables -kutsut aakkosjärjestyksessä
+// 	functionRegisterHandler("/add_foreign_key", foreign_keys.AddForeignKeyHandler, "general_tables.AddForeignKeyHandler")
+// 	functionRegisterHandler("/api/table-names", foreign_keys.GetTableNamesHandler, "general_tables.GetTableNamesHandler")
 // 	functionRegisterHandler("/api/table_permissions", general_tables.PermissionsHandler, "general_tables.PermissionsHandler")
-// 	functionRegisterHandler("/api/modify-columns", crud_workflows.ModifyColumnsHandler, "crud_workflows.ModifyColumnsHandler")
+// 	functionRegisterHandler("/api/tables", general_tables.GetGroupedTables, "general_tables.GetGroupedTables")
+// 	functionRegisterHandler("/delete_foreign_key", foreign_keys.DeleteForeignKeyHandler, "general_tables.DeleteForeignKeyHandler")
+// 	functionRegisterHandler("/foreign_keys", foreign_keys.GetForeignKeys, "general_tables.GetForeignKeys")
+// 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
 
-// 	// --- OpenAI chat endpoint (päivitetty) ---
-// 	// functionRegisterHandler("/openai_chat_sql_handler", openai.OpenaiChatSQLHandler, "openai.OpenaiChatSQLHandler")
-// 	// functionRegisterHandler("/api/execute_gpt_sql", openai.ExecuteGPTSQLHandler, "openai.ExecuteGPTSQLHandler")
+// 	// gt_-funktiot aakkosjärjestyksessä
+// 	functionRegisterHandler("/api/add-row", gt_1_row_create.AddRowHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
+// 	functionRegisterHandler("/api/delete-rows", gt_1_row_delete.DeleteRowsHandlerWrapper, "gt_1_row_delete.DeleteRowsHandlerWrapper")
+// 	functionRegisterHandler("/api/drop-table", gt_3_table_delete.DropTableHandler, "gt_3_table_delete.DropTableHandler")
+// 	functionRegisterHandler("/api/fetch-dynamic-children", gt_1_row_read.GetDynamicChildItemsHandler, "gt_1_row_read.GetDynamicChildItemsHandler")
+// 	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
 
-// 	// CRUD
+// 	// Referencing tables -reitit
+// 	// functionRegisterHandler("/api/get-referencing-tables", gt_1_row_create.GetReferencingTablesHandlerWrapper, "gt_1_row_create.GetReferencingTablesHandlerWrapper")
+// 	functionRegisterHandler("/api/get-many-to-many", gt_1_row_create.GetManyToManyTablesHandlerWrapper, "gt_1_row_create.GetManyToManyTablesHandlerWrapper")
+// 	functionRegisterHandler("/api/get-1m-relations", gt_1_row_create.GetOneToManyRelationsHandlerWrapper, "gt_1_row_create.GetOneToManyRelationsHandlerWrapper")
+// 	// lisää reitti gt_1_row_create.GeocodeAddressHandler
+// 	functionRegisterHandler("/api/geocode-address", gt_1_row_create.GeocodeAddressHandler, "gt_1_row_create.GeocodeAddressHandler")
+
+// 	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_3_table_read.GetTableViewHandlerWrapper")
+// 	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_1_row_read.GetResultsHandlerWrapper")
+// 	functionRegisterHandler("/api/get-results-vector", gt_1_row_read.GetResultsVector, "gt_1_row_read.GetResultsVector")
 // 	functionRegisterHandler("/api/get-row-count", gt_1_row_read.GetRowCountHandlerWrapper, "gt_1_row_read.GetRowCountHandlerWrapper")
+// 	functionRegisterHandler("/api/system_triggers/create", gt_triggers.CreateTriggerHandler, "gt_triggers.CreateTriggerHandler")
+// 	functionRegisterHandler("/api/system_triggers/list", gt_triggers.GetTriggersHandler, "gt_triggers.GetTriggersHandler")
+// 	functionRegisterHandler("/api/table-columns/", gt_2_column_crud.GetTableColumnsHandler, "gt_2_column_crud.GetTableColumnsHandler")
+// 	functionRegisterHandler("/api/update-row", gt_1_row_update.UpdateRowHandlerWrapper, "gt_1_row_update.UpdateRowHandlerWrapper")
+// 	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
 
-// 	// SSE-stream reitti
+// 	// Muut reitit aakkosjärjestyksessä
+// 	functionRegisterHandler("/api/modify-columns", crud_workflows.ModifyColumnsHandler, "crud_workflows.ModifyColumnsHandler")
+// 	functionRegisterHandler("/api/refresh_file_structure", refresh_file_structure.RefreshFileStructureHandler, "refresh_file_structure.RefreshFileStructureHandler")
+// 	functionRegisterHandler("/api/translations", vanilla_tree.GetTranslationsHandler, "vanilla_tree.GetTranslationsHandler")
+// 	functionRegisterHandler("/api/tree_data", vanilla_tree.GetTreeDataHandler, "vanilla_tree.GetTreeDataHandler")
+// 	functionRegisterHandler("/create_table", crud_workflows.CreateTableHandler, "crud_workflows.CreateTableHandler")
 // 	functionRegisterHandler("/openai_chat_stream_handler", openai.OpenaiChatStreamHandler, "openai.OpenaiChatStreamHandler")
 // 	functionRegisterHandler("/openai_code_editor_stream_handler", openai.OpenaiCodeEditorStreamHandler, "openai.OpenaiCodeEditorStreamHandler")
 // 	functionRegisterHandler("/openai_embedding_stream_handler", openai.OpenaiEmbeddingStreamHandler, "openai.OpenaiEmbeddingStreamHandler")
-// 	functionRegisterHandler("/api/get-results-vector", gt_1_row_read.GetResultsVector, "gt_1_row_read.GetResultsVector")
-
-// 	functionRegisterHandler("/api/refresh_file_structure", refresh_file_structure.RefreshFileStructureHandler, "refresh_file_structure.RefreshFileStructureHandler")
-
-// 	functionRegisterHandler("/api/add-row", gt_1_row_create.AddRowHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
-// 	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_1_row_read.GetResultsHandlerWrapper")
-// 	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_3_table_read.GetTableViewHandlerWrapper")
-// 	functionRegisterHandler("/api/fetch-dynamic-children", gt_1_row_read.GetDynamicChildItemsHandler, "gt_1_row_read.GetDynamicChildItemsHandler")
-// 	functionRegisterHandler("/api/update-row", gt_1_row_update.UpdateRowHandlerWrapper, "gt_1_row_update.UpdateRowHandlerWrapper")
-// 	functionRegisterHandler("/api/delete-rows", gt_1_row_delete.DeleteRowsHandlerWrapper, "gt_1_row_delete.DeleteRowsHandlerWrapper")
-// 	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
-
-// 	// Foreign key -reitit
-// 	functionRegisterHandler("/add_foreign_key", general_tables.AddForeignKeyHandler, "general_tables.AddForeignKeyHandler")
-// 	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
-// 	functionRegisterHandler("/foreign_keys", general_tables.GetForeignKeys, "general_tables.GetForeignKeys")
-// 	functionRegisterHandler("/delete_foreign_key", general_tables.DeleteForeignKeyHandler, "general_tables.DeleteForeignKeyHandler")
-
-// 	// Muita
 // 	functionRegisterHandler("/save-usergroup-right", backend.SaveUserGroupRight, "backend.SaveUserGroupRight")
-// 	functionRegisterHandler("/create_table", crud_workflows.CreateTableHandler, "crud_workflows.CreateTableHandler")
-// 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
-// 	functionRegisterHandler("/api/drop-table", gt_3_table_delete.DropTableHandler, "gt_3_table_delete.DropTableHandler")
-// 	functionRegisterHandler("/api/translations", vanilla_tree.GetTranslationsHandler, "vanilla_tree.GetTranslationsHandler")
 // }
