@@ -29,25 +29,24 @@ type ColumnInfo struct {
 	// showKeyOnCard bool
 }
 
-// col.AllowFormInsertionOnSource = allowFormInsertionOnSource
-// col.InputMethodOnSource = inputMethodOnSource.String
-
 type AddRowColumnInfo struct {
-	ColumnName                string `json:"column_name"`
-	DataType                  string `json:"data_type"`
-	IsNullable                string `json:"is_nullable"`
-	ColumnDefault             string `json:"column_default"`
-	IsIdentity                string `json:"is_identity"`
-	GenerationExpression      string `json:"generation_expression"`
-	ForeignTableSchema        string `json:"foreign_table_schema,omitempty"`
-	ForeignTableName          string `json:"foreign_table_name,omitempty"`
-	ForeignColumnName         string `json:"foreign_column_name,omitempty"`
-	UdtName                   string `json:"udt_name"`
-	InsertNewTargetWithSource string `json:"insert_new_target_with_source"`
-	SourceInsertSpecs         string `json:"source_insert_specs"`
+	ColumnName                string       `json:"column_name"`
+	DataType                  string       `json:"data_type"`
+	IsNullable                string       `json:"is_nullable"`
+	ColumnDefault             string       `json:"column_default"`
+	IsIdentity                string       `json:"is_identity"`
+	GenerationExpression      string       `json:"generation_expression"`
+	ForeignTableSchema        string       `json:"foreign_table_schema,omitempty"`
+	ForeignTableName          string       `json:"foreign_table_name,omitempty"`
+	ForeignColumnName         string       `json:"foreign_column_name,omitempty"`
+	UdtName                   string       `json:"udt_name"`
+	InsertNewSourceWithTarget sql.NullBool `json:"insert_new_source_with_target"`
+	InsertNewTargetWithSource sql.NullBool `json:"insert_new_target_with_source"`
+	SourceInsertSpecs         string       `json:"source_insert_specs"`
+	TargetInsertSpecs         string       `json:"target_insert_specs"`
 }
 
-// // models.go 2025-03-10--01-19
+// // models.go 2025-03-11--01-07
 // package models
 
 // import "database/sql"
@@ -82,16 +81,16 @@ type AddRowColumnInfo struct {
 // // col.InputMethodOnSource = inputMethodOnSource.String
 
 // type AddRowColumnInfo struct {
-// 	ColumnName           string `json:"column_name"`
-// 	DataType             string `json:"data_type"`
-// 	IsNullable           string `json:"is_nullable"`
-// 	ColumnDefault        string `json:"column_default"`
-// 	IsIdentity           string `json:"is_identity"`
-// 	GenerationExpression string `json:"generation_expression"`
-// 	ForeignTableSchema   string `json:"foreign_table_schema,omitempty"`
-// 	ForeignTableName     string `json:"foreign_table_name,omitempty"`
-// 	ForeignColumnName    string `json:"foreign_column_name,omitempty"`
-// 	UdtName              string `json:"udt_name"`
-// 	// Poistettu: AllowFormInsertionOnSource sql.NullBool `json:"allow_form_insertion_on_source"`
-// 	// InputMethodOnSource string `json:"input_method_on_source"`
+// 	ColumnName                string `json:"column_name"`
+// 	DataType                  string `json:"data_type"`
+// 	IsNullable                string `json:"is_nullable"`
+// 	ColumnDefault             string `json:"column_default"`
+// 	IsIdentity                string `json:"is_identity"`
+// 	GenerationExpression      string `json:"generation_expression"`
+// 	ForeignTableSchema        string `json:"foreign_table_schema,omitempty"`
+// 	ForeignTableName          string `json:"foreign_table_name,omitempty"`
+// 	ForeignColumnName         string `json:"foreign_column_name,omitempty"`
+// 	UdtName                   string `json:"udt_name"`
+// 	InsertNewTargetWithSource string `json:"insert_new_target_with_source"`
+// 	SourceInsertSpecs         string `json:"source_insert_specs"`
 // }

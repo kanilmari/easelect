@@ -4,7 +4,7 @@ import { initNavbar } from './main_app/navigation/navbar.js';
 import { update_oids_and_table_names } from './main_app/main/update_oids_and_table_names.js';
 import { load_tables } from './main_app/main/load_tables.js';
 import { updateMenuLanguageDisplay } from './logical_components/lang/lang_panel.js';
-import { handle_table_selected_event } from './main_app/navigation/table_selected_listener.js';
+import { handle_table_selected_event } from './main_app/navigation/navigation.js';
 
 // Tarpeellisia lisäimportteja
 import './logical_components/lang/lang.js';

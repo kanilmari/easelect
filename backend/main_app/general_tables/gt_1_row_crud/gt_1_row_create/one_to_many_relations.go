@@ -2,6 +2,7 @@
 package gt_1_row_create
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,11 +12,15 @@ import (
 
 // OneToManyRelation edustaa riviä foreign_key_relations_1_m -taulussa
 type OneToManyRelation struct {
-	SourceTableName    string `json:"source_table_name"`
-	SourceColumnName   string `json:"source_column_name"`
-	TargetTableName    string `json:"target_table_name"`
-	TargetColumnName   string `json:"target_column_name"`
-	ReferenceDirection string `json:"reference_direction"`
+	SourceTableName           string       `json:"source_table_name"`
+	SourceColumnName          string       `json:"source_column_name"`
+	TargetTableName           string       `json:"target_table_name"`
+	TargetColumnName          string       `json:"target_column_name"`
+	InsertNewTargetWithSource sql.NullBool `json:"insert_new_target_with_source"`
+	InsertNewSourceWithTarget sql.NullBool `json:"insert_new_source_with_target"`
+	SourceInsertSpecs         string       `json:"source_insert_specs"`
+	TargetInsertSpecs         string       `json:"target_insert_specs"`
+	ReferenceDirection        string       `json:"reference_direction"`
 }
 
 // GetOneToManyRelationsHandlerWrapper hakee foreign_key_relations_1_m -taulusta
@@ -36,11 +41,15 @@ func GetOneToManyRelationsHandlerWrapper(w http.ResponseWriter, r *http.Request)
 func GetOneToManyRelationsHandler(w http.ResponseWriter, mainTableName string) error {
 	query := `
 		SELECT
-			source_table_name,
-			source_column_name,
-			target_table_name,
-			target_column_name,
-			reference_direction
+		source_table_name,
+		source_column_name,
+		target_table_name,
+		target_column_name,
+		insert_new_target_with_source,
+		insert_new_source_with_target,
+		source_insert_specs,
+		target_insert_specs,
+		reference_direction
 		FROM foreign_key_relations_1_m
 		WHERE target_table_name = $1
 	`
@@ -59,6 +68,10 @@ func GetOneToManyRelationsHandler(w http.ResponseWriter, mainTableName string) e
 			&rel.SourceColumnName,
 			&rel.TargetTableName,
 			&rel.TargetColumnName,
+			&rel.InsertNewTargetWithSource,
+			&rel.InsertNewSourceWithTarget,
+			&rel.SourceInsertSpecs,
+			&rel.TargetInsertSpecs,
 			&rel.ReferenceDirection,
 		); err != nil {
 			return err
@@ -69,7 +82,7 @@ func GetOneToManyRelationsHandler(w http.ResponseWriter, mainTableName string) e
 	return json.NewEncoder(w).Encode(results)
 }
 
-// // one_to_many_relations.go 2025-03-10--01-19
+// // one_to_many_relations.go 2025-03-11--01-07
 // package gt_1_row_create
 
 // import (

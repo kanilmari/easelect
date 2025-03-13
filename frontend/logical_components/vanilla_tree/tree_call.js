@@ -1,11 +1,8 @@
 // tree_call.js
 
 import { render_tree } from './vanilla_tree.js';
-// Jos haluat navigointifunktioita, esim.:
-// import { get_load_info } from '../../main_app/navigation/nav_utils.js';
 import {custom_views} from '../../main_app/main/custom_views.js';
 import { handle_all_navigation } from '../../main_app/navigation/navigation.js';
-// import { handle_navigation } from '../../main_app/navigation/navigation.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -119,26 +116,32 @@ document.addEventListener('DOMContentLoaded', () => {
           return response.json();
       })
       .then(async (data) => {
-          // 1) Piirretään ensin nappi-puu #nav_tree
+
+          // *** UUSI KOODI: kerätään taulujen table_uid:t ja tallennetaan localStorageen
+          const tableUidsMap = {};
+          data.forEach((node) => {
+              if (node.table_uid) {
+                  // Käytetään taulun nimenä avainta, arvona table_uid
+                  tableUidsMap[node.name] = node.table_uid;
+              }
+          });
+          localStorage.setItem('table_uids', JSON.stringify(tableUidsMap));
+
+          // 1) Piirretään nappipuu
           await render_tree(data, {
               container_id: 'nav_tree',
               id_suffix: '_nav',
-              render_mode: 'button',      // Nappilogiikka
-              checkbox_mode: 'none',      // Ei checkboxeja
+              render_mode: 'button',
+              checkbox_mode: 'none',
               use_icons: false,
               populate_checkbox_selection: false,
               max_recursion_depth: 32,
-              tree_model: 'flat',         // Data on "flat" + parent_id
+              tree_model: 'flat',
               initial_open_level: 0,
               show_node_count: false,
               show_search: true,
               use_data_lang_key: true,
               button_action_function: async (nodeData) => {
-                  // Esim. klikatessa lehteä
-                //   console.log("Klikkasit solmua:", nodeData);
-                  // Halutessasi ohjaa navigointiin:
-                //   const { loadFunction, containerId } = get_load_info(nodeData.name, custom_views);
-                //   await handle_navigation(nodeData.name, containerId, loadFunction);
                   await handle_all_navigation(nodeData.name, custom_views);
                   localStorage.setItem('selected_table', nodeData.name);
               }
@@ -147,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // 2) Kun puu on valmis, otetaan drag & drop käyttöön
           await enable_drag_and_drop_for_folders_and_tables();
 
-          // 3) (Valinnaista) Piirretään toinen puu "table_selector_tree" checkbox-tilalla
+          // 3) Piirretään toinen puu "table_selector_tree" checkbox-tilalla
           await render_tree(data, {
               container_id: 'table_selector_tree',
               id_suffix: '_table_rights',
@@ -162,10 +165,65 @@ document.addEventListener('DOMContentLoaded', () => {
               show_search: true,
               use_data_lang_key: true
           });
-
       })
       .catch(error => {
           console.error("Virhe:", error);
       });
 
 });
+    // fetch('/api/tree_data')
+    //   .then(response => {
+    //       if (!response.ok) {
+    //           throw new Error("Virhe datan haussa");
+    //       }
+    //       return response.json();
+    //   })
+    //   .then(async (data) => {
+    //       // 1) Piirretään ensin nappi-puu #nav_tree
+    //       await render_tree(data, {
+    //           container_id: 'nav_tree',
+    //           id_suffix: '_nav',
+    //           render_mode: 'button',      // Nappilogiikka
+    //           checkbox_mode: 'none',      // Ei checkboxeja
+    //           use_icons: false,
+    //           populate_checkbox_selection: false,
+    //           max_recursion_depth: 32,
+    //           tree_model: 'flat',         // Data on "flat" + parent_id
+    //           initial_open_level: 0,
+    //           show_node_count: false,
+    //           show_search: true,
+    //           use_data_lang_key: true,
+    //           button_action_function: async (nodeData) => {
+    //               // Esim. klikatessa lehteä
+    //             //   console.log("Klikkasit solmua:", nodeData);
+    //               // Halutessasi ohjaa navigointiin:
+    //             //   const { loadFunction, containerId } = get_load_info(nodeData.name, custom_views);
+    //             //   await handle_navigation(nodeData.name, containerId, loadFunction);
+    //               await handle_all_navigation(nodeData.name, custom_views);
+    //               localStorage.setItem('selected_table', nodeData.name);
+    //           }
+    //       });
+
+    //       // 2) Kun puu on valmis, otetaan drag & drop käyttöön
+    //       await enable_drag_and_drop_for_folders_and_tables();
+
+    //       // 3) (Valinnaista) Piirretään toinen puu "table_selector_tree" checkbox-tilalla
+    //       await render_tree(data, {
+    //           container_id: 'table_selector_tree',
+    //           id_suffix: '_table_rights',
+    //           render_mode: 'checkbox',
+    //           checkbox_mode: 'all',
+    //           use_icons: false,
+    //           populate_checkbox_selection: false,
+    //           max_recursion_depth: 32,
+    //           tree_model: 'flat',
+    //           initial_open_level: 1,
+    //           show_node_count: true,
+    //           show_search: true,
+    //           use_data_lang_key: true
+    //       });
+
+    //   })
+    //   .catch(error => {
+    //       console.error("Virhe:", error);
+    //   });

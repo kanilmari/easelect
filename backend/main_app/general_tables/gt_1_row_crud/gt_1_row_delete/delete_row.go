@@ -13,6 +13,15 @@ import (
 	"github.com/lib/pq"
 )
 
+func DeleteRowsHandlerWrapper(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("table")
+	if tableName == "" {
+		http.Error(w, "table-parametri puuttuu", http.StatusBadRequest)
+		return
+	}
+	DeleteRowsHandler(w, r, tableName)
+}
+
 func DeleteRowsHandler(w http.ResponseWriter, r *http.Request, table_name string) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Metodi ei ole sallittu", http.StatusMethodNotAllowed)

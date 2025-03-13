@@ -91,12 +91,12 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 
 	// järjestetään reitit, joita add_row.js kutsuu:
 	// --------------------------------------------------------------
-	// Reitit (JS add_row.js) allekkain, samassa järjestyksessä kuin tiedostossa
+	// router.go: Reitit (JS add_row.js)...
 	functionRegisterHandler("/api/get-columns", gt_1_row_create.GetAddRowColumnsHandlerWrapper, "gt_1_row_create.GetAddRowColumnsHandlerWrapper")
 	functionRegisterHandler("/api/get-1m-relations", gt_1_row_create.GetOneToManyRelationsHandlerWrapper, "gt_1_row_create.GetOneToManyRelationsHandlerWrapper")
 	functionRegisterHandler("/api/get-many-to-many", gt_1_row_create.GetManyToManyTablesHandlerWrapper, "gt_1_row_create.GetManyToManyTablesHandlerWrapper")
 	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
-	functionRegisterHandler("/api/add-row", gt_1_row_create.AddRowHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
+	functionRegisterHandler("/api/add-row-multipart", gt_1_row_create.AddRowMultipartHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
 	functionRegisterHandler("/api/geocode-address", gt_1_row_create.GeocodeAddressHandler, "gt_1_row_create.GeocodeAddressHandler")
 	// --------------------------------------------------------------
 

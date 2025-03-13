@@ -12,11 +12,13 @@ import (
 
 // TreeNode edustaa puun solmua. db_id on varsinainen numeroinen ID tietokannassa,
 // kun taas id on "näyttö-ID" (esim. "f_6" tai "t_testitaulu4").
+// TreeNode edustaa puun solmua.
 type TreeNode struct {
-	ID       string `json:"id"`        // esim. "f_6", "t_testitaulu4"
-	Name     string `json:"name"`      // Ihmislukuisempi otsikko
-	ParentID string `json:"parent_id"` // esim. "f_7" tai "null"
-	DbID     int    `json:"db_id"`     // oikea integer-ID tietokantaan
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	ParentID string `json:"parent_id"`
+	DbID     int    `json:"db_id"`
+	TableUID string `json:"table_uid,omitempty"`
 }
 
 // GetTreeDataHandler hakee kansioiden ja taulujen tiedot puumaisesti
@@ -43,23 +45,25 @@ func GetTreeDataHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// ParentID on merkkijonona "f_<numero>" tai "null"
 		parentIDStr := "null"
 		if folderParent.Valid {
 			parentIDStr = fmt.Sprintf("f_%d", folderParent.Int64)
 		}
 
-		// Jokainen kansio saa "f_X" ID:n, ja numeric db_id on folderID.
 		nodes = append(nodes, TreeNode{
 			ID:       fmt.Sprintf("f_%d", folderID),
 			Name:     folderName,
 			ParentID: parentIDStr,
-			DbID:     folderID, // varsinainen numeerinen ID
+			DbID:     folderID,
 		})
 	}
 
 	rowsTables, err := backend.Db.Query(`
-        SELECT id, table_name, folder_id
+        SELECT 
+          id, 
+          table_name,
+          table_uid,
+          folder_id
         FROM system_db_tables
         ORDER BY table_name
     `)
@@ -71,30 +75,28 @@ func GetTreeDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	for rowsTables.Next() {
 		var tableID int
-		var tableName string
+		var tableName, tableUID string
 		var folderID sql.NullInt64
 
-		if err := rowsTables.Scan(&tableID, &tableName, &folderID); err != nil {
+		if err := rowsTables.Scan(&tableID, &tableName, &tableUID, &folderID); err != nil {
 			http.Error(w, fmt.Errorf("virhe taulurivin lukemisessa: %w", err).Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Taulukolle parentID on kansio "f_X" tai "null"
 		parentIDStr := "null"
 		if folderID.Valid {
 			parentIDStr = fmt.Sprintf("f_%d", folderID.Int64)
 		}
 
-		// Jokainen taulu saa "t_<taulunNimi>" ID:n, ja numeric db_id on tableID (system_db_tables.id).
 		nodes = append(nodes, TreeNode{
 			ID:       "t_" + tableName,
 			Name:     tableName,
 			ParentID: parentIDStr,
 			DbID:     tableID,
+			TableUID: tableUID, // tallennetaan uusi kenttä
 		})
 	}
 
-	// Muodostetaan JSON
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(nodes); err != nil {
 		http.Error(w, fmt.Errorf("virhe JSON-koodauksessa: %w", err).Error(), http.StatusInternalServerError)

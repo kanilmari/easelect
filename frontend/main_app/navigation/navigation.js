@@ -1,6 +1,12 @@
 // navigation.js
 
-import { get_load_info } from './nav_utils.js';
+import { load_table } from './load_table.js';
+import { custom_views } from '../main/custom_views.js';
+
+export async function handle_table_selected_event(event) {
+    const selected_table_name = event.detail.tableName;
+    await handle_all_navigation(selected_table_name, custom_views);
+}
 
 const MAX_RECENT_TABS = 5;
 
@@ -234,5 +240,26 @@ function update_active_heading(groupName) {
   const active_heading = document.querySelector(`.collapsible[data-group="${groupName}"]`);
   if (active_heading) {
     active_heading.classList.add('child-active');
+  }
+}
+
+/**
+ * Palauttaa customView:n tai "normaalin" taulun loadFunctionin ja containerId:n.
+ * @param {string} name - Taulun tai customView’n nimi
+ * @param {Array} custom_views - custom_views-taulukko
+ */
+export function get_load_info(name, custom_views) {
+  const custom_view = custom_views.find(view => view.name === name);
+  if (custom_view) {
+      return {
+          loadFunction: custom_view.loadFunction,
+          containerId: custom_view.containerId
+      };
+  } else {
+      // Oletus: tavallisen taulun lukufunktio
+      return {
+          loadFunction: () => load_table(name),
+          containerId: `${name}_container`
+      };
   }
 }

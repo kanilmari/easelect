@@ -97,7 +97,9 @@ async function fetchOneToManyRelations(tableName) {
       }
       return [];
     }
-    return await response.json();
+    const data = await response.json();
+    console.log('1->m-suhteet backendistä:', data); // Lisätty lokitus
+    return data;
   } catch (error) {
     if (debug) {
       console.debug(`virhe haettaessa 1->m-suhteita taululle ${tableName}:`, error);
@@ -297,47 +299,73 @@ function buildRegularField(form, table_name, column) {
 /** Rakentaa 1->m-lomakesektion (lapsitaulut) */
 function buildOneToManySection(form, oneToManyRelations) {
   for (const ref of oneToManyRelations) {
+    console.log(`Suhteen ${ref.source_table_name}->${ref.target_table_name} insert_new_source_with_target:`, JSON.stringify(ref.insert_new_source_with_target));
+    if (ref.insert_new_source_with_target && ref.insert_new_source_with_target.Bool === false) {
+      console.log(`Ohitetaan suhde ${ref.source_table_name}->${ref.target_table_name}, Bool on false`);
+      continue;
+    }
+    
     // Haetaan lapsitaulun sarakkeet
     fetch(`/api/get-columns?table=${ref.source_table_name}`)
       .then(resp => {
-        if (!resp.ok) throw new Error(`http error: ${resp.status}`);
+        if (!resp.ok) {
+          throw new Error(`http error: ${resp.status}`);
+        }
         return resp.json();
       })
       .then(childColumns => {
-        // Poistetaan se sarake, joka viittaa pääriviin (ref.source_column_name)
+        // Poistetaan sarake, joka viittaa päärivin viitteeseen
         childColumns = childColumns.filter(cc => cc.column_name !== ref.source_column_name);
+        
+        // Selvitetään target_insert_specs
+        let targetInsertSpecs = null;
+        try {
+          if (ref.target_insert_specs) {
+            targetInsertSpecs = JSON.parse(ref.target_insert_specs);
+          }
+        } catch (parseErr) {
+          console.error('virhe target_insert_specs JSON-parsinnassa:', parseErr);
+        }
+        const fileUploadSpec = targetInsertSpecs?.file_upload || null;
+        
+        // Jos file upload on käytössä, poista automaattisesti luotava tiedostonimen syötekenttä
+        if (fileUploadSpec && fileUploadSpec.enabled && fileUploadSpec.filename_column) {
+          childColumns = childColumns.filter(cc => cc.column_name !== fileUploadSpec.filename_column);
+        }
+        
         if (childColumns.length > 0) {
           const fieldset = document.createElement('fieldset');
           fieldset.style.marginTop = '20px';
+          
           const legend = document.createElement('legend');
           legend.textContent = `Lisää aliobjekti (1-m): ${ref.source_table_name}`;
           fieldset.appendChild(legend);
-
-          // Lapsilomakkeen state
+          
+          // Lapsilomakkeen tila
           const childObjectState = {
             tableName: ref.source_table_name,
             referencingColumn: ref.source_column_name,
             data: {},
+            fileUploadSpec: fileUploadSpec // Tallennetaan speksit tilaan
           };
           modal_form_state['_childRowsArray'].push(childObjectState);
-
-          // Rakennetaan lapsen sarakkeet
+          
+          // Rakennetaan lapsen kentät
           for (const ccol of childColumns) {
             const label = document.createElement('label');
             label.textContent = ccol.column_name;
             label.htmlFor = `child-${ref.source_table_name}-${ccol.column_name}`;
             label.style.margin = '10px 0 5px';
-
-            const data_type_lower = ccol.data_type.toLowerCase();
-
-            if (data_type_lower.includes('geometry') && ccol.column_name.toLowerCase() === 'position') {
+            
+            const dataTypeLower = ccol.data_type.toLowerCase();
+            if (dataTypeLower.includes('geometry') && ccol.column_name.toLowerCase() === 'position') {
               buildChildGeometryField(fieldset, ccol, childObjectState);
             } else {
               let childInput;
               if (
-                data_type_lower === 'text' ||
-                data_type_lower.includes('varchar') ||
-                data_type_lower.startsWith('character varying')
+                dataTypeLower === 'text' ||
+                dataTypeLower.includes('varchar') ||
+                dataTypeLower.startsWith('character varying')
               ) {
                 childInput = document.createElement('textarea');
                 childInput.rows = 1;
@@ -350,15 +378,21 @@ function buildOneToManySection(form, oneToManyRelations) {
               childInput.style.marginBottom = '5px';
               childInput.style.border = '1px solid var(--border_color)';
               childInput.style.borderRadius = '4px';
-
+              
               childInput.addEventListener('input', (e) => {
                 childObjectState.data[ccol.column_name] = e.target.value;
               });
-
+              
               fieldset.appendChild(label);
               fieldset.appendChild(childInput);
             }
           }
+          
+          // Jos file_upload on käytössä, lisätään tiedoston valintakenttä
+          if (fileUploadSpec?.enabled) {
+            buildFileUploadField(fieldset, fileUploadSpec, childObjectState);
+          }
+          
           form.appendChild(fieldset);
         }
       })
@@ -366,6 +400,35 @@ function buildOneToManySection(form, oneToManyRelations) {
         console.error('virhe lapsitaulun sarakkeiden haussa:', err);
       });
   }
+}
+
+
+function buildFileUploadField(fieldset, fileUploadSpec, childObjectState) {
+  const label = document.createElement('label');
+  label.textContent = 'Valitse tiedosto';
+  label.style.margin = '10px 0 5px';
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = fileUploadSpec.allowed_file_types.map(ext => `.${ext}`).join(',');
+  fileInput.required = true;
+  fileInput.style.marginBottom = '10px';
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file && file.size / (1024 * 1024) > fileUploadSpec.max_file_size_mb) {
+      alert(`Tiedoston maksimikoko on ${fileUploadSpec.max_file_size_mb} MB.`);
+      fileInput.value = '';
+      return;
+    }
+    // Talletetaan lapsen "data" → filename
+    childObjectState.data[fileUploadSpec.filename_column] = file.name;
+    // Tallennetaan varsinainen File-olio omaan muuttujaan (EI JSONiin)
+    childObjectState._actualFileObject = file;
+  });
+
+  fieldset.appendChild(label);
+  fieldset.appendChild(fileInput);
 }
 
 /** Lisää lomakkeen alalaitaan Peruuta- ja Lisää-painikkeet */
@@ -435,24 +498,40 @@ function get_input_type(data_type) {
 
 /** Lomakkeen submit: lähetetään pään data, lapsidatat ja M2M-liitokset backendille */
 async function submit_new_row(table_name, form, columns) {
-  const form_data = new FormData(form);
-  const data = {};
+  // Luodaan FormData. Emme aseta Content-Type -otsikkoa itse,
+  // koska se määräytyy multipart/form-data -rajalla automaattisesti.
+  const formData = new FormData();
 
-  // 1) Pään taulun sarakkeet
+  // Rakennetaan pään taulun data JSONiin
+  const mainData = {};
   columns.forEach(column => {
-    let value = form_data.get(column.column_name);
+    let value = form.elements[column.column_name]?.value ?? '';
     if (column.data_type.toLowerCase() === 'boolean') {
       value = form.elements[column.column_name].checked;
     }
-    data[column.column_name] = value;
+    mainData[column.column_name] = value;
   });
 
-  // 2) Lapsidatat
+  // Lisätään childRows
+  let childRowsToSend = [];
   if (modal_form_state['_childRowsArray'] && modal_form_state['_childRowsArray'].length > 0) {
-    data['_childRows'] = modal_form_state['_childRowsArray'];
+    // Käydään jokainen lapsi-objekti läpi
+    modal_form_state['_childRowsArray'].forEach((child, index) => {
+      // Kopioidaan childin data, jotta voimme poistaa
+      // `_actualFileObject` ennen JSON-koodausta
+      const safeChild = {...child};
+      if (safeChild.data) {
+        // Ei tallenneta mitään `_file`-tyyppistä map-olioita JSONiin
+        // Pelkkä filename pysyy `safeChild.data.filename`.
+      }
+      childRowsToSend.push(safeChild);
+    });
+  }
+  if (childRowsToSend.length > 0) {
+    mainData['_childRows'] = childRowsToSend;
   }
 
-  // 3) Monesta->moneen
+  // Jos on many-to-many-dataa, lisätään sekin
   let finalM2M = [];
   if (modal_form_state['_manyToManyRows'] && modal_form_state['_manyToManyRows'].length > 0) {
     for (let m2m of modal_form_state['_manyToManyRows']) {
@@ -492,29 +571,43 @@ async function submit_new_row(table_name, form, columns) {
     }
   }
   if (finalM2M.length > 0) {
-    data['_manyToMany'] = finalM2M;
+    mainData['_manyToMany'] = finalM2M;
   }
 
-  // Lähetetään data palvelimelle
+  // Muutetaan mainData stringiksi
+  const mainDataJSON = JSON.stringify(mainData);
+
+  // Lisätään se FormDataan
+  formData.append('jsonPayload', mainDataJSON);
+
+  // 2) Lisätään varsinaiset tiedosto-objektit
+  //    Nimetään ne esim. file_child_<index> -muodossa
+  childRowsToSend.forEach((child, index) => {
+    if (child._actualFileObject) {
+      formData.append(`file_child_${index}`, child._actualFileObject);
+    }
+  });
+
+  // Lähetetään formData (HUOM! Ei content-type -otsikkoa manuaalisesti!)
   try {
-    const response = await fetch(`/api/add-row?table=${table_name}`, {
+    const response = await fetch(`/api/add-row-multipart?table=${table_name}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: formData
     });
 
-    if (response.ok) {
-      alert('Rivi lisätty onnistuneesti!');
-      hideModal();
-      modal_form_state = {};
-      await reload_table(table_name);
-    } else {
+    if (!response.ok) {
       const error_data = await response.json();
-      alert(`Virhe uuden rivin lisäämisessä: ${error_data.message || 'Tuntematon virhe.'}`);
+      alert(`Virhe: ${error_data.message || response.statusText}`);
+      return;
     }
+
+    alert('Rivi lisätty onnistuneesti!');
+    hideModal();
+    modal_form_state = {};
+    await reload_table(table_name);
   } catch (error) {
-    console.error('virhe uuden rivin lisäämisessä:', error);
-    alert('virhe uuden rivin lisäämisessä.');
+    console.error('virhe uuden rivin lisäämisessä (multipart):', error);
+    alert('virhe uuden rivin lisäämisessä (multipart).');
   }
 }
 
