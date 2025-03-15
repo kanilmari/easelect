@@ -1,0 +1,125 @@
+/* Style.css */
+/* .icon svg,
+.toggle svg {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.icon {
+    transform: translateY(1px);
+}
+
+.children {
+    padding-left: 23px;
+
+    transition: max-height 0.5s ease-in-out;
+}
+
+
+.children.visible {
+    display: block;
+}
+
+.node > span, .node > .icon, .node > input[type="checkbox"], .node > .toggle {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.node > input[type="checkbox"] {
+    margin-right: 7px;
+}
+
+.node > .icon {
+    margin-right: 5px;
+}
+
+.node > .toggle {
+    transform: rotate(-90deg);
+    margin-right: 5px;
+    transform-origin: center;
+}
+
+.node > .toggle.rotated {
+    transform: rotate(0deg);
+}
+
+.node {
+    width: fit-content;
+    cursor: pointer;
+    padding-left: 2px;
+}
+ */
+
+
+ /* Style.css */
+
+/* Rivi, jolla node-elementin sisältö näytetään yhdessä rivissä */
+.node-row {
+    display: flex;
+    align-items: center;
+}
+
+/* Nuolen ja ikonin koko ja kursori */
+.node-row .toggle svg,
+.node-row .icon svg {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.node-row > .toggle {
+    /* transform: rotate(0deg) translateX(-2px); */
+    transform: rotate(0deg);
+    /* transition: transform 0.2s ease; */
+    margin-top: 2px;
+    margin-right: 2px;
+    transform-origin: center;
+}
+
+.node-row > .toggle.rotated {
+    /* transform: rotate(90deg); */
+    transform: rotate(90deg) translateX(-2.5px) translateY(0);
+
+}
+
+/* Ikoni hieman alas, jos tarvitaan */
+.node-row .icon {
+    transform: translateY(1px);
+    /* margin-right: 5px; */
+}
+
+/* Teksti ja checkbox rivillä */
+.node-row span,
+.node-row input[type="checkbox"] {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.node-row input[type="checkbox"] {
+    margin-right: 7px;
+}
+
+/* Lapsisolmuille sisennys */
+.children {
+    padding-left: 23px;
+    /* transition: max-height 0.25s ease-in-out; */
+}
+
+.children.visible {
+    display: block;
+}
+
+/* Node-konteksti, width: fit-content voi säilyä 
+   mutta varmista että ympäristö tukee sitä. */
+.node {
+    width: fit-content;
+    cursor: pointer;
+    padding-left: 2px;
+}
+
+
+
+.tree-container button {
+    margin: 2px 0;
+}

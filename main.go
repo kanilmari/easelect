@@ -9,15 +9,15 @@ import (
 	"os"
 	"path/filepath"
 
-	backend "easelect/backend/main_app"
-	"easelect/backend/main_app/auth"
-	"easelect/backend/main_app/general_tables"
-	"easelect/backend/main_app/general_tables/crud_workflows"
-	"easelect/backend/main_app/general_tables/foreign_keys"
-	"easelect/backend/main_app/middlewares"
-	"easelect/backend/main_app/router"
+	backend "easelect/backend/core_components"
+	"easelect/backend/core_components/auth"
+	"easelect/backend/core_components/general_tables"
+	"easelect/backend/core_components/general_tables/crud_workflows"
+	"easelect/backend/core_components/general_tables/foreign_keys"
+	"easelect/backend/core_components/middlewares"
+	"easelect/backend/core_components/router"
 
-	e_sessions "easelect/backend/main_app/sessions"
+	e_sessions "easelect/backend/core_components/sessions"
 
 	"github.com/joho/godotenv"
 )

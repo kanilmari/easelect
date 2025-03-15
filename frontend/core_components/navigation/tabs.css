@@ -1,0 +1,21 @@
+.navtablinks {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0 3px;
+    position: relative;
+  }
+  /* .navtablinks.active {
+    outline: 2px solid blue;
+  } */
+  .svg-container {
+    width: 250px;
+    height: 63px;
+  }
+  .tab_button_text {
+    position: absolute;
+    left: 50px;
+    top: 21px;
+    font-size: 16px;
+  }

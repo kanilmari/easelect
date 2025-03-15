@@ -17,23 +17,23 @@
 
 /* import  logical_components  vanilla_tree vanilla_tree.css */
 
-@import url("../logical_components/vanilla_tree/vanilla_tree.css");
+@import url("../common_components/vanilla_tree/vanilla_tree.css");
 
 /* import logical_components/windows/windows.css */
 
-@import url("../logical_components/windows/windows.css");
+@import url("../common_components/windows/windows.css");
 
 /* /logical_components/vanilla_dropdown/vanilla_dropdown.css */
 
-@import url("../logical_components/vanilla_dropdown/vanilla_dropdown.css");
+@import url("../common_components/vanilla_dropdown/vanilla_dropdown.css");
 
 /* /logical_components/notification_triggers/add_notification.css */
 
-@import url("../logical_components/notification_triggers/add_notification.css");
+@import url("../core_components/notification_triggers/add_notification.css");
 
 /* /navbar/lang_panel/lang_panel.css */
 
-@import url("../logical_components/lang/lang_panel.css");
+@import url("../core_components/lang/lang_panel.css");
 
 
 
@@ -50,10 +50,10 @@
 @import url("./html_table_views/cards_view/card_view.css");
 
 
-/* @import url("../logical_components/table_views/card_view/cards.css"); */
-@import url("../logical_components/table_views/card_view/cards.css");
-@import url("../logical_components/table_views/table_view/cells.css");
+/* @import url("../core_components/table_views/card_view/cards.css"); */
+@import url("../core_components/table_views/card_view/cards.css");
+@import url("../core_components/table_views/table_view/cells.css");
 
-@import url("../main_app/navigation/tabs.css");
+@import url("../core_components/navigation/tabs.css");
 
-@import url("../logical_components/table_views/styles.css");
+@import url("../core_components/table_views/styles.css");

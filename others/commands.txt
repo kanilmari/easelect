@@ -12,3 +12,4 @@ node ./frontend/check_js_imports2.js ./frontend/main.js --exclude=others/**,fron
 # Check css imports with manual script
 node .\frontend\css\check_css_imports.js .\frontend\css\imports.css
 node .\frontend\css\check_css_imports.js .\frontend\css\imports.css --fix-imports
+node ./frontend/styles/check_css_imports.js ./frontend/styles/imports.css --fix-imports

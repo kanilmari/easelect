@@ -1,18 +1,18 @@
 // main.js
 
-import { initNavbar } from './main_app/navigation/navbar.js';
-import { update_oids_and_table_names } from './main_app/main/update_oids_and_table_names.js';
-import { load_tables } from './main_app/main/load_tables.js';
-import { updateMenuLanguageDisplay } from './logical_components/lang/lang_panel.js';
-import { handle_table_selected_event } from './main_app/navigation/navigation.js';
+import { initNavbar } from './core_components/navigation/navbar.js';
+import { update_oids_and_table_names } from './core_components/main/update_oids_and_table_names.js';
+import { load_tables } from './core_components/main/load_tables.js';
+import { updateMenuLanguageDisplay } from './core_components/lang/lang_panel.js';
+import { handle_table_selected_event } from './core_components/navigation/navigation.js';
 
 // Tarpeellisia lisäimportteja
-import './logical_components/lang/lang.js';
-import './logical_components/vanilla_tree/tree_call.js';
-import './logical_components/table_views/table_view/table_column_resizer.js';
-import './logical_components/print_svgs/logout_svg.js';
-import './main_app/navigation/tabs.js';
-import './logical_components/theme.js';
+import './core_components/lang/lang.js';
+import './common_components/vanilla_tree/tree_call.js';
+import './core_components/table_views/table_view/table_column_resizer.js';
+import './common_components/print_svgs/logout_svg.js';
+import './core_components/navigation/tabs.js';
+import './core_components/theme.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const current_path = window.location.pathname; 
