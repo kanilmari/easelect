@@ -7,8 +7,9 @@ export function initNavbar() {
   const navbar = document.getElementById('navbar');
   const menuButton = document.getElementById('menuButton');
   const overlay = document.getElementById('overlay');
+  const tabsContainer = document.getElementById('tabs_container');
 
-  if (!navbar || !menuButton || !overlay) {
+  if (!navbar || !menuButton || !overlay || !tabsContainer) {
     console.warn('Navbar elements not found in DOM');
     return;
   }
@@ -26,9 +27,11 @@ export function initNavbar() {
   if (navVisible) {
     navbar.classList.remove('collapsed');
     menuButton.classList.add('inset');
+    tabsContainer.classList.remove('navbar_hidden');
   } else {
     navbar.classList.add('collapsed');
     menuButton.classList.remove('inset');
+    tabsContainer.classList.add('navbar_hidden');
   }
 
   // Menu-napin klikkaus
@@ -39,9 +42,11 @@ export function initNavbar() {
     if (navVisible) {
       navbar.classList.remove('collapsed');
       menuButton.classList.add('inset');
+      tabsContainer.classList.remove('navbar_hidden');
     } else {
       navbar.classList.add('collapsed');
       menuButton.classList.remove('inset');
+      tabsContainer.classList.add('navbar_hidden');
     }
     updateOverlayVisibility();
   });
@@ -53,6 +58,7 @@ export function initNavbar() {
       localStorage.setItem('navVisible', navVisible);
       navbar.classList.add('collapsed');
       menuButton.classList.remove('inset');
+      tabsContainer.classList.add('navbar_hidden');
     }
     overlay.classList.remove('active');
   });
@@ -64,11 +70,11 @@ export function initNavbar() {
   updateOverlayVisibility();
 }
 
-// Huom: Tehdään checkWindowWidth ja updateOverlayVisibility sisäisiksi funktioiksi
+// Sisäinen funktio ruudun leveyden tarkistukseen
 function checkWindowWidth() {
   const windowWidth = window.innerWidth;
   if (windowWidth < 1080 && isInitialLoad) {
-    // Halutessa voit pakottaa piiloon ensilatauksella
+    // Halutessasi voit pakottaa piiloon ensilatauksella
     // navbar.classList.add('collapsed');
     // navVisible = false;
   }
@@ -78,6 +84,7 @@ function checkWindowWidth() {
   }
 }
 
+// Overlayn näkyvyyden päivitys
 function updateOverlayVisibility() {
   const overlay = document.getElementById('overlay');
   if (!overlay) return;

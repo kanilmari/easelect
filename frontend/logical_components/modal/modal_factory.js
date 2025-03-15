@@ -1,6 +1,13 @@
 // modal_factory.js
 
-export function createModal({ titleDataLangKey, titleDataLangKeyFallback, tableName, contentElements, width = '600px' }) {
+export function createModal({
+    titleDataLangKey,
+    titleDataLangKeyFallback,
+    titlePlainText, // <-- UUSI parametri
+    tableName,
+    contentElements,
+    width = '600px'
+}) {
     // Luo modalin taustalla oleva overlay-elementti
     let modal_overlay = document.getElementById('custom_modal_overlay');
     if (!modal_overlay) {
@@ -37,23 +44,25 @@ export function createModal({ titleDataLangKey, titleDataLangKeyFallback, tableN
     close_button.addEventListener('click', hideModal);
     modal.appendChild(close_button);
 
-    // Otsikko (jos titleDataLangKey on annettu)
+    // Otsikko (valitaan sen perusteella, millaisia parametreja on annettu)
     if (titleDataLangKey) {
+        // Jos titleDataLangKey on annettu, käytetään data-lang-key -pohjaista otsikkoa
         const modal_title = document.createElement('h2');
-
-        // Jos tableName on annettu, lisätään plus-merkki mukaan
         let combined_key = titleDataLangKey;
         if (tableName) {
             combined_key += `+${tableName}`;
         }
-
         modal_title.setAttribute('data-lang-key', combined_key);
 
-        // Jos titleDataLangKeyFallback on annettu, lisätään myös fallback-attribuutti
         if (titleDataLangKeyFallback) {
             modal_title.setAttribute('data-lang-key-fallback', titleDataLangKeyFallback);
         }
+        modal.appendChild(modal_title);
 
+    } else if (titlePlainText) {
+        // Jos titleDataLangKey ei ole annettu, mutta titlePlainText on, näytetään puhdas teksti
+        const modal_title = document.createElement('h2');
+        modal_title.textContent = titlePlainText;
         modal.appendChild(modal_title);
     }
 
@@ -67,7 +76,6 @@ export function createModal({ titleDataLangKey, titleDataLangKeyFallback, tableN
 
     return { modal_overlay, modal };
 }
-
 
 export function showModal() {
     const modal_overlay = document.getElementById('custom_modal_overlay');
