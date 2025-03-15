@@ -105,7 +105,7 @@ function createSVGTabButton(tabElement, buttonText, iconPathD) {
   outlinePath.setAttribute("d", INACTIVE_PATH);
   outlinePath.setAttribute("stroke", "var(--border_color)");
   outlinePath.setAttribute("stroke-width", "2");
-  outlinePath.setAttribute("fill", "var(--bg_color)");
+  outlinePath.setAttribute("fill", "var(--blended_bg_2)");
   svg.appendChild(outlinePath);
 
   // Ikonin polku
@@ -142,7 +142,7 @@ function openNavTab(evt, tabName) {
     // Ensimmäinen path meillä on outline
     if (svgPaths[0]) {
       svgPaths[0].setAttribute("d", INACTIVE_PATH);
-      svgPaths[0].setAttribute("fill", "var(--bg_color)");
+      svgPaths[0].setAttribute("fill", "var(--blended_bg_2)");
     }
   }
 

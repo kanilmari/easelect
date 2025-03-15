@@ -1,5 +1,6 @@
 /* Painikkeiden yleiset tyylit */
 #navbar {
+    width: 300px;
     display: grid;
     grid-template-columns: 1fr;
     gap: 2px;

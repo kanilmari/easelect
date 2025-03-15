@@ -1,6 +1,4 @@
 /**
- * tableView.js
- * 
  * Sisältää funktiot erilaisten näkymien (normal, transposed, ticket) luomiseen.
  * Vastaanottaa parametreina dataa, headers-listan sekä callback-funktioita,
  * esim. sort-funktio ja reorder-funktiot (drag & drop).
@@ -32,10 +30,10 @@ export function generateNormalTable(filteredData, headers, onSort, onReorderColu
         // Klikkaamalla otsikkoa -> sort-funktio
         cell.addEventListener('click', () => onSort(header.key));
 
-        // == DRAG HANDLE (normal-näkymään) ==
+        // DRAG HANDLE
         const dragHandle = document.createElement('span');
         dragHandle.className = 'drag-handle';
-        dragHandle.textContent = '⠿'; // Unicode "grip" -ikoni tms.
+        dragHandle.textContent = '⠿'; // Unicode "grip" -ikoni
         dragHandle.draggable = true;
 
         dragHandle.addEventListener('dragstart', (e) => {
@@ -75,29 +73,18 @@ export function generateNormalTable(filteredData, headers, onSort, onReorderColu
         const row = document.createElement('div');
         row.className = 'row';
 
-        // headers.forEach((header, colIndex) => {
-        //     const cell = document.createElement('div');
-        //     cell.className = 'cell';
-        //     cell.textContent = item[header.key];
-
-        //     // Huomaa: data-riveillä rowIndex on +1, koska rivillä 0 on otsikko
-        //     cell.dataset.row = rowIndex + 1;
-        //     cell.dataset.col = colIndex;
-
-        //     row.appendChild(cell);
-        // });
         headers.forEach((header, colIndex) => {
             const cell = document.createElement('div');
             cell.className = 'cell';
-        
+
             // Luodaan sisempi div solun sisällölle
             const cellContent = document.createElement('div');
             cellContent.className = 'cell-content';
-            cellContent.textContent = item[header.key]; // Aseta solun sisältö
-        
-            // Lisätään cellContent ulompaan cell-elementtiin
+            cellContent.textContent = item[header.key] ?? '';
+            // HUOM: Säilytetään rivinvaihdot
+            cellContent.style.whiteSpace = 'pre-wrap';
+
             cell.appendChild(cellContent);
-        
             cell.dataset.row = rowIndex + 1;
             cell.dataset.col = colIndex;
             row.appendChild(cell);
@@ -140,13 +127,12 @@ export function generateTransposedTable(filteredData, headers, onSort, onReorder
         row.className = 'row';
         row.dataset.row = rowIndex;
 
-        // Otsikkosolu, jossa käytetään sisäkkäistä .cell-content -elementtiä
+        // Otsikkosolu
         const labelCell = document.createElement('div');
         labelCell.className = 'cell header sortable';
         labelCell.dataset.row = rowIndex;
         labelCell.dataset.col = 0;
 
-        // Luodaan sisäinen cell-content div otsikon tekstille
         const labelCellContent = document.createElement('div');
         labelCellContent.className = 'cell-content';
         labelCellContent.textContent = header.label;
@@ -169,18 +155,20 @@ export function generateTransposedTable(filteredData, headers, onSort, onReorder
         labelCell.appendChild(dragHandle);
         row.appendChild(labelCell);
 
-        // Data-sarakkeet: jokaiselle solulle luodaan myös sisäinen .cell-content -div
+        // Data-sarakkeet
         filteredData.forEach((item, colIndex) => {
             const cell = document.createElement('div');
             cell.className = 'cell';
             cell.dataset.row = rowIndex;
-            cell.dataset.col = colIndex + 1; // 0 on varattu otsikolle
+            cell.dataset.col = colIndex + 1; // 0 on otsikolle
 
             const cellContent = document.createElement('div');
             cellContent.className = 'cell-content';
-            cellContent.textContent = item[header.key];
-            cell.appendChild(cellContent);
+            cellContent.textContent = item[header.key] ?? '';
+            // HUOM: Säilytetään rivinvaihdot
+            cellContent.style.whiteSpace = 'pre-wrap';
 
+            cell.appendChild(cellContent);
             row.appendChild(cell);
         });
 
@@ -189,6 +177,7 @@ export function generateTransposedTable(filteredData, headers, onSort, onReorder
 
     return table;
 }
+
 
 // export function generateTransposedTable(filteredData, headers, onSort, onReorderTransposed) {
 //     const table = document.createElement('div');

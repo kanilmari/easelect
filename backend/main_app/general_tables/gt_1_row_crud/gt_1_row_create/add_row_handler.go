@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart" // <-- Tärkeä
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,13 +20,14 @@ import (
 	"github.com/lib/pq"
 )
 
-// ChildRowPayload ja ManyToManyPayload kuten ennen
+// ChildRowPayload sisältää lapsirivin tiedot
 type ChildRowPayload struct {
 	TableName         string                 `json:"tableName"`
 	ReferencingColumn string                 `json:"referencingColumn"`
 	Data              map[string]interface{} `json:"data"`
 }
 
+// ManyToManyPayload sisältää m2m-liitosta koskevat tiedot
 type ManyToManyPayload struct {
 	LinkTableName      string                 `json:"linkTableName"`
 	MainTableFkColumn  string                 `json:"mainTableFkColumn"`
@@ -37,7 +38,17 @@ type ManyToManyPayload struct {
 	NewRowData         map[string]interface{} `json:"newRowData,omitempty"`
 }
 
-// AddRowMultipartHandlerWrapper ohjaa /api/add-row-multipart?table=... -pyyntöjä
+// ChildInsertResult kantaa tiedot yhdestä lapsirivistä, jotta tiedämme
+// tallennusvaiheessa (saveUploadedFiles) mm. lapsirivin ID, taulun nimen jne.
+type ChildInsertResult struct {
+	FieldKey          string // esim. "file_child_0"
+	TableName         string
+	ReferencingColumn string
+	ChildRowID        int64
+	MainRowID         int64
+}
+
+// AddRowMultipartHandlerWrapper hoitaa /api/add-row-multipart?table=... -pyyntöjä
 func AddRowMultipartHandlerWrapper(w http.ResponseWriter, r *http.Request) {
 	tableName := r.URL.Query().Get("table")
 	if tableName == "" {
@@ -52,13 +63,14 @@ func AddRowMultipartHandlerWrapper(w http.ResponseWriter, r *http.Request) {
 }
 
 // AddRowMultipartHandler lukee multipart/form-data -pyynnön, jossa
-// - jsonPayload (lomakkeen tekstikentät JSON:na)
-// - mahdolliset tiedostot lapsitauluille (file_child_0, file_child_1, ...)
+//   - jsonPayload (lomakkeen tekstikentät JSON:na)
+//   - mahdolliset tiedostot lapsitauluille (file_child_0, file_child_1, ...)
 //
-// Tällä versiolla tallennamme ensin päätaulun rivin, jotta saamme
-// luodun mainRowID-arvon. Tiedostot tallennamme polkuun:
-//
-//	media/<tableUID>/<mainRowID>/<tiedostonimi>
+// Tallennuksen logiikka:
+//  1. luo päärivin (RETURNING id -> mainRowID)
+//  2. luo lapsirivit (RETURNING id -> childRowID) ja kerää talteen ChildInsertResult-listaan
+//  3. tallentaa tiedostot polkuun: media/<tableUID>/<mainRowID>/, nimeksi <tableUID>_<mainRowID>_<childRowID>.ext
+//  4. päivittää lapsirivin "filename" (ja mahdolliset cacheTargets) samalle nimelle
 func AddRowMultipartHandler(w http.ResponseWriter, r *http.Request, tableName string) {
 	err := r.ParseMultipartForm(50 << 20) // Sallit. esim. 50 MB
 	if err != nil {
@@ -88,30 +100,36 @@ func AddRowMultipartHandler(w http.ResponseWriter, r *http.Request, tableName st
 		return
 	}
 
-	// 1) Lisätään data kantaan (pää, lapsirivit, M2M) -> saamme mainRowID
-	mainRowID, err := insertDataAccordingToPayload(w, r, tableName, payload)
+	// 1) Lisätään data kantaan (pää, lapsirivit, M2M) -> saamme mainRowID + lapsirivien tiedot
+	mainRowID, childInsertResults, err := insertDataAccordingToPayload(w, r, tableName, payload)
 	if err != nil {
 		// insertDataAccordingToPayload hoitaa virhevastausten antamisen
 		return
 	}
 
-	// 2) Tallennetaan tiedostot, kun tiedämme jo mainRowID:n
-	saveUploadedFiles(w, r.MultipartForm.File, "media", tableUID, mainRowID)
+	// 2) Tallennetaan tiedostot, kun tiedämme jo mainRowID:n ja lapsirivien ID:t
+	saveUploadedFiles(w, r.MultipartForm.File, "media", tableUID, mainRowID, childInsertResults)
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "rivi (ja tiedostot) lisätty onnistuneesti",
+		"message": "rivi (ja tiedostot) lisätty onnistuneesti ☀️",
 	})
 }
 
 // insertDataAccordingToPayload lisää päätaulun rivin, lapsirivit ja M2M-liitokset.
-// Palauttaa luodun päärivin id-arvon (mainRowID).
-func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableName string, payload map[string]interface{}) (int64, error) {
+// Palauttaa luodun päärivin id-arvon (mainRowID) sekä ChildInsertResult-listan lapsiriveistä.
+func insertDataAccordingToPayload(
+	w http.ResponseWriter,
+	r *http.Request,
+	tableName string,
+	payload map[string]interface{},
+) (int64, []ChildInsertResult, error) {
+
 	currentUserID, err := getCurrentUserID(r)
 	if err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(w, "käyttäjätunnusta ei voitu hakea", http.StatusInternalServerError)
-		return 0, err
+		return 0, nil, err
 	}
 
 	// Erota lapsirivit ja M2M
@@ -138,7 +156,7 @@ func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableN
 	if err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(w, "virhe sarakkeiden haussa", http.StatusInternalServerError)
-		return 0, err
+		return 0, nil, err
 	}
 
 	columnTypeMap := make(map[string]string)
@@ -176,7 +194,7 @@ func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableN
 						if parseErr != nil {
 							fmt.Printf("\033[31mvirhe: %s\033[0m\n", parseErr.Error())
 							http.Error(w, "invalid integer value for "+colName, http.StatusBadRequest)
-							return 0, parseErr
+							return 0, nil, parseErr
 						}
 						val = parsedVal
 					}
@@ -202,7 +220,7 @@ func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableN
 	if err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(w, "virhe transaktion aloituksessa", http.StatusInternalServerError)
-		return 0, err
+		return 0, nil, err
 	}
 
 	// 1) Päärivi
@@ -211,17 +229,29 @@ func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableN
 		tx.Rollback()
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(w, "virhe päärivin lisäyksessä", http.StatusInternalServerError)
-		return 0, err
+		return 0, nil, err
 	}
 
+	childInsertResults := []ChildInsertResult{}
+
 	// 2) Lapsirivit
-	for _, child := range childRows {
-		if err := insertSingleChildRow(tx, mainRowID, child); err != nil {
+	for i, child := range childRows {
+		cID, cErr := insertSingleChildRow(tx, mainRowID, child)
+		if cErr != nil {
 			tx.Rollback()
-			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+			fmt.Printf("\033[31mvirhe: %s\033[0m\n", cErr.Error())
 			http.Error(w, "virhe aliobjektin lisäyksessä", http.StatusInternalServerError)
-			return 0, err
+			return 0, nil, cErr
 		}
+		// Esim. "file_child_0"
+		fieldKey := fmt.Sprintf("file_child_%d", i)
+		childInsertResults = append(childInsertResults, ChildInsertResult{
+			FieldKey:          fieldKey,
+			TableName:         child.TableName,
+			ReferencingColumn: child.ReferencingColumn,
+			ChildRowID:        cID,
+			MainRowID:         mainRowID,
+		})
 	}
 
 	// 3) M2M
@@ -233,7 +263,7 @@ func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableN
 				tx.Rollback()
 				fmt.Printf("\033[31mvirhe: %s\033[0m\n", errNew.Error())
 				http.Error(w, "virhe kolmannen taulun lisäyksessä", http.StatusInternalServerError)
-				return 0, errNew
+				return 0, nil, errNew
 			}
 			linkValue = newID
 		}
@@ -249,14 +279,14 @@ func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableN
 			tx.Rollback()
 			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 			http.Error(w, "virhe M2M-liitoksen lisäyksessä", http.StatusInternalServerError)
-			return 0, err
+			return 0, nil, err
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(w, "virhe transaktion commitissa", http.StatusInternalServerError)
-		return 0, err
+		return 0, nil, err
 	}
 
 	// Mahdolliset triggerit
@@ -266,27 +296,38 @@ func insertDataAccordingToPayload(w http.ResponseWriter, r *http.Request, tableN
 		// jatketaan silti
 	}
 
-	return mainRowID, nil
+	return mainRowID, childInsertResults, nil
 }
 
 // saveUploadedFiles tallentaa lomakkeen tiedostokentät levyyn polkuun:
 //
-//	media/<tableUID>/<mainRowID>/<tiedostonimi>
+//	media/<tableUID>/<mainRowID>/
+//
+// Nimeää tiedoston <tableUID>_<mainRowID>_<childRowID>.ext
+// ja päivittää lapsirivin "filename"-sarakkeen sekä mahdolliset
+// "cacheTargets" (updateCacheTargets).
 func saveUploadedFiles(
 	w http.ResponseWriter,
 	fileMap map[string][]*multipart.FileHeader,
 	baseDir string,
 	tableUID string,
 	mainRowID int64,
+	childInsertResults []ChildInsertResult,
 ) {
+	// Kerätään ChildInsertResult map-muotoon fieldKey -> ChildInsertResult
+	resultMap := make(map[string]ChildInsertResult)
+	for _, res := range childInsertResults {
+		resultMap[res.FieldKey] = res
+	}
+
 	for fieldName, fhArray := range fileMap {
+		// Haemme vain lapsitauluihin liittyviä file_child_X -kenttiä
 		if !strings.HasPrefix(fieldName, "file_child_") {
 			continue
 		}
 		if len(fhArray) == 0 {
 			continue
 		}
-		// Tässä esimerkissä käsitellään vain ensimmäinen tiedosto
 		fh := fhArray[0]
 
 		srcFile, err := fh.Open()
@@ -297,7 +338,12 @@ func saveUploadedFiles(
 		}
 		defer srcFile.Close()
 
-		// Polku: media/<tableUID>/<mainRowID>
+		resInfo := resultMap[fieldName]
+		childRowID := resInfo.ChildRowID
+		childTableName := resInfo.TableName
+		referencingColumn := resInfo.ReferencingColumn
+
+		// Kansion luonti: media/<tableUID>/<mainRowID>/
 		subFolder := filepath.Join(baseDir, tableUID, fmt.Sprintf("%d", mainRowID))
 		err = os.MkdirAll(subFolder, 0755)
 		if err != nil {
@@ -306,7 +352,11 @@ func saveUploadedFiles(
 			continue
 		}
 
-		savePath := filepath.Join(subFolder, fh.Filename)
+		// Uusi tiedostonimi
+		originalExt := filepath.Ext(fh.Filename)
+		newFileName := fmt.Sprintf("%s_%d_%d%s", tableUID, mainRowID, childRowID, originalExt)
+		savePath := filepath.Join(subFolder, newFileName)
+
 		dstFile, err := os.Create(savePath)
 		if err != nil {
 			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
@@ -322,97 +372,122 @@ func saveUploadedFiles(
 			continue
 		}
 		fmt.Printf("[INFO] tallennettu tiedosto: %s\n", savePath)
+
+		// Päivitetään lapsirivin filename-sarake:
+		updateFilenameInChildRow(childTableName, childRowID, newFileName)
+
+		// Kutsutaan uudelleen updateCacheTargets, jotta sama nimi päivittyy cache-sarakkeisiin:
+		// Luodaan "childData", jossa relevantit sarakkeet:
+		tempChildData := map[string]interface{}{
+			referencingColumn: mainRowID, // esim. service_id = <mainRowID>
+			"filename":        newFileName,
+		}
+		if err := updateCacheTargetsNoTx(childTableName, referencingColumn, tempChildData); err != nil {
+			fmt.Printf("\033[31mvirhe (cacheTargets): %s\033[0m\n", err.Error())
+		}
 	}
 }
 
-// getCurrentUserID hakee sessiosta user_id:n (int) tai virheen
-func getCurrentUserID(r *http.Request) (int, error) {
-	store := e_sessions.GetStore()
-	session, err := store.Get(r, "session")
+// updateFilenameInChildRow tekee pienen UPDATE-lauseen tallentaakseen
+// uuden tiedostonimen lapsirivin "filename"-sarakkeeseen.
+func updateFilenameInChildRow(childTableName string, childRowID int64, newFileName string) {
+	updateQ := fmt.Sprintf(`UPDATE %s SET filename=$1 WHERE id=$2`, pq.QuoteIdentifier(childTableName))
+	if _, err := backend.Db.Exec(updateQ, newFileName, childRowID); err != nil {
+		fmt.Printf("\033[31mvirhe: tiedostonimen päivitys tauluun=%s, id=%d: %s\033[0m\n", childTableName, childRowID, err.Error())
+	}
+}
+
+// updateCacheTargetsNoTx kutsuu samaa logiikkaa kuin updateCacheTargets, mutta
+// ilman transaktiota. (Voit myös halutessasi avata mini-tx:n.)
+func updateCacheTargetsNoTx(sourceTable string, sourceColumn string, childData map[string]interface{}) error {
+	query := `
+		SELECT target_insert_specs, target_table_name, target_column_name
+		FROM foreign_key_relations_1_m
+		WHERE source_table_name = $1
+		  AND source_column_name = $2
+		LIMIT 1
+	`
+	var targetInsertSpecs string
+	var targetTableName string
+	var targetColumnName string
+
+	err := backend.Db.QueryRow(query, sourceTable, sourceColumn).Scan(
+		&targetInsertSpecs, &targetTableName, &targetColumnName,
+	)
 	if err != nil {
-		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
-		return 0, fmt.Errorf("session get error: %v", err)
+		// Ei välttämättä ole riviä
+		return nil
 	}
-	rawUserID, ok := session.Values["user_id"]
+
+	if targetInsertSpecs == "" {
+		return nil
+	}
+
+	var specs map[string]interface{}
+	if err := json.Unmarshal([]byte(targetInsertSpecs), &specs); err != nil {
+		return err
+	}
+
+	fileUpload, ok := specs["file_upload"].(map[string]interface{})
 	if !ok {
-		fmt.Printf("\033[31mvirhe: käyttäjän ID puuttuu sessiosta\033[0m\n")
-		return 0, fmt.Errorf("käyttäjän ID puuttuu sessiosta")
+		return nil
 	}
-	userID, ok := rawUserID.(int)
+
+	filenameColumn, _ := fileUpload["filename_column"].(string)
+	if filenameColumn == "" {
+		return nil
+	}
+
+	rawFilename, ok := childData[filenameColumn]
 	if !ok {
-		fmt.Printf("\033[31mvirhe: käyttäjän ID on väärää tyyppiä sessiossa\033[0m\n")
-		return 0, fmt.Errorf("user ID invalid type in session")
+		return nil
 	}
-	return userID, nil
-}
-
-// getTableUID hakee table_uid-arvon system_db_tables-taulusta
-func getTableUID(tableName string) (string, error) {
-	var foundUID string
-	query := `SELECT table_uid FROM system_db_tables WHERE table_name = $1`
-	err := backend.Db.QueryRow(query, tableName).Scan(&foundUID)
-	if err != nil {
-		return "", err
+	filenameStr, _ := rawFilename.(string)
+	if filenameStr == "" {
+		return nil
 	}
-	return foundUID, nil
-}
 
-// insertMainRow lisää päärivin tauluun ja palauttaa luodun rivin id-arvon
-func insertMainRow(tx *sql.Tx, tableName string, rowData map[string]interface{}, columnTypeMap map[string]string) (int64, error) {
-	insertColumns := []string{}
-	placeholders := []string{}
-	values := []interface{}{}
-	i := 1
+	cacheTargets, ok := fileUpload["cache_targets"].([]interface{})
+	if !ok {
+		return nil
+	}
 
-	for col, val := range rowData {
-		insertColumns = append(insertColumns, pq.QuoteIdentifier(col))
-		colType := strings.ToLower(columnTypeMap[col])
+	refVal, refOk := childData[sourceColumn]
+	if !refOk {
+		return nil
+	}
 
-		// Mahdollinen geometry-tyyppi
-		if strings.Contains(colType, "geometry") {
-			if val == nil || val == "" {
-				val = "POINT(24.9384 60.1699)"
-			}
-			placeholders = append(placeholders, fmt.Sprintf("ST_GeomFromText($%d, 4326)", i))
-			values = append(values, val)
-			i++
+	// Päivitetään jokaiselle cacheTargets-riville tiedostonimi
+	for _, target := range cacheTargets {
+		targetObj, _ := target.(map[string]interface{})
+		tblName, _ := targetObj["table"].(string)
+		colName, _ := targetObj["column"].(string)
+		if tblName == "" || colName == "" {
 			continue
 		}
-
-		placeholders = append(placeholders, fmt.Sprintf("$%d", i))
-		values = append(values, val)
-		i++
+		updateQuery := fmt.Sprintf(`UPDATE %s SET %s = $1 WHERE %s = $2`,
+			pq.QuoteIdentifier(tblName),
+			pq.QuoteIdentifier(colName),
+			pq.QuoteIdentifier(targetColumnName),
+		)
+		if _, err := backend.Db.Exec(updateQuery, filenameStr, refVal); err != nil {
+			return fmt.Errorf("cache update error table=%s col=%s: %v", tblName, colName, err)
+		}
 	}
-
-	if len(insertColumns) == 0 {
-		return 0, fmt.Errorf("ei validia saraketta lisättäväksi taulussa %s", tableName)
-	}
-
-	insertQuery := fmt.Sprintf(
-		`INSERT INTO %s (%s) VALUES (%s) RETURNING id`,
-		pq.QuoteIdentifier(tableName),
-		strings.Join(insertColumns, ", "),
-		strings.Join(placeholders, ", "),
-	)
-
-	var mainRowID int64
-	err := tx.QueryRow(insertQuery, values...).Scan(&mainRowID)
-	if err != nil {
-		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
-		return 0, err
-	}
-	return mainRowID, nil
+	return nil
 }
 
 // insertSingleChildRow lisää yksittäisen lapsirivin child.TableName-tauluun
 // ja asettaa referencingColumnin arvoksi mainRowID.
-func insertSingleChildRow(tx *sql.Tx, mainRowID int64, child ChildRowPayload) error {
+// Palauttaa lisätyn rivin id-arvon (childRowID).
+func insertSingleChildRow(tx *sql.Tx, mainRowID int64, child ChildRowPayload) (int64, error) {
 	if child.TableName == "" || child.ReferencingColumn == "" {
-		return fmt.Errorf("puuttuva lapsidatan kenttä: tableName tai referencingColumn")
+		return 0, fmt.Errorf("puuttuva lapsidatan kenttä: tableName tai referencingColumn")
 	}
 	if child.Data == nil {
-		return nil
+		return 0, nil
 	}
+
 	// Poistetaan _file -kenttä, ettei yritetä SQL:ään
 	delete(child.Data, "_file")
 
@@ -432,21 +507,108 @@ func insertSingleChildRow(tx *sql.Tx, mainRowID int64, child ChildRowPayload) er
 	}
 
 	if len(insertColumns) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	insertQuery := fmt.Sprintf(
-		`INSERT INTO %s (%s) VALUES (%s)`,
+		`INSERT INTO %s (%s) VALUES (%s) RETURNING id`,
 		pq.QuoteIdentifier(child.TableName),
 		strings.Join(insertColumns, ", "),
 		strings.Join(placeholders, ", "),
 	)
 
-	_, err := tx.Exec(insertQuery, values...)
+	var childRowID int64
+	err := tx.QueryRow(insertQuery, values...).Scan(&childRowID)
 	if err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		return 0, err
 	}
-	return err
+
+	// Tämän jälkeen (transaktion sisällä) päivitetään mahdolliset cacheTargets
+	if cacheErr := updateCacheTargets(tx, child.TableName, child.ReferencingColumn, child.Data); cacheErr != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", cacheErr.Error())
+		return 0, cacheErr
+	}
+
+	return childRowID, nil
+}
+
+// updateCacheTargets (transaktion sisällä) – sama idea kuin updateCacheTargetsNoTx.
+func updateCacheTargets(
+	tx *sql.Tx,
+	sourceTable string,
+	sourceColumn string,
+	childData map[string]interface{},
+) error {
+	query := `
+		SELECT target_insert_specs, target_table_name, target_column_name
+		FROM foreign_key_relations_1_m
+		WHERE source_table_name = $1
+		  AND source_column_name = $2
+		LIMIT 1
+	`
+	var targetInsertSpecs string
+	var targetTableName string
+	var targetColumnName string
+
+	err := tx.QueryRow(query, sourceTable, sourceColumn).Scan(
+		&targetInsertSpecs, &targetTableName, &targetColumnName,
+	)
+	if err != nil {
+		// Ei välttämättä ole virhe, jos ei ole riviä
+		return nil
+	}
+	if targetInsertSpecs == "" {
+		return nil
+	}
+
+	var specs map[string]interface{}
+	if err := json.Unmarshal([]byte(targetInsertSpecs), &specs); err != nil {
+		return err
+	}
+	fileUpload, ok := specs["file_upload"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	filenameColumn, _ := fileUpload["filename_column"].(string)
+	if filenameColumn == "" {
+		return nil
+	}
+	rawFilename, ok := childData[filenameColumn]
+	if !ok {
+		return nil
+	}
+	filenameStr, ok := rawFilename.(string)
+	if !ok || filenameStr == "" {
+		return nil
+	}
+
+	cacheTargets, ok := fileUpload["cache_targets"].([]interface{})
+	if !ok {
+		return nil
+	}
+	referencingValue, refOk := childData[sourceColumn]
+	if !refOk {
+		return nil
+	}
+	for _, target := range cacheTargets {
+		targetObj, _ := target.(map[string]interface{})
+		tableName, _ := targetObj["table"].(string)
+		colName, _ := targetObj["column"].(string)
+		if tableName == "" || colName == "" {
+			continue
+		}
+		updateQuery := fmt.Sprintf(`UPDATE %s SET %s = $1 WHERE %s = $2`,
+			pq.QuoteIdentifier(tableName),
+			pq.QuoteIdentifier(colName),
+			pq.QuoteIdentifier(targetColumnName),
+		)
+		if _, err := tx.Exec(updateQuery, filenameStr, referencingValue); err != nil {
+			return fmt.Errorf("cache update error table=%s col=%s: %v", tableName, colName, err)
+		}
+	}
+	return nil
 }
 
 // insertNewThirdTableRow lisää uuden rivin kolmanteen tauluun (m2m), jos
@@ -499,7 +661,86 @@ func insertOneManyToManyRelation(tx *sql.Tx, mainRowID int64, m2m ManyToManyPayl
 	return err
 }
 
-// apu-funktio integer-tyypin tarkistukseen
+// getCurrentUserID hakee sessiosta user_id:n (int) tai virheen
+func getCurrentUserID(r *http.Request) (int, error) {
+	store := e_sessions.GetStore()
+	session, err := store.Get(r, "session")
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		return 0, fmt.Errorf("session get error: %v", err)
+	}
+	rawUserID, ok := session.Values["user_id"]
+	if !ok {
+		fmt.Printf("\033[31mvirhe: käyttäjän ID puuttuu sessiosta\033[0m\n")
+		return 0, fmt.Errorf("käyttäjän ID puuttuu sessiosta")
+	}
+	userID, ok := rawUserID.(int)
+	if !ok {
+		fmt.Printf("\033[31mvirhe: käyttäjän ID on väärää tyyppiä sessiossa\033[0m\n")
+		return 0, fmt.Errorf("user ID invalid type in session")
+	}
+	return userID, nil
+}
+
+// getTableUID hakee table_uid-arvon system_db_tables-taulusta
+func getTableUID(tableName string) (string, error) {
+	var foundUID string
+	query := `SELECT table_uid FROM system_db_tables WHERE table_name = $1`
+	err := backend.Db.QueryRow(query, tableName).Scan(&foundUID)
+	if err != nil {
+		return "", err
+	}
+	return foundUID, nil
+}
+
+// insertMainRow lisää päärivin tauluun ja palauttaa luodun rivin id-arvon
+func insertMainRow(tx *sql.Tx, tableName string, rowData map[string]interface{}, columnTypeMap map[string]string) (int64, error) {
+	insertColumns := []string{}
+	placeholders := []string{}
+	values := []interface{}{}
+	i := 1
+
+	for col, val := range rowData {
+		insertColumns = append(insertColumns, pq.QuoteIdentifier(col))
+		colType := strings.ToLower(columnTypeMap[col])
+
+		// Esimerkki: geometry-tyyppi
+		if strings.Contains(colType, "geometry") {
+			if val == nil || val == "" {
+				val = "POINT(24.9384 60.1699)" // jonkinlainen oletus
+			}
+			placeholders = append(placeholders, fmt.Sprintf("ST_GeomFromText($%d, 4326)", i))
+			values = append(values, val)
+			i++
+			continue
+		}
+
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i))
+		values = append(values, val)
+		i++
+	}
+
+	if len(insertColumns) == 0 {
+		return 0, fmt.Errorf("ei validia saraketta lisättäväksi taulussa %s", tableName)
+	}
+
+	insertQuery := fmt.Sprintf(
+		`INSERT INTO %s (%s) VALUES (%s) RETURNING id`,
+		pq.QuoteIdentifier(tableName),
+		strings.Join(insertColumns, ", "),
+		strings.Join(placeholders, ", "),
+	)
+
+	var mainRowID int64
+	err := tx.QueryRow(insertQuery, values...).Scan(&mainRowID)
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		return 0, err
+	}
+	return mainRowID, nil
+}
+
+// isIntegerType on apu-funktio integer-tyypin tunnistamiseen
 func isIntegerType(dataType string) bool {
 	dataType = strings.ToLower(dataType)
 	return strings.Contains(dataType, "int")
