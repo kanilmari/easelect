@@ -391,6 +391,8 @@ func getColumnDataTypesWithFK(tableName string) (map[string]interface{}, error) 
 			"card_element":     cardElement,
 			"show_key_on_card": showKeyOnCard,
 		}
+		// debug: print columnInfo in blue color
+		fmt.Printf("\x1b[34;1m%+v\x1b[0m\n", columnInfo)
 		if foreignTableName.Valid && foreignColumnName.Valid {
 			columnInfo["foreign_table"] = foreignTableName.String
 			columnInfo["foreign_column"] = foreignColumnName.String

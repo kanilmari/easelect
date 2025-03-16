@@ -1,5 +1,4 @@
 import { handle_all_navigation } from '../navigation/navigation.js';
-import { custom_views } from '../main/custom_views.js';
 // Välilehtien tiedot (voit lisätä/poistaa omia)
 const tabsData = [
   {
@@ -77,8 +76,8 @@ tabsData.forEach((tabData) => {
     tabButton.setAttribute("data-lang-key", tabData.langKey);
   }
 
-  // Klikkaus -> kutsutaan openNavTab
-  tabButton.onclick = (event) => openNavTab(event, tabData.id);
+  // Klikkaus -> kutsutaan openNavTab (vain tabData.id parametrina)
+  tabButton.onclick = () => openNavTab(tabData.id);
 
   // Luodaan SVG+teksti tälle napille
   createSVGTabButton(tabButton, tabData.text, tabData.svgPath);
@@ -130,16 +129,15 @@ function createSVGTabButton(tabElement, buttonText, iconPathD) {
  * Klikattaessa muutetaan edellinen aktiivinen napin polku "epäaktiiviseksi"
  * ja asetetaan klikatulle napille "aktiivinen" polku, sekä merkintä active-luokasta.
  */
-function openNavTab(evt, tabName) {
-  console.log(`Tab "${tabName}" clicked.`);
-  handle_all_navigation(tabName, custom_views);
+function openNavTab(table_name) {
+  console.log(`Tab "${table_name}" clicked.`);
+  handle_all_navigation(table_name);
 
   // Poistetaan active kaikilta napeilta
   const allTabButtons = document.getElementsByClassName("navtablinks");
   for (let i = 0; i < allTabButtons.length; i++) {
     allTabButtons[i].classList.remove("active");
     const svgPaths = allTabButtons[i].querySelectorAll("svg path");
-    // Ensimmäinen path meillä on outline
     if (svgPaths[0]) {
       svgPaths[0].setAttribute("d", INACTIVE_PATH);
       svgPaths[0].setAttribute("fill", "var(--blended_bg_2)");
@@ -148,7 +146,7 @@ function openNavTab(evt, tabName) {
 
   // Aktivoidaan klikatun napin polku
   const clickedButton = document.querySelector(
-    `.navtablinks[data-id="${tabName}"]`
+    `.navtablinks[data-id="${table_name}"]`
   );
   if (clickedButton) {
     clickedButton.classList.add("active");
@@ -159,7 +157,6 @@ function openNavTab(evt, tabName) {
     }
   }
 }
-
 // /* ------------------------------------------------------ */
 // /*               tabs.js (muokattu)                       */
 // /* ------------------------------------------------------ */

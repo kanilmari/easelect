@@ -9,6 +9,7 @@
  * @param {string} [options.sort_column=null] - lajittelusarakkeen nimi (mapataan ?sort_column=...)
  * @param {string} [options.sort_order=null]  - ASC tai DESC (mapataan ?sort_order=...)
  * @param {Object} [options.filters={}] - muut filtteröintiparametrit (avain-arvo)
+ * @param {string} [options.callerName=''] - (valinnainen) kutsujafunktion nimi lokitusta varten
  *
  * @returns {Promise<Object>} Palauttaa JSON-vastauksen, muotoa:
  *   {
@@ -23,7 +24,8 @@ export async function fetchTableData({
     offset = 0,
     sort_column = null,
     sort_order = null,
-    filters = {}
+    filters = {},
+    callerName = ''
 }) {
     // Kootaan query-parametrit
     const params = new URLSearchParams();
@@ -41,8 +43,7 @@ export async function fetchTableData({
         params.append('sort_column', sort_column);
     }
     if (sort_order) {
-        // getResults.go hyväksyy vain "ASC" tai "DESC" isoilla kirjaimilla,
-        // mutta jos haluat joustoa, voit normalisoida täällä:
+        // getResults.go hyväksyy vain "ASC" tai "DESC" isoilla kirjaimilla
         const upperOrder = sort_order.toUpperCase();
         if (upperOrder === 'ASC' || upperOrder === 'DESC') {
             params.append('sort_order', upperOrder);
@@ -53,8 +54,6 @@ export async function fetchTableData({
     }
 
     // Lisätään loput filtterit parametreiksi
-    // Näin jokainen key -> param, value -> arvoksi.
-    // getResults.go käsittelee nämä sarakefilttereinä.
     for (const [key, val] of Object.entries(filters)) {
         if (val !== null && val !== undefined && val !== '') {
             params.append(key, val);
@@ -62,6 +61,7 @@ export async function fetchTableData({
     }
 
     // Rakennetaan lopullinen URL
+    console.log(`/api/get-results käynnistyy... (kutsu peräisin: ${callerName || 'tuntematon'})`);
     const url = `/api/get-results?${params.toString()}`;
 
     // Tehdään fetch-kutsu
@@ -71,6 +71,5 @@ export async function fetchTableData({
     }
 
     // Palautetaan purettu JSON
-    const data = await response.json();
-    return data;
+    return await response.json();
 }

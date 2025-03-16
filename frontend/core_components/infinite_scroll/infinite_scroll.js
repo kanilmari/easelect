@@ -1,145 +1,170 @@
 // infinite_scroll.js
 
-import { buildFilters, buildSortAndOffset } from '../general_tables/gt_crud/gt_read/table_refresh_collector.js';
 import { fetchTableData } from '../endpoints/endpoint_data_fetcher.js';
 import { appendDataToTable } from '../table_views/table_view/append_rows_to_table_view.js';
 import { appendDataToCardView } from '../table_views/card_view/card_view.js';
 
+// Tuodaan unifyed-tila
+import {
+    getUnifiedTableState,
+    setUnifiedTableState
+} from '../general_tables/gt_crud/gt_read/table_refresh_collector.js';
+
+// "isLoading" ja IntersectionObserverin hallintamuuttujat paikallisesti
 let isLoading = false;
-let offset = 0;
-let handleScroll; // Määritellään handleScroll moduulin laajuudessa
+let observer = null;
+let sentinel = null;
 
-export function resetOffset() {
-    offset = 0;
-}
-
-export function updateOffset(newOffset) {
-    offset += newOffset;
+/**
+ * Nollaa offsetin unifyed-tilasta esim. kun taulu latautuu uusilla filttereillä.
+ */
+export function resetOffset(tableName) {
+    const state = getUnifiedTableState(tableName);
+    state.offset = 0;
+    console.log('infinite_scroll.js: resetOffset kutsuu funktiota setUnifiedTableState arvoilla tableName:', tableName, 'state:', state);
+    setUnifiedTableState(tableName, state);
 }
 
 /**
- * Alustaa infinite scrollin annetulle table_namelle ja näkymälle.
- * orientation = 'vertical' tai 'horizontal' (esim. transposed-näkymään).
+ * Inkrementoi offsetia unifyed-tilassa ladatun datan määrällä.
  */
-export function initializeInfiniteScroll(table_name, orientation = 'vertical') {
-    // Haetaan localStoragesta nykyinen näkymä
-    const current_view = localStorage.getItem(`${table_name}_view`) || 'table';
+export function updateOffset(tableName, loadedCount) {
+    const state = getUnifiedTableState(tableName);
+    const oldOffset = state.offset || 0;
+    state.offset = oldOffset + loadedCount;
+    console.log('infinite_scroll.js: updateOffset kutsuu funktiota setUnifiedTableState arvoilla tableName:', tableName, 'state:', state);
+    setUnifiedTableState(tableName, state);
+}
 
-    // Käytetään samaa ID-kaavaa kuin generate_table() luo
-    const container_id = `${table_name}_${current_view}_view_container`;
-    const container = document.getElementById(container_id);
+/**
+ * Alustaa infinite scroll -toiminnon taululle `tableName`.
+ * Käyttää IntersectionObserveria. Kun containerin lopussa oleva
+ * sentinel-elementti tulee näkyviin, haetaan lisää dataa offsetin mukaan.
+ *
+ * @param {string} tableName   Minkä “taulun” scrollille varaus
+ * @param {string} orientation 'vertical' tai 'horizontal'
+ */
+export function initializeInfiniteScroll(tableName, orientation = 'vertical') {
+    const currentView = localStorage.getItem(`${tableName}_view`) || 'table';
+    const containerId = `${tableName}_${currentView}_view_container`;
+    const container = document.getElementById(containerId);
+
     if (!container) {
-        console.error(`Container element not found: #${container_id}`);
+        console.error(`Ei löydy containeria: #${containerId}`);
         return;
     }
 
-    // Poistetaan mahdollinen vanha scroll-listener
-    if (handleScroll) {
-        container.removeEventListener('scroll', handleScroll);
+    // Jos observer on olemassa, tuhotaan se ensin (estää tuplahavainnoinnin)
+    if (observer) {
+        observer.disconnect();
+        observer = null;
     }
 
-    // Luodaan funktio, joka kutsuu fetchMoreData, kun lähestytään vierityksen loppua
-    handleScroll = function() {
-        if (isLoading) return;
+    // Luodaan sentinel-elementti, ellei jo ole
+    sentinel = document.createElement('div');
+    sentinel.id = `${tableName}_infinite_scroll_sentinel`;
+    sentinel.style.height = '1px';
+    sentinel.style.width = '100%';
+    container.appendChild(sentinel);
 
-        if (orientation === 'vertical') {
-            // Pystysuuntainen rullaus
-            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-                fetchMoreData(table_name);
+    observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                fetchMoreData(tableName);
             }
-        } else if (orientation === 'horizontal') {
-            // Vaakasuuntainen rullaus
-            if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 100) {
-                fetchMoreData(table_name);
-            }
-        }
-    };
+        });
+    }, {
+        root: container,
+        // Määritellään margin sen mukaan, halutaanko pysty- vai vaakavieritystä
+        rootMargin: orientation === 'vertical'
+            ? '0px 0px 100px 0px'
+            : '0px 100px 0px 0px',
+        threshold: 0.0
+    });
 
-    // Kiinnitetään uusi listener
-    container.addEventListener('scroll', handleScroll);
+    observer.observe(sentinel);
 }
 
 /**
- * Hakee lisää dataa, kun rullataan loppuun.
+ * Varsinainen “hae lisää dataa” -funktio. Käyttää unifyed-tilaa
+ * filtterien, sortin ja offsetin selvittämiseen.
  */
-async function fetchMoreData(table_name) {
-    console.log('fetching more data');
+async function fetchMoreData(tableName) {
     if (isLoading) return;
     isLoading = true;
 
     try {
-        const current_view = localStorage.getItem(`${table_name}_view`) || 'table';
+        const currentView = localStorage.getItem(`${tableName}_view`) || 'table';
 
-        // Kerätään filtterit, sort_column ja sort_order
-        const filters = buildFilters(table_name, { skipUrlParams: true });
-        const { sort_column, sort_order } = buildSortAndOffset(table_name);
+        // Haetaan unifyed-tila: offset, filters, sort
+        const state = getUnifiedTableState(tableName);
+        const offsetVal = state.offset || 0;
+        const filters = state.filters || {};
+        const sort_column = state.sort?.column || null;
+        const sort_order = state.sort?.direction || null;
 
-        // Haetaan uudet rivit
+        // Haetaan data offsetista eteenpäin — callerName-lisäys
         const result = await fetchTableData({
-            table_name,
-            offset,
+            table_name: tableName,
+            offset: offsetVal,
             sort_column,
             sort_order,
-            filters
+            filters,
+            callerName: 'fetchMoreData (infinite scroll)'
         });
 
-        // Jos ei tullut dataa, poistetaan scroll-listener, jotta ei kutsuta loputtomiin
+        // Jos ei dataa -> lopetetaan infinite scroll -> unobserve
         if (!result.data || result.data.length === 0) {
-            const containerId = `${table_name}_${current_view}_view_container`;
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.removeEventListener('scroll', handleScroll);
+            if (observer && sentinel) {
+                observer.unobserve(sentinel);
             }
-            isLoading = false;
             return;
         }
 
-        // Päivitetään offset
-        updateOffset(result.data.length);
+        // Päivitetään offset unifyed-tilassa
+        const loadedCount = result.data.length;
+        console.log('infinite_scroll.js: fetchMoreData kutsuu funktiota updateOffset arvoilla:', tableName, loadedCount);
+        updateOffset(tableName, loadedCount);
 
-        // Päivitetään data oikeaan näkymään
-        if (current_view === 'table') {
-            // Perinteinen HTML-taulu
-            const table = document.querySelector(`#${table_name}_container table`);
+        // Päivitetään DOM sen mukaan, mikä näkymä on voimassa
+        if (currentView === 'table') {
+            const table = document.querySelector(`#${tableName}_container table`);
             if (!table) {
-                console.error(`Table element not found for table: ${table_name}`);
+                console.error(`Tauluelementti puuttuu: #${tableName}_container table`);
                 return;
             }
             const columns = JSON.parse(table.dataset.columns);
             const dataTypes = JSON.parse(table.dataset.dataTypes);
             appendDataToTable(table, result.data, columns, dataTypes);
 
-        } else if (current_view === 'card') {
+        } else if (currentView === 'card') {
             // Korttinäkymä
-            const cardContainer = document.querySelector(`#${table_name}_card_view_container .card_container`);
+            const cardContainer = document.querySelector(`#${tableName}_card_view_container .card_container`);
             if (!cardContainer) {
-                console.error(`Card container not found for table: ${table_name}`);
+                console.error(`Korttinäkymän kontainer puuttuu: #${tableName}_card_view_container .card_container`);
                 return;
             }
-            const columns = JSON.parse(localStorage.getItem(`${table_name}_columns`));
-            appendDataToCardView(cardContainer, columns, result.data, table_name);
+            const columns = JSON.parse(localStorage.getItem(`${tableName}_columns`)) || [];
+            appendDataToCardView(cardContainer, columns, result.data, tableName);
 
-        } else if (['normal', 'transposed', 'ticket'].includes(current_view)) {
-            // Uudet TableComponent-pohjaiset näkymät
-            const containerId = `${table_name}_${current_view}_view_container`;
+        } else if (['normal', 'transposed', 'ticket'].includes(currentView)) {
+            // TableComponent-näkymä (SPA-hallintasovellus)
+            const containerId = `${tableName}_${currentView}_view_container`;
             const container = document.getElementById(containerId);
             if (!container) {
-                console.error(`No container found: #${containerId}`);
+                console.error(`Kontainer puuttuu: #${containerId}`);
                 return;
             }
-
-            // TableComponentin juurielementillä on luokka .table-component-root
             const tableComponentRoot = container.querySelector('.table-component-root');
             if (tableComponentRoot && tableComponentRoot.tableComponentInstance) {
-                // Lisätään uudet rivit appendData-metodilla
                 tableComponentRoot.tableComponentInstance.appendData(result.data);
             } else {
-                console.error(`TableComponent instance not found in ${current_view} view for table: ${table_name}`);
+                console.error(`TableComponent ei löydy (tableName: ${tableName}, view: ${currentView}).`);
             }
         }
 
-    } catch (error) {
-        console.error('Error fetching more data:', error);
+    } catch (err) {
+        console.error('error fetching more data:', err);
     } finally {
         isLoading = false;
     }

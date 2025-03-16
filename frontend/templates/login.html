@@ -10,72 +10,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Kirjaudu sisään</title>
-    <style>
-        :root {
-            --bg_color: #222;
-            --text_color: white;
-            --button_bg_color: #444;
-            --button_text_color: white;
-            --button_hover_bg_color: #555;
-            --button_active_bg_color: #666;
-        }
-
-        body {
-            margin: 0;
-            height: 100vh;
-            display: grid;
-            place-items: center;
-            background-color: var(--bg_color);
-            color: var(--text_color);
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        form {
-            display: grid;
-            gap: 15px;
-            width: 300px;
-            padding: 20px;
-            border: 1px solid var(--text_color);
-            border-radius: 8px;
-            background-color: #333;
-            box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            padding: 8px;
-            border: 1px solid var(--text_color);
-            border-radius: 4px;
-            background-color: #444;
-            color: var(--text_color);
-        }
-
-        input[type="submit"] {
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            background-color: var(--button_bg_color);
-            color: var(--button_text_color);
-            cursor: pointer;
-            width: 100%;
-        }
-
-        input[type="submit"]:hover {
-            background-color: var(--button_hover_bg_color);
-        }
-
-        input[type="submit"]:active {
-            background-color: var(--button_active_bg_color);
-        }
-
-        #submit {
-            margin-top: 20px;
-        }
-    </style>
-    <script type="module" src="/main_app/auth/login.js"></script>
+    <link rel="stylesheet" href="/core_components/auth/login.css">
+    <script type="module" src="/core_components/auth/login.js"></script>
 </head>
 <body>
-    <form method="POST" action="/login" onsubmit="return attachFingerprint();">
+    <!-- Poista onsubmit-eventin käyttö -->
+    <form method="POST" action="/login">
         <h2>Kirjaudu sisään</h2>
         <label for="username">Käyttäjätunnus:</label>
         <input type="text" id="username" name="username" required>

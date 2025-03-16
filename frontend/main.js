@@ -7,10 +7,10 @@ import { updateMenuLanguageDisplay } from './core_components/lang/lang_panel.js'
 import { handle_table_selected_event } from './core_components/navigation/navigation.js';
 
 // Tarpeellisia lisäimportteja
+import './common_components/print_svgs/logout_svg.js';
 import './core_components/lang/lang.js';
 import './common_components/vanilla_tree/tree_call.js';
 import './core_components/table_views/table_view/table_column_resizer.js';
-import './common_components/print_svgs/logout_svg.js';
 import './core_components/navigation/tabs.js';
 import './core_components/theme.js';
 

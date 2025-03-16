@@ -1,8 +1,6 @@
 // button_factory.js
 
 import { open_add_row_modal } from '../gt_crud/gt_create/add_row.js';
-// import { load_table } from '../../navigation/load_table.js'; // POISTETTU
-import { refresh_table } from '../gt_crud/gt_read/table_refresh_collector.js';         // UUSI
 import { delete_selected_items } from '../gt_crud/gt_delete/delete_rows.js';
 import { createColumnVisibilityDropdown } from './column_visibility_dropdown.js';
 import { open_column_management_modal } from './column_management.js';
@@ -72,14 +70,15 @@ export function createDeleteSelectedButton(table_name, current_view) {
 /**
  * Luo dropdown-napin, josta voi valita table/card/tree -näkymän.
  */
+/**
+ * Luo dropdown-napin, josta voi valita table/card/tree -näkymän.
+ */
 export function createViewSelectorDropdown(table_name) {
     const container = document.createElement('div');
     container.classList.add('view-selector-dropdown'); 
-    // Huom. Se EI ole .custom-dropdown
 
-    // Pää-nappi
     const dropdownButton = document.createElement('button');
-    dropdownButton.textContent = 'Näytä ▼'; 
+    dropdownButton.textContent = 'Näytä ▼';
     dropdownButton.classList.add('view-mode-button');
     dropdownButton.style.backgroundColor = 'var(--button_bg_color)';
     dropdownButton.style.color = 'var(--button_text_color)';
@@ -92,7 +91,6 @@ export function createViewSelectorDropdown(table_name) {
         dropdownButton.style.color = 'var(--button_text_color)';
     });
 
-    // Itse dropdown-alue
     const dropdownContent = document.createElement('div');
     dropdownContent.classList.add('view-selector-content');
     dropdownContent.style.display = 'none';
@@ -105,15 +103,14 @@ export function createViewSelectorDropdown(table_name) {
         item.style.cursor = 'pointer';
 
         item.addEventListener('click', () => {
+            console.log('createViewSelectorDropdown kutsuu refreshTableUnified');
             localStorage.setItem(`${table_name}_view`, viewKey);
-            // load_table(table_name); // POISTETTU
-            refresh_table(table_name);  // KORVAAVA
+            refreshTableUnified(table_name);
             dropdownContent.style.display = 'none';
         });
         return item;
     }
 
-    // Valintavaihtoehdot
     const itemTable = createItem('Taulunäkymä', 'table');
     const itemCard  = createItem('Korttinäkymä', 'card');
     const itemTree  = createItem('Puunäkymä',   'tree');
@@ -122,13 +119,12 @@ export function createViewSelectorDropdown(table_name) {
     dropdownContent.appendChild(itemCard);
     dropdownContent.appendChild(itemTree);
 
-    // Avataan/suljetaan dropdown
     dropdownButton.addEventListener('click', (evt) => {
         evt.stopPropagation();
-        dropdownContent.style.display = (dropdownContent.style.display === 'none') ? 'block' : 'none';
+        dropdownContent.style.display =
+            (dropdownContent.style.display === 'none') ? 'block' : 'none';
     });
 
-    // Klikkaus ulkopuolelle sulkee
     document.addEventListener('click', (evt) => {
         if (!container.contains(evt.target)) {
             dropdownContent.style.display = 'none';

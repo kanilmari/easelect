@@ -1,7 +1,6 @@
 // navigation.js
 
-// import { load_table } from './load_table.js'; // POISTETTU
-import { refresh_table } from '../general_tables/gt_crud/gt_read/table_refresh_collector.js';
+import { refreshTableUnified } from '../general_tables/gt_crud/gt_read/table_refresh_collector.js';
 import { custom_views } from '../main/custom_views.js';
 
 export async function handle_table_selected_event(event) {
@@ -75,12 +74,15 @@ export function create_navigation_buttons(custom_views) {
 }
 
 export async function handle_all_navigation(name, customViews) {
-    // 1) Selvitetään, onko kyseessä custom_view vai normaali taulu
-    const { loadFunction, containerId } = get_load_info(name, customViews);
+    // Oletusarvoinen taulukko, jos customViews puuttuu
+    const arrayOfViews = customViews || [];
 
-    // 2) Etsitään ryhmä
+    // 1) Selvitetään, onko kyseessä custom_view vai normaali taulu
+    const { loadFunction, containerId } = get_load_info(name, arrayOfViews);
+
+    // 2) Etsitään ryhmä navigaationapeille, voisi olla esim. Admin, User, etc.
     let groupName = null;
-    const foundView = customViews.find(v => v.name === name);
+    const foundView = arrayOfViews.find(v => v.name === name);
     if (foundView && foundView.group) {
         groupName = foundView.group;
     }
@@ -91,6 +93,7 @@ export async function handle_all_navigation(name, customViews) {
     // 4) Tallennetaan localStorageen valinta
     localStorage.setItem('selected_table', name);
 }
+
 
 export async function performNavigation(data_lang_key, container_id, load_function, groupName) {
     console.log('Navigating to:', data_lang_key);
@@ -146,9 +149,9 @@ export async function performNavigation(data_lang_key, container_id, load_functi
 
 /**
  * get_load_info: selvittää, onko "name" custom_view vai tavallinen taulu.
- * Jos ei custom, käytetään refresh_table(name).
+ * Jos ei custom, käytetään nyt refreshTableUnified (vanhan refresh _table sijaan).
  */
-export function get_load_info(name, custom_views) {
+function get_load_info(name, custom_views) {
     const custom_view = custom_views.find(view => view.name === name);
     if (custom_view) {
         return {
@@ -156,9 +159,11 @@ export function get_load_info(name, custom_views) {
             containerId: custom_view.containerId
         };
     } else {
-        // Oletus: tavallisen taulun "load" on nyt refresh_table
         return {
-            loadFunction: () => refresh_table(name),
+            loadFunction: () => {
+                console.log('navigation.js: get_load_info kutsuu refreshTableUnified');
+                return refreshTableUnified(name);
+            },
             containerId: `${name}_container`
         };
     }

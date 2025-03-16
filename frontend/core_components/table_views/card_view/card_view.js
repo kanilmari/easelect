@@ -695,6 +695,8 @@ export async function open_big_card_modal(row_item, table_name) {
 
             // Käsitellään kunkin sarakkeen roolit
             for (const singleRole of baseRoles) {
+                console.log(`Korttielementti: sarake "${column}", rooli "${singleRole}", arvo: "${val_str}"`);
+
                 // 1) description
                 if (/^description(\d+)?$/.test(singleRole) && val_str.trim()) {
                     let suffix_number = Number.MAX_SAFE_INTEGER;
