@@ -10,13 +10,14 @@
 }
 
 .card {
-    border: 1px solid #888;
+    /* border: 1px solid #888; */
     border-radius: 4px;
     padding: 1rem;
     /* width: calc(33.333% - 2rem); */
     box-sizing: border-box;
     position: relative;
     box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
+    /* background: linear-gradient(135deg, var(--bg_color), var(--bg_color_2)); */
 }
 
 .card_checkbox {
@@ -81,7 +82,7 @@
 
 /* Kortti */
 .card {
-    border: 1px solid #ccc;
+    border: 1px solid var(--border_color);
     padding: 16px;
     display: flex;
     flex-direction: column;
@@ -145,6 +146,30 @@
         "image details details"
         "thumbnails details details"
         "footer footer footer";
+}
+
+.article_compact_content {
+    display: grid;
+    gap: 1.5rem;
+    padding: 0.5rem;
+    /* Kolme riviä: ensimmäinen otsikolle, toinen kuvalle, kolmas tekstille */
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+        "header"
+        "image"
+        "description";
+}
+
+.article_full_content {
+    display: grid;
+    gap: 1.5rem;
+    padding: 0.5rem;
+    /* Kolme riviä: ensimmäinen otsikolle, toinen kuvalle, kolmas tekstille */
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+        "header"
+        "image"
+        "description";
 }
 
 /* Iso layout (300px image-col) */
@@ -258,3 +283,33 @@
     background-color: rgba(255, 255, 255, 0.1);
     border-top: 1px solid #999;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.card_pair {
+    display: grid;
+    grid-template-columns: 150px 1fr; 
+    gap: 0.5rem;
+  }
+  
+  .card_label {
+    font-weight: bold;
+  }
+  
+  .card_value {
+    white-space: pre-wrap; /* säilytetään rivinvaihdot */
+  }

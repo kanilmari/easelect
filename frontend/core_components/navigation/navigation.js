@@ -96,10 +96,10 @@ export async function handle_all_navigation(name, customViews) {
 
 
 export async function performNavigation(data_lang_key, container_id, load_function, groupName) {
-    console.log('Navigating to:', data_lang_key);
-    console.log('Container ID:', container_id);
-    console.log('Load function:', load_function);
-    console.log('Group name:', groupName);
+    // console.log('Navigating to:', data_lang_key);
+    // console.log('Container ID:', container_id);
+    // console.log('Load function:', load_function);
+    // console.log('Group name:', groupName);
 
     // 1) Poistetaan edelliseltä aktiiviselta nappilta .active
     const old_active_button = document.querySelector('.general_button_nav.active');
@@ -161,7 +161,7 @@ function get_load_info(name, custom_views) {
     } else {
         return {
             loadFunction: () => {
-                console.log('navigation.js: get_load_info kutsuu refreshTableUnified');
+                // console.log('navigation.js: get_load_info kutsuu refreshTableUnified');
                 return refreshTableUnified(name);
             },
             containerId: `${name}_container`

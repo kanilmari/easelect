@@ -32,7 +32,6 @@ func GetResultsHandlerWrapper(w http.ResponseWriter, r *http.Request) {
 	GetResults(w, r)
 }
 
-// GetResults korvattu/muokattu versio, joka käyttää käyttäjäkohtaisia sarakeasetuksia.
 // getResults.go
 func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	table_name := request.URL.Query().Get("table")
@@ -52,13 +51,13 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	var results_per_load_str string
 	err = backend.Db.QueryRow("SELECT value FROM system_config WHERE key = 'results_load_amount'").Scan(&results_per_load_str)
 	if err != nil {
-		log.Printf("virhe haettaessa results_load_amount: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe konfiguraatiota haettaessa", http.StatusInternalServerError)
 		return
 	}
 	results_per_load, err := strconv.Atoi(results_per_load_str)
 	if err != nil {
-		log.Printf("virhe muunnettaessa results_load_amount kokonaisluvuksi: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe konfiguraation arvossa", http.StatusInternalServerError)
 		return
 	}
@@ -68,7 +67,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	if offset_str != "" {
 		offset_value, err = strconv.Atoi(offset_str)
 		if err != nil {
-			log.Printf("virhe muunnettaessa offset kokonaisluvuksi: %v", err)
+			log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 			http.Error(response_writer, "virhe offset-parametrissa", http.StatusBadRequest)
 			return
 		}
@@ -77,7 +76,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	// 3. Haetaan käyttäjän sarakeasetukset kyseiselle taululle ja varmennetaan puuttuvat rivit
 	userColumnSettings, err := ensureAndFetchUserColumnSettings(userID, table_name)
 	if err != nil {
-		log.Printf("Virhe user_table_settings haussa: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe sarakeasetuksissa", http.StatusInternalServerError)
 		return
 	}
@@ -88,7 +87,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	// 4. Haetaan muun datan osalta saraketietoja, tietotyyppejä ym.
 	column_data_types, err := getColumnDataTypesWithFK(table_name)
 	if err != nil {
-		log.Printf("virhe sarakkeiden tietotyyppien haussa: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe sarakkeiden tietotyyppien haussa", http.StatusInternalServerError)
 		return
 	}
@@ -96,15 +95,19 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	// Haetaan sarakkeet ja liitokset käytettäväksi vain näkyville sarakkeille
 	columnsMap, err := gt_2_column_read.GetColumnsMapForTable(table_name)
 	if err != nil {
-		log.Printf("virhe columnsMap haussa: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe sarakkeiden tietojen haussa", http.StatusInternalServerError)
 		return
 	}
 
-	// Rajataan asetuksista vain näkyvät (is_hidden=false) ja etsitään vastaavat column_uid:t
+	// Rajataan asetuksista vain näkyvät (is_hidden=false) ja ohitetaan "openai_embedding"
 	visibleColUids := make([]int, 0)
 	for _, cs := range userColumnSettings {
 		if cs.IsHidden {
+			continue
+		}
+		if cs.ColumnName == "openai_embedding" {
+			// Tämä sarake jätetään aina pois hakutuloksista
 			continue
 		}
 		for uid, colInfo := range columnsMap {
@@ -118,7 +121,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	// Rakennetaan SELECT- ja JOIN-osat näkyville sarakkeille
 	selectColumns, joinClauses, columnExpressions, err := buildJoins(table_name, columnsMap, visibleColUids)
 	if err != nil {
-		log.Printf("virhe JOIN-liitosten rakentamisessa: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe JOIN-liitosten rakentamisessa", http.StatusInternalServerError)
 		return
 	}
@@ -126,13 +129,13 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	// Rakennetaan WHERE- ja ORDER BY -ehdot
 	where_clause, query_args, err := buildWhereClause(request.URL.Query(), table_name, buildColumnsByName(columnsMap), columnExpressions)
 	if err != nil {
-		log.Printf("virhe WHERE-ehdon rakentamisessa: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe WHERE-ehdon rakentamisessa", http.StatusInternalServerError)
 		return
 	}
 	order_by_clause, err := buildOrderByClause(request.URL.Query(), table_name, buildColumnsByName(columnsMap), columnExpressions)
 	if err != nil {
-		log.Printf("virhe ORDER BY -ehdon rakentamisessa: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe ORDER BY -ehdon rakentamisessa", http.StatusBadRequest)
 		return
 	}
@@ -149,12 +152,9 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 		offset_value,
 	)
 
-	// log.Printf("DEBUG sql: %s", query)
-	// log.Printf("DEBUG args: %+v", query_args)
-
 	rows_result, err := backend.Db.Query(query, query_args...)
 	if err != nil {
-		log.Printf("virhe suoritettaessa kyselyä: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe tietoja haettaessa", http.StatusInternalServerError)
 		return
 	}
@@ -162,7 +162,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 
 	result_columns, err := rows_result.Columns()
 	if err != nil {
-		log.Printf("virhe sarakkeiden haussa tuloksesta: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe sarakkeiden haussa", http.StatusInternalServerError)
 		return
 	}
@@ -175,7 +175,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 			row_pointers[i] = &row_values[i]
 		}
 		if err := rows_result.Scan(row_pointers...); err != nil {
-			log.Printf("virhe rivien käsittelyssä: %v", err)
+			log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 			http.Error(response_writer, "virhe rivien käsittelyssä", http.StatusInternalServerError)
 			return
 		}
@@ -194,7 +194,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 		query_results = append(query_results, current_row_result)
 	}
 	if err := rows_result.Err(); err != nil {
-		log.Printf("row iteration error: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe rivien käsittelyssä (err)", http.StatusInternalServerError)
 		return
 	}
@@ -209,7 +209,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 
 	response_writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if err := json.NewEncoder(response_writer).Encode(response_data); err != nil {
-		log.Printf("virhe vastauksen koodauksessa: %v", err)
+		log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe vastauksen koodauksessa", http.StatusInternalServerError)
 		return
 	}
@@ -319,8 +319,9 @@ func buildColumnsByName(colsMap map[int]models.ColumnInfo) map[string]models.Col
 	return byName
 }
 
-// Uusi versio: lisätään show_key_on_card sarakkeeseen
 func getColumnDataTypesWithFK(tableName string) (map[string]interface{}, error) {
+	fmt.Printf("\033[36m[getColumnDataTypesWithFK] haetaan taulun '%s' sarake- ja fk-tiedot...\033[0m\n", tableName)
+
 	query := `
         SELECT
             c.column_name,
@@ -360,30 +361,24 @@ func getColumnDataTypesWithFK(tableName string) (map[string]interface{}, error) 
         WHERE c.table_name = $1
           AND c.table_schema = 'public'
     `
-
 	rows, err := backend.Db.Query(query, tableName)
 	if err != nil {
-		return nil, fmt.Errorf("error selecting columns data: %v", err)
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		return nil, fmt.Errorf("getColumnDataTypesWithFK: %v", err)
 	}
 	defer rows.Close()
 
 	data_types := make(map[string]interface{})
+
 	for rows.Next() {
 		var columnName, dataType string
 		var foreignTableName, foreignColumnName sql.NullString
 		var cardElement string
 		var showKeyOnCard bool
 
-		err := rows.Scan(
-			&columnName,
-			&dataType,
-			&foreignTableName,
-			&foreignColumnName,
-			&cardElement,
-			&showKeyOnCard,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning columns data: %v", err)
+		if err := rows.Scan(&columnName, &dataType, &foreignTableName, &foreignColumnName, &cardElement, &showKeyOnCard); err != nil {
+			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+			return nil, fmt.Errorf("getColumnDataTypesWithFK: %v", err)
 		}
 
 		columnInfo := map[string]interface{}{
@@ -391,19 +386,22 @@ func getColumnDataTypesWithFK(tableName string) (map[string]interface{}, error) 
 			"card_element":     cardElement,
 			"show_key_on_card": showKeyOnCard,
 		}
-		// debug: print columnInfo in blue color
-		fmt.Printf("\x1b[34;1m%+v\x1b[0m\n", columnInfo)
 		if foreignTableName.Valid && foreignColumnName.Valid {
 			columnInfo["foreign_table"] = foreignTableName.String
 			columnInfo["foreign_column"] = foreignColumnName.String
 		}
 
+		// Lisätään pieni loki tämän sarakkeen tiedoista
+		fmt.Printf("  - Sarake '%s' -> %+v\n", columnName, columnInfo)
 		data_types[columnName] = columnInfo
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error in rows for columns data: %v", err)
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		return nil, fmt.Errorf("getColumnDataTypesWithFK, rows error: %v", err)
 	}
+
+	fmt.Printf("\033[36m[getColumnDataTypesWithFK] taulun '%s' saraketiedot ladattu onnistuneesti.\033[0m\n", tableName)
 	return data_types, nil
 }
 

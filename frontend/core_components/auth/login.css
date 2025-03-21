@@ -22,10 +22,13 @@ form {
     gap: 15px;
     width: 300px;
     padding: 20px;
-    border: 1px solid var(--text_color);
     border-radius: 8px;
     background-color: #333;
     box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.3);
+}
+
+.form_with_border {
+    border: 1px solid var(--text_color);
 }
 
 input[type="text"],

@@ -1,82 +1,82 @@
 // tree_call.js
 
 import { render_tree } from './vanilla_tree.js';
-import {custom_views} from '../../core_components/main/custom_views.js';
+import { custom_views } from '../../core_components/main/custom_views.js';
 import { handle_all_navigation } from '../../core_components/navigation/navigation.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
     async function enable_drag_and_drop_for_folders_and_tables() {
         // console.log('Enabling drag and drop for folders and tables');
-    
+
         // Etsitään kaikki .node-elementit puun sisältä (#nav_tree ID:n alta)
         const all_nodes = document.querySelectorAll('#nav_tree .node');
-    
+
         all_nodes.forEach((node_element) => {
             // Luetaan data-is-folder="true|false"
             const isFolder = (node_element.getAttribute('data-is-folder') === 'true');
             // Luetaan varsinainen kantarivin dbId
             const dbIdStr = node_element.getAttribute('data-db-id');
-    
+
             // 1) Asetetaan raahattavuus kaikille solmuille
             node_element.setAttribute('draggable', 'true');
-    
+
             // 2) dragstart
             node_element.addEventListener('dragstart', (event) => {
                 // Estetään kupliminen, jotta ylimmän tason (vanhemman) .node ei nappaa dragstartia
                 event.stopPropagation();
-    
+
                 // Varmuuden vuoksi: kerromme selaimelle, että haluamme move-efektin
                 event.dataTransfer.effectAllowed = "move";
-    
+
                 // Asetetaan data: node_db_id & node_type
                 event.dataTransfer.setData('node_db_id', dbIdStr);
                 event.dataTransfer.setData('node_type', isFolder ? 'folder' : 'table');
-    
+
                 console.log('[dragstart]', {
                     dbIdStr,
                     type: isFolder ? 'folder' : 'table'
                 });
             });
-    
+
             // 3) dragover
             node_element.addEventListener('dragover', (event) => {
                 // Estetään kupliminen
                 event.stopPropagation();
-    
+
                 // Pudotus sallitaan vain, jos *tämä* node on kansio
                 if (isFolder) {
-                    event.preventDefault(); 
+                    event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
                 }
             });
-    
+
             // 4) drop
             node_element.addEventListener('drop', async (event) => {
                 // Estetään kupliminen
                 event.stopPropagation();
-    
+
                 // Jos ei ole kansio, emme tee pudotusta
                 if (!isFolder) return;
                 event.preventDefault();
-    
+
                 // Haetaan dataTransferiin aiemmin tallennettuja arvoja
                 const draggedNodeDbIdStr = event.dataTransfer.getData('node_db_id');
                 const draggedNodeType = event.dataTransfer.getData('node_type');
-    
+
                 // Tämän solmun (kansion) db-id
                 const targetFolderDbIdStr = node_element.getAttribute('data-db-id');
-    
+
                 // Vältetään pudottamasta kansiota itseensä
                 if (draggedNodeDbIdStr === targetFolderDbIdStr && draggedNodeType === 'folder') {
                     alert('Ei voi pudottaa kansiota itseensä!');
                     return;
                 }
-    
+
                 // Muunnetaan numeroksi
                 const draggedIdNum = parseInt(draggedNodeDbIdStr, 10);
-                const folderIdNum  = parseInt(targetFolderDbIdStr, 10);
-    
+                const folderIdNum = parseInt(targetFolderDbIdStr, 10);
+
                 // Lähetetään POST /api/update-folder
                 try {
                     const response = await fetch('/api/update-folder', {
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             new_folder_id: folderIdNum
                         })
                     });
-    
+
                     if (response.ok) {
                         console.log('Tieto siirrettiin onnistuneesti!');
                         // Jos haluat päivittää puun uudelleen:
@@ -106,68 +106,156 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // fetch('/api/tree_data')
+    // .then(response => {
+    //     if (!response.ok) {
+    //         throw new Error("Virhe datan haussa");
+    //     }
+    //     return response.json();
+    // })
+    // .then(async (data) => {
 
-    // Haetaan data /api/tree_data
+    //     // *** UUSI KOODI: kerätään taulujen table_uid + default_view_id ja tallennetaan localStorageen
+    //     const tableSpecsMap = {};
+    //     data.forEach((node) => {
+    //       if (node.table_uid) {
+    //         tableSpecsMap[node.name] = {
+    //           table_uid: node.table_uid,
+    //         //   default_view_id: node.default_view_id,     // numeroinen ID
+    //           default_view_name: node.default_view_name  // varsinainen näkymän nimi
+    //         };
+    //       }
+    //     });
+    //     localStorage.setItem('table_specs', JSON.stringify(tableSpecsMap));
     fetch('/api/tree_data')
-      .then(response => {
-          if (!response.ok) {
-              throw new Error("Virhe datan haussa");
-          }
-          return response.json();
-      })
-      .then(async (data) => {
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Virhe datan haussa");
+            }
+            return response.json();
+        })
+        .then(async (data) => {
 
-          // *** UUSI KOODI: kerätään taulujen table_uid:t ja tallennetaan localStorageen
-          const tableUidsMap = {};
-          data.forEach((node) => {
-              if (node.table_uid) {
-                  // Käytetään taulun nimenä avainta, arvona table_uid
-                  tableUidsMap[node.name] = node.table_uid;
-              }
-          });
-          localStorage.setItem('table_uids', JSON.stringify(tableUidsMap));
+            // *** UUSI KOODI: tallennetaan koko vastaus localStorageen
+            localStorage.setItem("full_tree_data", JSON.stringify(data));
+            console.log('all tree data in local storage: ', data);
 
-          // 1) Piirretään nappipuu
-          await render_tree(data, {
-              container_id: 'nav_tree',
-              id_suffix: '_nav',
-              render_mode: 'button',
-              checkbox_mode: 'none',
-              use_icons: false,
-              populate_checkbox_selection: false,
-              max_recursion_depth: 32,
-              tree_model: 'flat',
-              initial_open_level: 0,
-              show_node_count: false,
-              show_search: true,
-              use_data_lang_key: true,
-              button_action_function: async (nodeData) => {
-                  await handle_all_navigation(nodeData.name, custom_views);
-                  localStorage.setItem('selected_table', nodeData.name);
-              }
-          });
+            // *** UUSI KOODI: kerätään taulujen table_uid + default_view_name ja tallennetaan localStorageen
+            const tableSpecsMap = {};
+            data.nodes.forEach((node) => {
+                if (node.table_uid) {
+                    tableSpecsMap[node.name] = {
+                        table_uid: node.table_uid,
+                        default_view_name: node.default_view_name
+                    };
+                }
+            });
+            localStorage.setItem('table_specs', JSON.stringify(tableSpecsMap));
 
-          // 2) Kun puu on valmis, otetaan drag & drop käyttöön
-          await enable_drag_and_drop_for_folders_and_tables();
+            // 1) Piirretään nappipuu (huom! parametrina data.nodes)
+            await render_tree(data.nodes, {
+                container_id: 'nav_tree',
+                id_suffix: '_nav',
+                render_mode: 'button',
+                checkbox_mode: 'none',
+                use_icons: false,
+                populate_checkbox_selection: false,
+                max_recursion_depth: 32,
+                tree_model: 'flat',
+                initial_open_level: 0,
+                show_node_count: false,
+                show_search: true,
+                use_data_lang_key: true,
+                button_action_function: async (nodeData) => {
+                    await handle_all_navigation(nodeData.name, custom_views);
+                    localStorage.setItem('selected_table', nodeData.name);
+                }
+            });
 
-          // 3) Piirretään toinen puu "table_selector_tree" checkbox-tilalla
-          await render_tree(data, {
-              container_id: 'table_selector_tree',
-              id_suffix: '_table_rights',
-              render_mode: 'checkbox',
-              checkbox_mode: 'all',
-              use_icons: false,
-              populate_checkbox_selection: false,
-              max_recursion_depth: 32,
-              tree_model: 'flat',
-              initial_open_level: 1,
-              show_node_count: true,
-              show_search: true,
-              use_data_lang_key: true
-          });
-      })
-      .catch(error => {
-          console.error("Virhe:", error);
-      });
+            // 2) Kun puu on valmis, otetaan drag & drop käyttöön
+            await enable_drag_and_drop_for_folders_and_tables();
+
+            // 3) Piirretään toinen puu "table_selector_tree" checkbox-tilalla (jälleen data.nodes)
+            await render_tree(data.nodes, {
+                container_id: 'table_selector_tree',
+                id_suffix: '_table_rights',
+                render_mode: 'checkbox',
+                checkbox_mode: 'all',
+                use_icons: false,
+                populate_checkbox_selection: false,
+                max_recursion_depth: 32,
+                tree_model: 'flat',
+                initial_open_level: 1,
+                show_node_count: true,
+                show_search: true,
+                use_data_lang_key: true
+            });
+        })
+        .catch(error => {
+            console.error("Virhe:", error);
+        });
+
+    // // Haetaan data /api/tree_data
+    // fetch('/api/tree_data')
+    //   .then(response => {
+    //       if (!response.ok) {
+    //           throw new Error("Virhe datan haussa");
+    //       }
+    //       return response.json();
+    //   })
+    //   .then(async (data) => {
+
+    //       // *** UUSI KOODI: kerätään taulujen table_uid:t ja tallennetaan localStorageen
+    //       const tableUidsMap = {};
+    //       data.forEach((node) => {
+    //           if (node.table_uid) {
+    //               // Käytetään taulun nimenä avainta, arvona table_uid
+    //               tableUidsMap[node.name] = node.table_uid;
+    //           }
+    //       });
+    //       localStorage.setItem('table_uids', JSON.stringify(tableUidsMap));
+
+    //       // 1) Piirretään nappipuu
+    //       await render_tree(data, {
+    //           container_id: 'nav_tree',
+    //           id_suffix: '_nav',
+    //           render_mode: 'button',
+    //           checkbox_mode: 'none',
+    //           use_icons: false,
+    //           populate_checkbox_selection: false,
+    //           max_recursion_depth: 32,
+    //           tree_model: 'flat',
+    //           initial_open_level: 0,
+    //           show_node_count: false,
+    //           show_search: true,
+    //           use_data_lang_key: true,
+    //           button_action_function: async (nodeData) => {
+    //               await handle_all_navigation(nodeData.name, custom_views);
+    //               localStorage.setItem('selected_table', nodeData.name);
+    //           }
+    //       });
+
+    //       // 2) Kun puu on valmis, otetaan drag & drop käyttöön
+    //       await enable_drag_and_drop_for_folders_and_tables();
+
+    //       // 3) Piirretään toinen puu "table_selector_tree" checkbox-tilalla
+    //       await render_tree(data, {
+    //           container_id: 'table_selector_tree',
+    //           id_suffix: '_table_rights',
+    //           render_mode: 'checkbox',
+    //           checkbox_mode: 'all',
+    //           use_icons: false,
+    //           populate_checkbox_selection: false,
+    //           max_recursion_depth: 32,
+    //           tree_model: 'flat',
+    //           initial_open_level: 1,
+    //           show_node_count: true,
+    //           show_search: true,
+    //           use_data_lang_key: true
+    //       });
+    //   })
+    //   .catch(error => {
+    //       console.error("Virhe:", error);
+    //   });
 
 });

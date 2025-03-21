@@ -8,8 +8,8 @@
     --border_radius_small: 4px;
     /* --filterbar_width: 450px; */
 
-    --bg_color: #f0f0f0;
-    --bg_color_2: #eee;
+    --bg_color: #ccc;
+    --bg_color_2: #f0f0f0;
     --text_color: #000;
     --border_color: #888;
     --table_border_color: #ccc;
@@ -30,7 +30,6 @@
     --blended_bg: rgb(0 0 0 / 15%);
     --extreme_bg: rgb(255 255 255);
     --blended_bg_2: color-mix(in srgb, var(--bg_color) 80%, var(--extreme_bg) 20%);
-    
 }
 
 /* WebKit (Chrome, Safari) */
@@ -108,8 +107,8 @@
 
 /* Vaalea teema */
 body.light-mode {
-    --bg_color: #f0f0f0;
-    --bg_color_2: #eee;
+    --bg_color: #ccc;
+    --bg_color_2: #f0f0f0;
     --text_color: #000;
     --border_color: #888;
     --table_border_color: #ccc;
@@ -152,5 +151,5 @@ body.light-mode {
     --blended_bg: rgb(255 255 255 / 20%);
     --extreme_bg: rgb(0 0 0);
     --blended_bg_2: color-mix(in srgb, var(--bg_color) 70%, var(--extreme_bg) 30%);
-    --add_row_form_box_shadow: 0 2px 60px 30px rgb(0 0 0 / 100%);
+    --add_row_form_box_shadow: 0 2px 60px 30px rgb(0 0 0 / 50%);
   }

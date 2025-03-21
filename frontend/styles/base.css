@@ -1,15 +1,18 @@
 /* base.css */
 * {
+    font-family: Arial, sans-serif;
     letter-spacing: 0.5px;
     box-sizing: border-box;
     margin: 0;
     color: var(--text_color);
+    word-wrap: break-word;
+    overflow-wrap: break-word; 
+    /* word-break: break-all; */
 }
 
 /* Yleiset perustyylit */
 .body_content {
     height: 100vh;
-    font-family: Arial, sans-serif;
     /* display: grid; */
     background-color: var(--bg_color);
     color: var(--text_color);

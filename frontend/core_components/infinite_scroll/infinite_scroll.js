@@ -21,7 +21,7 @@ let sentinel = null;
 export function resetOffset(tableName) {
     const state = getUnifiedTableState(tableName);
     state.offset = 0;
-    console.log('infinite_scroll.js: resetOffset kutsuu funktiota setUnifiedTableState arvoilla tableName:', tableName, 'state:', state);
+    // console.log('infinite_scroll.js: resetOffset kutsuu funktiota setUnifiedTableState arvoilla tableName:', tableName, 'state:', state);
     setUnifiedTableState(tableName, state);
 }
 
@@ -32,7 +32,7 @@ export function updateOffset(tableName, loadedCount) {
     const state = getUnifiedTableState(tableName);
     const oldOffset = state.offset || 0;
     state.offset = oldOffset + loadedCount;
-    console.log('infinite_scroll.js: updateOffset kutsuu funktiota setUnifiedTableState arvoilla tableName:', tableName, 'state:', state);
+    // console.log('infinite_scroll.js: updateOffset kutsuu funktiota setUnifiedTableState arvoilla tableName:', tableName, 'state:', state);
     setUnifiedTableState(tableName, state);
 }
 

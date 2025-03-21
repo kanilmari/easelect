@@ -34,9 +34,7 @@ export async function fetchTableData({
     params.append('table', table_name);
 
     // Käytetään offset vain jos se on suurempi kuin nolla
-    if (offset > 0) {
-        params.append('offset', offset);
-    }
+    params.append('offset', offset);
 
     // Laitetaan sort_column ja sort_order, jos ne on annettu
     if (sort_column) {
@@ -61,7 +59,7 @@ export async function fetchTableData({
     }
 
     // Rakennetaan lopullinen URL
-    console.log(`/api/get-results käynnistyy... (kutsu peräisin: ${callerName || 'tuntematon'})`);
+    // console.log(`/api/get-results käynnistyy... (kutsu peräisin: ${callerName || 'tuntematon'})`);
     const url = `/api/get-results?${params.toString()}`;
 
     // Tehdään fetch-kutsu
