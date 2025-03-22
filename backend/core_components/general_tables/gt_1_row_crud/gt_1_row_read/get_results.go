@@ -100,16 +100,17 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// Rajataan asetuksista vain näkyvät (is_hidden=false) ja ohitetaan "openai_embedding"
+	// Rajataan asetuksista vain näkyvät (is_hidden=false)
+	// // ja ohitetaan "openai_embedding"
 	visibleColUids := make([]int, 0)
 	for _, cs := range userColumnSettings {
 		if cs.IsHidden {
 			continue
 		}
-		if cs.ColumnName == "openai_embedding" {
-			// Tämä sarake jätetään aina pois hakutuloksista
-			continue
-		}
+		// if cs.ColumnName == "openai_embedding" {
+		// 	// Tämä sarake jätetään aina pois hakutuloksista
+		// 	continue
+		// }
 		for uid, colInfo := range columnsMap {
 			if colInfo.ColumnName == cs.ColumnName {
 				visibleColUids = append(visibleColUids, uid)

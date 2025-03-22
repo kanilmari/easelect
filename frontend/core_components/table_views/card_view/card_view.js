@@ -3,172 +3,12 @@
 import { createModal, showModal } from '../../../common_components/modal/modal_factory.js';
 import { endpoint_router } from '../../endpoints/endpoint_router.js';
 import { update_card_selection } from '../table_view/selection.js';
-
-/**
- * Luo SHA-256 -pohjainen "avatar" annetusta siemenarvosta. 
- */
-export async function create_seeded_avatar(seed_string, letter_for_avatar, useLargeSize = false) {
-    // Lasketaan seed_string -> SHA-256 (hex)
-    const msgUint8 = new TextEncoder().encode(seed_string);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // Otetaan osa hashista numeriseen muotoon satunnaisuutta varten
-    const numericHashPart_for_color = parseInt(hashHex.slice(0, 8), 16);
-    const numericHashPart_for_radius = parseInt(hashHex.slice(8, 16), 16);
-
-    // Määritetään maksimi merkkimäärä
-    const max_chars = 16;
-    let final_text = '?';
-    if (letter_for_avatar) {
-        if (letter_for_avatar.length > max_chars) {
-            final_text = letter_for_avatar.slice(0, max_chars) + '...';
-        } else {
-            final_text = letter_for_avatar;
-        }
-    }
-    const final_letter = final_text.toUpperCase();
-
-    // Taustavärin laskenta HSL-muodossa
-    const hue_value = numericHashPart_for_color % 360;
-    const saturation_value = 30;  // Tummahko
-    const lightness_value = 40;
-    const chosen_color_hsl = `hsl(${hue_value}, ${saturation_value}%, ${lightness_value}%)`;
-
-    // Border-radiaalin laskenta
-    const random_radius = (numericHashPart_for_radius % 30) + 1;
-    const chosen_border_radius = `${random_radius}%`;
-
-    // Fontit
-    const fonts = [
-        'Arial, sans-serif',
-        '"Times New Roman", Times, serif',
-        'Consolas, monospace',
-        'Verdana, Geneva, sans-serif',
-        '"Trebuchet MS", Helvetica, sans-serif',
-        'Georgia, serif',
-        '"Palatino Linotype", "Book Antiqua", Palatino, serif'
-    ];
-    const font_index = (numericHashPart_for_color >>> 8) % fonts.length;
-    const chosen_font = fonts[font_index];
-
-    // Jos haluamme ison 300x300 tai pienen 120x120
-    const containerSize = useLargeSize ? 300 : 120;
-    const avatarBoxSize = useLargeSize ? 220 : 120;
-
-    // Container
-    const container_div = document.createElement('div');
-    container_div.style.width = containerSize + 'px';
-    container_div.style.height = containerSize + 'px';
-    container_div.style.display = 'flex';
-    container_div.style.alignItems = 'center';
-    container_div.style.justifyContent = 'center';
-    container_div.style.overflow = 'hidden';
-
-    // Avatar-elementti
-    const avatar_div = document.createElement('div');
-    avatar_div.textContent = final_letter;
-    avatar_div.style.display = 'flex';
-    avatar_div.style.alignItems = 'center';
-    avatar_div.style.justifyContent = 'center';
-    avatar_div.style.width = avatarBoxSize + 'px';
-    avatar_div.style.height = avatarBoxSize + 'px';
-    avatar_div.style.backgroundColor = chosen_color_hsl;
-    avatar_div.style.fontFamily = chosen_font;
-    avatar_div.style.fontWeight = 'bold';
-    avatar_div.style.fontSize = useLargeSize ? '7rem' : '4rem';
-    avatar_div.style.color = 'var(--text_color, #fff)';
-    avatar_div.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.5)';
-    avatar_div.style.borderRadius = chosen_border_radius;
-
-    container_div.appendChild(avatar_div);
-    return container_div;
-}
-
-/**
- * Luo fancy-kuvaelementin. PNG-kuville ei lisätä varjoa, sumennusta eikä pyöristettyjä kulmia.
- */
-function createImageElement(image_src, useLargeSize) {
-    const wrapper = document.createElement('div');
-    wrapper.style.width = useLargeSize ? '300px' : '140px';
-    wrapper.style.height = useLargeSize ? '300px' : '140px';
-    wrapper.style.position = 'relative';
-    // wrapper.style.overflow = 'hidden';  // avaa halutessasi
-
-    const foregroundImg = document.createElement('img');
-    const isPng = image_src.toLowerCase().endsWith('.png');
-
-    if (!isPng) {
-        // Muille kuin PNG-kuville lisätään pyöristys, varjo ja (halutessa) blur-tausta
-        wrapper.style.background = 'var(--bg_color)';
-        
-        wrapper.style.borderRadius = '7px';
-        // wrapper.style.border = '1px solid var(--border_color)';
-        foregroundImg.style.borderRadius = '6px';
-        // foregroundImg.style.border = '1px solid var(--border_color)';
-        wrapper.style.boxShadow = '2px 2px 4px rgba(0, 0, 0, 0.2)';
-        
-        wrapper.style.backdropFilter = 'blur(10px)';
-        wrapper.style.webkitBackdropFilter = 'blur(10px)';
-        // Alla oleva blur-elementti on optio, voit avata sen kommentoimalla sisällön näkyviin:
-        /*
-        const blurredBg = document.createElement('div');
-        blurredBg.style.position = 'absolute';
-        blurredBg.style.top = '0';
-        blurredBg.style.left = '0';
-        blurredBg.style.right = '0';
-        blurredBg.style.bottom = '0';
-        blurredBg.style.backgroundImage = `url(${image_src})`;
-        blurredBg.style.backgroundSize = 'cover';
-        blurredBg.style.backgroundPosition = 'center';
-        blurredBg.style.filter = 'blur(40px)';
-        blurredBg.style.opacity = '0.8';
-        blurredBg.style.filter += ' saturate(80%)';
-        wrapper.appendChild(blurredBg);
-        */
-    }
-
-    // Näytettävä kuva
-    foregroundImg.src = image_src;
-    foregroundImg.alt = 'Kuva puuttuu';
-    foregroundImg.style.position = 'relative';
-    foregroundImg.style.width = '100%';
-    foregroundImg.style.height = '100%';
-    foregroundImg.style.objectFit = 'contain';  // pidetään kuva kokonaan näkyvissä
-    foregroundImg.style.objectPosition = 'center';
-
-    wrapper.appendChild(foregroundImg);
-    // add style: wrapper.backdrop-filter: blur(10px);
-    wrapper.style.backdropFilter = 'blur(10px)';
-    
-    // Hey copilot, add class named "random"
-    wrapper.classList.add('wrapper');
-    
-    /*
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: '-webkit solid var(--border_color)';
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border: '1px solid var(--border_color)';
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    position: absolute;
-    z-index: 10001;
-    */
-
-
-    // wrapper.style.border = '1px solid rgba(255, 255, 255, 0.18)';
-    // wrapper.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.37)';
-    // wrapper.style.position = 'absolute';
-    // wrapper.style.zIndex = '10001';
-    // wrapper
-    return wrapper;
-}
+import { createImageElement, create_seeded_avatar } from './card_layout.js';
 
 /**
  * Lisää annettuun card_containeriin itemejä (kortteja) columns- ja data-listan perusteella.
- * (Yksinkertainen versio, joka luo yksinkertaiset pairDiv-labelit + -arvot.)
+ * Nyt label (avain) ja value (arvo) erotellaan aina omiin diveihin,
+ * mutta show_key_on_card -asetuksen mukaan labelin saa myös piiloon.
  */
 export function appendDataToCardView(card_container, columns, data, table_name) {
     let data_types = {};
@@ -207,14 +47,10 @@ export function appendDataToCardView(card_container, columns, data, table_name) 
             const labelDiv = document.createElement('div');
             labelDiv.classList.add('card_label');
 
-            const show_key_on_card = data_types[column]?.show_key_on_card === true;
+            // Näytetään label vain, jos show_key_on_card on true
+            const showKeyOnCard = data_types[column]?.show_key_on_card === true;
             const formatted_label = format_column_name(column);
-
-            if (show_key_on_card) {
-                labelDiv.textContent = `${formatted_label}:`;
-            } else {
-                labelDiv.textContent = '';
-            }
+            labelDiv.textContent = showKeyOnCard ? formatted_label : '';
 
             const valueDiv = document.createElement('div');
             valueDiv.classList.add('card_value');
@@ -274,12 +110,15 @@ function parseRoleString(roleStr) {
 }
 
 /**
- * Asynkroninen create_card_view: rakentaa kortit data-taulukosta, 
+ * Asynkroninen create_card_view: rakentaa kortit data-taulukosta,
  * tukee roolit: header, image, description, details, keywords, creation_spec,
  * sekä kieliavain "lang-key" (tai "lang_key").
- * 
- * Jokainen sarake voi sisältää useita rooleja (esim. "image,header"). 
+ *
+ * Jokainen sarake voi sisältää useita rooleja (esim. "image,header").
  * Kaikki roolit otetaan huomioon samalle sarakkeelle.
+ *
+ * Avain-arvo -parit pidetään erillisinä, jotta ne eivät ole samassa elementissä,
+ * mutta show_key_on_card -asetuksella voidaan piilottaa label tarvittaessa.
  */
 export async function create_card_view(columns, data, table_name) {
     const card_container = document.createElement('div');
@@ -383,35 +222,36 @@ export async function create_card_view(columns, data, table_name) {
             const roleFull = data_types[column]?.card_element || '';
             const { baseRoles, hasLangKey } = parseRoleString(roleFull);
 
-            const show_key_on_card = data_types[column]?.show_key_on_card === true;
-            const column_label = format_column_name(column);
-
-            // Pelkkä raaka arvo
-            const rawValueOnly = val_str;
-            // Mahd. label
-            const labelTextValue = show_key_on_card
-                ? `${column_label}: ${val_str}`
-                : val_str;
+            const showKeyOnCard = data_types[column]?.show_key_on_card === true;
+            const column_label = showKeyOnCard ? format_column_name(column) : '';
 
             // Jos ei rooleja, tulkitaan tavallisena tekstinä
             if (baseRoles.length === 0) {
                 if (val_str.trim()) {
-                    const elem_div = document.createElement('div');
-                    elem_div.classList.add('card_details');
-                    elem_div.textContent = labelTextValue;
-                    elem_div.style.whiteSpace = 'pre-wrap';
-                    card_content_div.appendChild(elem_div);
+                    const wrapper = document.createElement('div');
+                    wrapper.classList.add('card_pair');
+                    const kvElem = createKeyValueElement(
+                        column_label,
+                        val_str,
+                        column,
+                        hasLangKey,
+                        'card_value'
+                    );
+                    wrapper.appendChild(kvElem);
+                    card_content_div.appendChild(wrapper);
                 }
                 continue;
             }
 
             // Käsitellään kukin rooli
             for (const singleRole of baseRoles) {
+
                 // hidden
                 if (/^hidden(\d+)?$/.test(singleRole) && val_str.trim()) {
                     // Ei näytetä eikä tallenneta
                     continue;
                 }
+
                 // description
                 if (/^description(\d+)?$/.test(singleRole) && val_str.trim()) {
                     let suffix_number = Number.MAX_SAFE_INTEGER;
@@ -421,9 +261,10 @@ export async function create_card_view(columns, data, table_name) {
                     }
                     description_entries.push({
                         suffix_number,
-                        rawValue: rawValueOnly,
-                        textWithLabel: labelTextValue,
-                        hasLangKey
+                        rawValue: val_str,
+                        label: column_label,  // label näkyy vain, jos showKeyOnCard
+                        hasLangKey,
+                        column
                     });
                     continue;
                 }
@@ -437,9 +278,10 @@ export async function create_card_view(columns, data, table_name) {
                     }
                     details_entries.push({
                         suffix_number,
-                        rawValue: rawValueOnly,
-                        textWithLabel: labelTextValue,
-                        hasLangKey
+                        rawValue: val_str,
+                        label: column_label,
+                        hasLangKey,
+                        column
                     });
                     continue;
                 }
@@ -448,8 +290,8 @@ export async function create_card_view(columns, data, table_name) {
                 if (singleRole === 'keywords' && val_str.trim()) {
                     keywords_list.push({
                         column,
-                        rawValue: rawValueOnly,
-                        textWithLabel: labelTextValue,
+                        rawValue: val_str,
+                        label: column_label,
                         hasLangKey
                     });
                     continue;
@@ -480,7 +322,6 @@ export async function create_card_view(columns, data, table_name) {
                                 image_src = '/media/' + image_src;
                             }
                         }
-                        // Käytetään fancy createImageElement
                         const blurredImageElement = createImageElement(image_src, useLargeSize);
                         elem_div.appendChild(blurredImageElement);
 
@@ -498,9 +339,20 @@ export async function create_card_view(columns, data, table_name) {
                     const elem_div = document.createElement('div');
                     elem_div.classList.add('card_header');
                     if (hasLangKey) {
-                        elem_div.setAttribute('data-lang-key', rawValueOnly);
+                        elem_div.setAttribute('data-lang-key', val_str);
                     } else {
-                        elem_div.textContent = labelTextValue;
+                        // Aina avain–arvo -erittely, mutta piilotetaan avain jos showKeyOnCard=false
+                        const wrapper = document.createElement('div');
+                        wrapper.classList.add('card_pair');
+                        const kvElem = createKeyValueElement(
+                            column_label,
+                            val_str,
+                            column,
+                            hasLangKey,
+                            'header_value'
+                        );
+                        wrapper.appendChild(kvElem);
+                        elem_div.appendChild(wrapper);
                         elem_div.style.whiteSpace = 'pre-wrap';
                     }
                     elem_div.addEventListener('click', (e) => {
@@ -516,26 +368,41 @@ export async function create_card_view(columns, data, table_name) {
                     const elem_div = document.createElement('div');
                     elem_div.classList.add('card_creation_spec');
                     if (hasLangKey) {
-                        elem_div.setAttribute('data-lang-key', rawValueOnly);
+                        elem_div.setAttribute('data-lang-key', val_str);
                     } else {
-                        elem_div.textContent = labelTextValue;
+                        // Aina avain–arvo -erittely
+                        const wrapper = document.createElement('div');
+                        wrapper.classList.add('card_pair');
+                        const kvElem = createKeyValueElement(
+                            column_label,
+                            val_str,
+                            column,
+                            hasLangKey,
+                            'creation_value'
+                        );
+                        wrapper.appendChild(kvElem);
+                        elem_div.appendChild(wrapper);
                         elem_div.style.whiteSpace = 'pre-wrap';
                     }
                     card_content_div.appendChild(elem_div);
                     continue;
                 }
 
-                // jokin tuntematon rooli => perus tekstikenttä
+                // jokin tuntematon rooli => perus tekstikenttä avain-arvo -erottelulla
                 if (val_str.trim()) {
-                    const elem_div = document.createElement('div');
-                    elem_div.classList.add('card_details');
-                    if (hasLangKey) {
-                        elem_div.setAttribute('data-lang-key', rawValueOnly);
-                    } else {
-                        elem_div.textContent = labelTextValue;
-                        elem_div.style.whiteSpace = 'pre-wrap';
-                    }
-                    card_content_div.appendChild(elem_div);
+                    const wrapper = document.createElement('div');
+                    wrapper.classList.add('card_pair');
+
+                    const kvElem = createKeyValueElement(
+                        column_label,
+                        val_str,
+                        column,
+                        hasLangKey,
+                        'card_details'
+                    );
+                    wrapper.appendChild(kvElem);
+
+                    card_content_div.appendChild(wrapper);
                 }
             }
         }
@@ -564,36 +431,50 @@ export async function create_card_view(columns, data, table_name) {
             const desc_container = document.createElement('div');
             desc_container.classList.add('card_description_container');
 
-            let anyLong = false;
             for (const descObj of description_entries) {
                 const d = document.createElement('div');
                 d.classList.add('single_description_item');
 
-                if (descObj.hasLangKey) {
-                    d.setAttribute('data-lang-key', descObj.rawValue);
-                } else {
-                    const fullText = descObj.textWithLabel;
-                    let displayText = fullText;
-                    if (fullText.length > 500) {
-                        displayText = fullText.slice(0, 500) + '...';
-                        anyLong = true;
+                if (!descObj.hasLangKey) {
+                    const rawLength = descObj.rawValue.length;
+                    if (rawLength > 500) {
+                        const shortText = descObj.rawValue.slice(0, 500) + '...';
+                        const wrapper = createKeyValueElement(
+                            descObj.label,
+                            shortText,
+                            descObj.column,
+                            descObj.hasLangKey,
+                            'description_value'
+                        );
+
+                        // Linkki heti lyhennetyn tekstin jatkoksi
+                        const valueDiv = wrapper.querySelector('[data-column="' + descObj.column + '"]');
+                        if (valueDiv) {
+                            valueDiv.appendChild(document.createTextNode(' '));
+                            valueDiv.appendChild(createShowMoreLink(row_item, table_name));
+                        }
+                        d.appendChild(wrapper);
+                    } else {
+                        const wrapper = createKeyValueElement(
+                            descObj.label,
+                            descObj.rawValue,
+                            descObj.column,
+                            descObj.hasLangKey,
+                            'description_value'
+                        );
+                        d.appendChild(wrapper);
                     }
-                    d.textContent = displayText;
-                    d.style.whiteSpace = 'pre-wrap';
+                } else {
+                    const wrapper = createKeyValueElement(
+                        descObj.label,
+                        descObj.rawValue,
+                        descObj.column,
+                        descObj.hasLangKey,
+                        'description_value'
+                    );
+                    d.appendChild(wrapper);
                 }
                 desc_container.appendChild(d);
-            }
-
-            if (anyLong && !description_entries.some(e => e.hasLangKey)) {
-                const show_more_link = document.createElement('a');
-                show_more_link.href = '#';
-                show_more_link.textContent = 'Näytä lisää';
-                show_more_link.classList.add('show_more_link');
-                show_more_link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    open_big_card_modal(row_item, table_name);
-                });
-                desc_container.appendChild(show_more_link);
             }
             card_content_div.appendChild(desc_container);
         }
@@ -605,18 +486,42 @@ export async function create_card_view(columns, data, table_name) {
             for (const kwObj of keywords_list) {
                 const k = document.createElement('div');
                 k.classList.add('single_keyword_item');
-                if (kwObj.hasLangKey) {
-                    k.setAttribute('data-lang-key', kwObj.rawValue);
+
+                // Jos ei kieliavain, lyhennetään pitkät keywordit ja näytetään “Näytä lisää”
+                if (!kwObj.hasLangKey && kwObj.rawValue.length > 160) {
+                    const shortText = kwObj.rawValue.slice(0, 160) + '...';
+                    const wrapper = createKeyValueElement(
+                        kwObj.label,
+                        shortText,
+                        kwObj.column,
+                        kwObj.hasLangKey,
+                        'keyword_value'
+                    );
+
+                    const valueDiv = wrapper.querySelector('[data-column="' + kwObj.column + '"]');
+                    if (valueDiv) {
+                        valueDiv.appendChild(document.createTextNode(' '));
+                        valueDiv.appendChild(createShowMoreLink(row_item, table_name));
+                    }
+                    k.appendChild(wrapper);
                 } else {
-                    k.textContent = kwObj.textWithLabel;
-                    k.style.whiteSpace = 'pre-wrap';
+                    // Näytetään koko keyword
+                    const wrapper = createKeyValueElement(
+                        kwObj.label,
+                        kwObj.rawValue,
+                        kwObj.column,
+                        kwObj.hasLangKey,
+                        'keyword_value'
+                    );
+                    k.appendChild(wrapper);
                 }
+
                 kw_container.appendChild(k);
             }
             card_content_div.appendChild(kw_container);
         }
 
-        // details-entries
+        // Käsitellään details-entries (nyt ilman summary_details-flagia, pelkkä pituustarkistus)
         details_entries.sort((a, b) => a.suffix_number - b.suffix_number);
         if (details_entries.length > 0) {
             const details_container = document.createElement('div');
@@ -634,23 +539,31 @@ export async function create_card_view(columns, data, table_name) {
                 const detail_item = document.createElement('div');
                 detail_item.classList.add('single_detail_item');
 
-                if (detailObj.hasLangKey) {
-                    detail_item.setAttribute('data-lang-key', detailObj.rawValue);
-                } else {
-                    if (detailObj.textWithLabel.length > 80) {
-                        const details_element = document.createElement('details');
-                        const summary_element = document.createElement('summary');
-                        summary_element.textContent = detailObj.textWithLabel.slice(0, 80);
-                        const rest_of_text = detailObj.textWithLabel.slice(80);
+                // Luodaan ensin avain–arvo -elementti (jotta label näkyy).
+                const wrapper = createKeyValueElement(
+                    detailObj.label,
+                    '', // teksti lisätään vasta alla
+                    detailObj.column,
+                    detailObj.hasLangKey,
+                    'detail_value'
+                );
 
-                        details_element.appendChild(summary_element);
-                        details_element.appendChild(document.createTextNode(rest_of_text));
-                        detail_item.appendChild(details_element);
-                    } else {
-                        detail_item.textContent = detailObj.textWithLabel;
-                        detail_item.style.whiteSpace = 'pre-wrap';
-                    }
+                const valueDiv = wrapper.querySelector('.detail_value');
+
+                // Jos teksti on tosi pitkä, lyhennetään ja näytetään “Näytä lisää” -linkki.
+                if (!detailObj.hasLangKey && detailObj.rawValue.length > 80) {
+                    const truncatedText = detailObj.rawValue.slice(0, 80) + '...';
+                    const textDiv = document.createElement('div');
+                    textDiv.textContent = truncatedText + ' ';
+
+                    textDiv.appendChild(createShowMoreLink(row_item, table_name));
+                    valueDiv.appendChild(textDiv);
+                } else {
+                    // Muuten näytetään koko teksti
+                    valueDiv.textContent = detailObj.rawValue;
                 }
+
+                detail_item.appendChild(wrapper);
                 details_container.appendChild(detail_item);
             }
             card_content_div.appendChild(details_container);
@@ -675,436 +588,76 @@ export async function create_card_view(columns, data, table_name) {
 
     return card_container;
 }
-// /**
-//  * Avaa ison kortin modaalin. Näyttää kootusti kortin kentät, roolit ym.
-//  * Tukee useita rooleja (esim. "image,header"), sekä kieliavainta.
-//  * Käyttää createImageElement ei-PNG-kuville.
-//  */
-// export async function open_big_card_modal(row_item, table_name) {
-//     try {
-//         let data_types = {};
-//         try {
-//             data_types = JSON.parse(localStorage.getItem(`${table_name}_dataTypes`)) || {};
-//         } catch (error) {
-//             console.warn("could not parse data_types for table", table_name, error);
-//         }
 
-//         const columns = Object.keys(row_item);
-//         const sorted_columns = [...columns];
-//         sorted_columns.sort((colA, colB) => {
-//             const a_card_element = data_types[colA]?.card_element || '';
-//             const b_card_element = data_types[colB]?.card_element || '';
-//             if (a_card_element && !b_card_element) return -1;
-//             if (!a_card_element && b_card_element) return 1;
-//             return 0;
-//         });
 
-//         // Otsikoksi valitaan header-roolin arvo
-//         let modal_header_text = '';
+function createShowMoreLink(row_item, table_name) {
+    const link = document.createElement('a');
+    link.href = '#';
+    link.classList.add('show_more_link');
+    link.setAttribute('data-lang-key', 'show_more');
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        open_big_card_modal(row_item, table_name);
+    });
+    return link;
+}
 
-//         // Suuri container modalia varten
-//         const big_card_div = document.createElement('div');
-//         big_card_div.classList.add('big_card_container');
+/**
+ * Pieni apufunktio, joka erottaa labelin ja arvon eri elementteihin.
+ * - Avain näytetään vain, jos sitä ei ole tyhjennetty jo (ts. jos haluttiin näyttää se).
+ * - Arvo tallennetaan valueDiv:iin, jossa on data-column-attribuutti.
+ * - Jos hasLangKey on true, arvon sijaan asetetaan data-lang-key-attribuutti.
+ */
+function createKeyValueElement(column_label, raw_value, column, hasLangKey, cssClass = 'big_card_generic_field') {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('key_value_wrapper');
 
-//         const card_modal_content_div = document.createElement('div');
-//         card_modal_content_div.classList.add('big_card_content');
+    // Näytetään avain vain jos column_label ei ole tyhjä
+    if (column_label) {
+        const labelDiv = document.createElement('div');
+        labelDiv.classList.add('kv_label');
+        labelDiv.textContent = column_label;
+        wrapper.appendChild(labelDiv);
+    }
 
-//         // Headerin eka kirjain (avatar)
-//         let header_first_letter = '';
-//         for (const col of sorted_columns) {
-//             const roleFull = data_types[col]?.card_element || '';
-//             const { baseRoles } = parseRoleString(roleFull);
-//             if (baseRoles.includes('header')) {
-//                 const val_str = row_item[col] ? String(row_item[col]) : '';
-//                 if (val_str.trim()) {
-//                     header_first_letter = val_str.trim()[0];
-//                 }
-//             }
-//         }
+    // Arvo:
+    const valueDiv = document.createElement('div');
+    valueDiv.classList.add(cssClass);
+    valueDiv.setAttribute('data-column', column);
 
-//         // Luontiaika / ID seed
-//         const created_part = row_item.created
-//             || row_item.created_at
-//             || row_item.luontiaika
-//             || null;
-//         const id_part = (row_item.id !== undefined) ? String(row_item.id) : 'unknown_id';
-//         const creation_seed = created_part ? `${id_part}_${created_part}` : id_part;
+    // Tallennetaan raaka arvo data-raw-value -kenttään (editointia varten)
+    valueDiv.setAttribute('data-raw-value', raw_value);
 
-//         // Onko taululla image-rooli?
-//         const table_has_image_role = sorted_columns.some(col => {
-//             const { baseRoles } = parseRoleString(data_types[col]?.card_element || '');
-//             return baseRoles.includes('image');
-//         });
+    if (hasLangKey) {
+        // Kieliavain => jätetään textContent tyhjäksi, asetetaan attribuutti
+        valueDiv.setAttribute('data-lang-key', raw_value);
+    } else {
+        valueDiv.textContent = raw_value;
+        valueDiv.style.whiteSpace = 'pre-wrap';
+    }
 
-//         const description_entries = [];
-//         const details_entries = [];
-//         const keywords_list = [];
-//         let found_image_for_this_row = false;
+    wrapper.appendChild(valueDiv);
 
-//         // Sarakkeiden käsittely
-//         for (const column of sorted_columns) {
-//             const raw_val = row_item[column];
-//             let val_str = '';
-//             if (raw_val !== null && raw_val !== undefined) {
-//                 val_str = (typeof raw_val === 'string') ? raw_val : String(raw_val);
-//             }
-
-//             const roleFull = data_types[column]?.card_element || '';
-//             const { baseRoles, hasLangKey } = parseRoleString(roleFull);
-
-//             const show_key_on_card = data_types[column]?.show_key_on_card === true;
-//             const column_label = format_column_name(column);
-
-//             const rawValueOnly = val_str;
-//             const labelTextValue = show_key_on_card
-//                 ? `${column_label}: ${val_str}`
-//                 : val_str;
-
-//             if (baseRoles.length === 0 && val_str.trim()) {
-//                 const detail_div = document.createElement('div');
-//                 detail_div.classList.add('big_card_generic_field');
-//                 detail_div.setAttribute('data-column', column);
-//                 detail_div.textContent = labelTextValue;
-//                 detail_div.style.whiteSpace = 'pre-wrap';
-//                 card_modal_content_div.appendChild(detail_div);
-//                 continue;
-//             }
-
-//             for (const singleRole of baseRoles) {
-//                 // hidden
-//                 if (/^hidden(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     // Ei näytetä eikä tallenneta
-//                     continue;
-//                 }
-
-//                 // description
-//                 if (/^description(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     let suffix_number = Number.MAX_SAFE_INTEGER;
-//                     const match = singleRole.match(/^description(\d+)?$/);
-//                     if (match && match[1]) {
-//                         suffix_number = parseInt(match[1], 10);
-//                     }
-//                     description_entries.push({
-//                         suffix_number,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey,
-//                         column
-//                     });
-//                     continue;
-//                 }
-
-//                 // details
-//                 if (/^details(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     let suffix_number = Number.MAX_SAFE_INTEGER;
-//                     const match = singleRole.match(/^details(\d+)?$/);
-//                     if (match && match[1]) {
-//                         suffix_number = parseInt(match[1], 10);
-//                     }
-//                     details_entries.push({
-//                         suffix_number,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey,
-//                         column
-//                     });
-//                     continue;
-//                 }
-
-//                 // keywords
-//                 if (singleRole === 'keywords' && val_str.trim()) {
-//                     keywords_list.push({
-//                         column,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey
-//                     });
-//                     continue;
-//                 }
-
-//                 // image
-//                 if (singleRole === 'image') {
-//                     found_image_for_this_row = true;
-//                     const image_div = document.createElement('div');
-//                     image_div.classList.add('big_card_image');
-
-//                     if (val_str.trim()) {
-//                         let img_src = val_str.trim();
-//                         if (
-//                             !img_src.startsWith('http://') &&
-//                             !img_src.startsWith('https://') &&
-//                             !img_src.startsWith('./') &&
-//                             !img_src.startsWith('/')
-//                         ) {
-//                             const match = img_src.match(/^(\d+)_(\d+)_(\d+)\.(\w+)$/);
-//                             if (match) {
-//                                 const mainTableId = match[1];
-//                                 const mainRowId = match[2];
-//                                 img_src = `/media/${mainTableId}/${mainRowId}/${img_src}`;
-//                             } else {
-//                                 img_src = '/media/' + img_src;
-//                             }
-//                         }
-//                         // Käytetään fancy createImageElement
-//                         const fancyImgEl = createImageElement(img_src, true);
-//                         image_div.appendChild(fancyImgEl);
-//                     } else {
-//                         const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-//                         image_div.appendChild(avatar);
-//                     }
-//                     card_modal_content_div.appendChild(image_div);
-//                     continue;
-//                 }
-
-//                 // header
-//                 if (singleRole === 'header') {
-//                     if (hasLangKey) {
-//                         modal_header_text = rawValueOnly;
-//                     } else {
-//                         modal_header_text = labelTextValue;
-//                     }
-//                     const header_el = document.createElement('div');
-//                     header_el.classList.add('big_card_header');
-//                     header_el.setAttribute('data-column', column);
-//                     if (hasLangKey) {
-//                         header_el.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         header_el.textContent = labelTextValue;
-//                         header_el.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_modal_content_div.appendChild(header_el);
-//                     continue;
-//                 }
-
-//                 // creation_spec
-//                 if (singleRole === 'creation_spec') {
-//                     const creation_div = document.createElement('div');
-//                     creation_div.classList.add('big_card_creation_spec');
-//                     creation_div.setAttribute('data-column', column);
-//                     if (hasLangKey) {
-//                         creation_div.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         creation_div.textContent = labelTextValue;
-//                         creation_div.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_modal_content_div.appendChild(creation_div);
-//                     continue;
-//                 }
-
-//                 // tuntematon rooli => perus tekstikenttä
-//                 if (val_str.trim()) {
-//                     const detail_div = document.createElement('div');
-//                     detail_div.classList.add('big_card_generic_field');
-//                     detail_div.setAttribute('data-column', column);
-//                     if (hasLangKey) {
-//                         detail_div.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         detail_div.textContent = labelTextValue;
-//                         detail_div.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_modal_content_div.appendChild(detail_div);
-//                 }
-//             }
-//         }
-
-//         // Jos taululla on image-rooli, mutta ei kuvaa -> avatar
-//         if (table_has_image_role && !found_image_for_this_row) {
-//             const image_div = document.createElement('div');
-//             image_div.classList.add('big_card_image');
-//             const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-//             image_div.appendChild(avatar);
-//             card_modal_content_div.appendChild(image_div);
-//         }
-
-//         // Jos EI ole image-roolia => iso avatar
-//         if (!table_has_image_role) {
-//             const avatar_div = document.createElement('div');
-//             avatar_div.classList.add('big_card_image');
-//             const big_avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-//             avatar_div.appendChild(big_avatar);
-//             card_modal_content_div.appendChild(avatar_div);
-//         }
-
-//         // Sortataan description- ja details-listat
-//         description_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-//         details_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-
-//         // description-osiot
-//         if (description_entries.length > 0) {
-//             const desc_container = document.createElement('div');
-//             desc_container.classList.add('big_card_description_container');
-
-//             for (const descObj of description_entries) {
-//                 const d = document.createElement('div');
-//                 d.classList.add('single_big_description');
-//                 d.setAttribute('data-column', descObj.column);
-
-//                 if (descObj.hasLangKey) {
-//                     d.setAttribute('data-lang-key', descObj.rawValue);
-//                 } else {
-//                     d.textContent = descObj.textWithLabel;
-//                     d.style.whiteSpace = 'pre-wrap';
-//                 }
-//                 desc_container.appendChild(d);
-//             }
-//             card_modal_content_div.appendChild(desc_container);
-//         }
-
-//         // keywords
-//         if (keywords_list.length > 0) {
-//             const kw_container = document.createElement('div');
-//             kw_container.classList.add('big_card_keywords_container');
-//             for (const kwObj of keywords_list) {
-//                 const k = document.createElement('div');
-//                 k.classList.add('big_card_keyword_item');
-//                 k.setAttribute('data-column', kwObj.column);
-
-//                 if (kwObj.hasLangKey) {
-//                     k.setAttribute('data-lang-key', kwObj.rawValue);
-//                 } else {
-//                     k.textContent = kwObj.textWithLabel;
-//                     k.style.whiteSpace = 'pre-wrap';
-//                 }
-//                 kw_container.appendChild(k);
-//             }
-//             card_modal_content_div.appendChild(kw_container);
-//         }
-
-//         // details
-//         if (details_entries.length > 0) {
-//             const details_container = document.createElement('div');
-//             details_container.classList.add('big_card_details_container');
-//             details_container.style.display = 'grid';
-//             details_container.style.gridTemplateColumns = '1fr 1fr';
-//             details_container.style.gap = '0.5rem';
-
-//             for (const detailObj of details_entries) {
-//                 const detail_item = document.createElement('div');
-//                 detail_item.classList.add('big_card_detail_item');
-//                 detail_item.setAttribute('data-column', detailObj.column);
-
-//                 if (detailObj.hasLangKey) {
-//                     detail_item.setAttribute('data-lang-key', detailObj.rawValue);
-//                 } else {
-//                     if (detailObj.textWithLabel.length > 300) {
-//                         const details_el = document.createElement('details');
-//                         const summary_el = document.createElement('summary');
-//                         summary_el.textContent = detailObj.textWithLabel.slice(0, 300) + '...';
-//                         details_el.appendChild(summary_el);
-
-//                         const restText = document.createElement('span');
-//                         restText.textContent = detailObj.textWithLabel.slice(300);
-//                         restText.style.whiteSpace = 'pre-wrap';
-//                         details_el.appendChild(restText);
-//                         detail_item.appendChild(details_el);
-//                     } else {
-//                         detail_item.textContent = detailObj.textWithLabel;
-//                         detail_item.style.whiteSpace = 'pre-wrap';
-//                     }
-//                 }
-//                 details_container.appendChild(detail_item);
-//             }
-//             card_modal_content_div.appendChild(details_container);
-//         }
-
-//         // Dynaamiset lapsitiedot
-//         if (row_item.id) {
-//             try {
-//                 const dynamic_child_data = await endpoint_router('fetchDynamicChildren', {
-//                     method: 'POST',
-//                     body_data: {
-//                         parent_table: table_name,
-//                         parent_pk_value: String(row_item.id)
-//                     },
-//                 });
-//                 console.log('card_view.js: open_big_card_modal(); dynaamiset lapsitiedot:', dynamic_child_data);
-
-//                 if (dynamic_child_data && dynamic_child_data.child_tables) {
-//                     for (const child_obj of dynamic_child_data.child_tables) {
-//                         const child_table_name = child_obj.table;
-//                         const child_column_name = child_obj.column;
-//                         const child_rows = child_obj.rows || [];
-
-//                         const child_container_div = document.createElement('div');
-//                         child_container_div.classList.add('big_card_child_container');
-
-//                         const child_header = document.createElement('h3');
-//                         child_header.textContent = `${child_table_name} - ${child_column_name}`;
-//                         child_container_div.appendChild(child_header);
-
-//                         const link_elem = document.createElement('a');
-//                         link_elem.href = `/tables/${child_table_name}?${child_column_name}=${row_item.id}`;
-//                         link_elem.textContent = `Avaa /tables/${child_table_name}?${child_column_name}=${row_item.id}`;
-//                         link_elem.target = '_blank';
-//                         child_container_div.appendChild(link_elem);
-
-//                         child_rows.forEach(single_child_row => {
-//                             const row_div = document.createElement('div');
-//                             row_div.classList.add('child_item');
-//                             row_div.textContent = JSON.stringify(single_child_row, null, 2);
-//                             row_div.style.whiteSpace = 'pre-wrap';
-//                             child_container_div.appendChild(row_div);
-//                         });
-
-//                         card_modal_content_div.appendChild(child_container_div);
-//                     }
-//                 }
-//             } catch (err) {
-//                 console.error("virhe: " + err.message);
-//             }
-//         }
-
-//         big_card_div.appendChild(card_modal_content_div);
-
-//         //
-//         // --- LISÄTÄÄN MUOKKAUSNAPPI ---
-//         //
-//         let editModeActive = false;
-
-//         // Luo nappi muokkaustilaan / tallennukseen
-//         const editButton = document.createElement('button');
-//         editButton.textContent = 'Muokkaa';
-//         editButton.addEventListener('click', async () => {
-//             editModeActive = !editModeActive;
-//             if (editModeActive) {
-//                 editButton.textContent = 'Tallenna';
-//                 enableEditing(card_modal_content_div, table_name);
-//             } else {
-//                 editButton.textContent = 'Muokkaa';
-//                 const updatedData = disableEditing(card_modal_content_div);
-//                 console.log('Päivitetyt arvot:', updatedData);
-
-//                 // Lähetetään muutokset palvelimelle
-//                 if (row_item.id !== undefined) {
-//                     try {
-//                         await sendCardUpdates(table_name, row_item.id, updatedData);
-//                     } catch (err) {
-//                         console.error("virhe: " + err.message);
-//                     }
-//                 }
-//             }
-//         });
-//         big_card_div.appendChild(editButton);
-
-//         createModal({
-//             titlePlainText: modal_header_text || 'card_details_big',
-//             tableName: table_name,
-//             contentElements: [big_card_div],
-//             width: '70vw'
-//         });
-//         showModal();
-
-//     } catch (err) {
-//         console.error("virhe: " + err.message);
-//     }
-// }
+    return wrapper;
+}
 
 /**
  * Avaa ison kortin modaalin. Näyttää kootusti kortin kentät, roolit ym.
- * Tukee useita rooleja (esim. "image,header"), sekä kieliavainta.
- * Käyttää createImageElement ei-PNG-kuville.
+ * Täällä näytetään aina label, koska "isolla kortilla tiedot saavat olla näkyvillä".
+ * Muokkaus huomioi saman rakenteen, eli label ja value ovat erillisissä elementeissä.
+ */
+// card_view.js
+
+/**
+ * Avaa ison kortin modaalin. Näyttää kootusti kortin kentät, roolit ym.
+ * Täällä näytetään aina label, koska "isolla kortilla tiedot saavat olla näkyvillä".
+ * Muokkaus huomioi saman rakenteen, eli label ja value ovat erillisissä elementeissä.
  */
 export async function open_big_card_modal(row_item, table_name) {
+    // Tämä ohjaa vain sitä, käytetäänkö <details> + <summary>-rakennetta isojen tekstien lyhennykseen,
+    // EI sitä, näytetäänkö description-kentät ylipäätään.
+    let summary_details = false; // aseta false, jos haluat aina näyttää koko tekstin
+
     try {
         let data_types = {};
         try {
@@ -1133,7 +686,7 @@ export async function open_big_card_modal(row_item, table_name) {
         const card_modal_content_div = document.createElement('div');
         card_modal_content_div.classList.add('big_card_content');
 
-        // Headerin eka kirjain (avatar)
+        // Haetaan headerin eka kirjain (avataria varten)
         let header_first_letter = '';
         for (const col of sorted_columns) {
             const roleFull = data_types[col]?.card_element || '';
@@ -1176,34 +729,29 @@ export async function open_big_card_modal(row_item, table_name) {
             const roleFull = data_types[column]?.card_element || '';
             const { baseRoles, hasLangKey } = parseRoleString(roleFull);
 
-            const show_key_on_card = data_types[column]?.show_key_on_card === true;
+            // Iso kortti => label näytetään aina
             const column_label = format_column_name(column);
 
-            const rawValueOnly = val_str;
-            const labelTextValue = show_key_on_card
-                ? `${column_label}: ${val_str}`
-                : val_str;
-
-            // Jos ei ole rooleja, näytetään peruskenttänä (myös tyhjät).
+            // Jos rooleja ei ole, näytetään peruskenttänä
             if (baseRoles.length === 0) {
-                const detail_div = document.createElement('div');
-                detail_div.classList.add('big_card_generic_field');
-                detail_div.setAttribute('data-column', column);
-                detail_div.textContent = labelTextValue;
-                detail_div.style.whiteSpace = 'pre-wrap';
-                card_modal_content_div.appendChild(detail_div);
+                const kvElem = createKeyValueElement(
+                    column_label,
+                    val_str,
+                    column,
+                    hasLangKey,
+                    'big_card_generic_field'
+                );
+                card_modal_content_div.appendChild(kvElem);
                 continue;
             }
 
+            let handled = false;
             for (const singleRole of baseRoles) {
-                // hidden-roolit. Poistamalla tai kommentoimalla tämän, näytetään kaikki hidden-kentätkin.
-                /*
+                // hidden -> ohitetaan
                 if (/^hidden(\d+)?$/.test(singleRole)) {
-                    // Ei näytetä eikä tallenneta
+                    handled = true;
                     continue;
                 }
-                */
-
                 // description
                 if (/^description(\d+)?$/.test(singleRole)) {
                     let suffix_number = Number.MAX_SAFE_INTEGER;
@@ -1213,11 +761,12 @@ export async function open_big_card_modal(row_item, table_name) {
                     }
                     description_entries.push({
                         suffix_number,
-                        rawValue: rawValueOnly,
-                        textWithLabel: labelTextValue,
+                        rawValue: val_str,
+                        label: column_label,
                         hasLangKey,
                         column
                     });
+                    handled = true;
                     continue;
                 }
 
@@ -1230,11 +779,12 @@ export async function open_big_card_modal(row_item, table_name) {
                     }
                     details_entries.push({
                         suffix_number,
-                        rawValue: rawValueOnly,
-                        textWithLabel: labelTextValue,
+                        rawValue: val_str,
+                        label: column_label,
                         hasLangKey,
                         column
                     });
+                    handled = true;
                     continue;
                 }
 
@@ -1242,10 +792,11 @@ export async function open_big_card_modal(row_item, table_name) {
                 if (singleRole === 'keywords') {
                     keywords_list.push({
                         column,
-                        rawValue: rawValueOnly,
-                        textWithLabel: labelTextValue,
+                        rawValue: val_str,
+                        label: column_label,
                         hasLangKey
                     });
+                    handled = true;
                     continue;
                 }
 
@@ -1263,43 +814,55 @@ export async function open_big_card_modal(row_item, table_name) {
                             !img_src.startsWith('./') &&
                             !img_src.startsWith('/')
                         ) {
-                            const match = img_src.match(/^(\d+)_(\d+)_(\d+)\.(\w+)$/);
-                            if (match) {
-                                const mainTableId = match[1];
-                                const mainRowId = match[2];
+                            const possibleMatch = img_src.match(/^(\d+)_(\d+)_(\d+)\.(\w+)$/);
+                            if (possibleMatch) {
+                                const mainTableId = possibleMatch[1];
+                                const mainRowId = possibleMatch[2];
                                 img_src = `/media/${mainTableId}/${mainRowId}/${img_src}`;
                             } else {
                                 img_src = '/media/' + img_src;
                             }
                         }
-                        // Käytetään fancy createImageElement
                         const fancyImgEl = createImageElement(img_src, true);
                         image_div.appendChild(fancyImgEl);
                     } else {
+                        // Avatar
                         const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
                         image_div.appendChild(avatar);
                     }
                     card_modal_content_div.appendChild(image_div);
+                    handled = true;
                     continue;
                 }
 
                 // header
                 if (singleRole === 'header') {
+                    // Tallennetaan vain otsikkoteksti modaalin yläotsikolle
                     if (hasLangKey) {
-                        modal_header_text = rawValueOnly;
+                        modal_header_text = val_str;
                     } else {
-                        modal_header_text = labelTextValue;
+                        modal_header_text = `${column_label}: ${val_str}`;
                     }
+
+                    // Luodaan myös iso header-elementti kortin sisälle
                     const header_el = document.createElement('div');
                     header_el.classList.add('big_card_header');
-                    header_el.setAttribute('data-column', column);
                     if (hasLangKey) {
-                        header_el.setAttribute('data-lang-key', rawValueOnly);
+                        header_el.setAttribute('data-lang-key', val_str);
                     } else {
-                        header_el.textContent = labelTextValue;
-                        header_el.style.whiteSpace = 'pre-wrap';
+                        const kvElem = createKeyValueElement(
+                            column_label,
+                            val_str,
+                            column,
+                            hasLangKey,
+                            'big_card_header_value'
+                        );
+                        header_el.appendChild(kvElem);
                     }
+                    header_el.style.whiteSpace = 'pre-wrap';
+
                     card_modal_content_div.appendChild(header_el);
+                    handled = true;
                     continue;
                 }
 
@@ -1307,32 +870,40 @@ export async function open_big_card_modal(row_item, table_name) {
                 if (singleRole === 'creation_spec') {
                     const creation_div = document.createElement('div');
                     creation_div.classList.add('big_card_creation_spec');
-                    creation_div.setAttribute('data-column', column);
                     if (hasLangKey) {
-                        creation_div.setAttribute('data-lang-key', rawValueOnly);
+                        creation_div.setAttribute('data-lang-key', val_str);
                     } else {
-                        creation_div.textContent = labelTextValue;
+                        const kvElem = createKeyValueElement(
+                            column_label,
+                            val_str,
+                            column,
+                            hasLangKey,
+                            'big_card_creation_value'
+                        );
+                        creation_div.appendChild(kvElem);
                         creation_div.style.whiteSpace = 'pre-wrap';
                     }
                     card_modal_content_div.appendChild(creation_div);
+                    handled = true;
                     continue;
                 }
 
-                // tuntematon rooli => perus tekstikenttä (myös tyhjät kentät näkyviin)
-                const detail_div = document.createElement('div');
-                detail_div.classList.add('big_card_generic_field');
-                detail_div.setAttribute('data-column', column);
-                if (hasLangKey) {
-                    detail_div.setAttribute('data-lang-key', rawValueOnly);
-                } else {
-                    detail_div.textContent = labelTextValue;
-                    detail_div.style.whiteSpace = 'pre-wrap';
+                // Tuntematon rooli => avain-arvo
+                if (!handled) {
+                    const kvElem = createKeyValueElement(
+                        column_label,
+                        val_str,
+                        column,
+                        hasLangKey,
+                        'big_card_generic_field'
+                    );
+                    card_modal_content_div.appendChild(kvElem);
+                    handled = true;
                 }
-                card_modal_content_div.appendChild(detail_div);
             }
         }
 
-        // Jos taululla on image-rooli, mutta ei kuvaa -> avatar
+        // Jos taululla on image-rooli, mutta ei kuvaa => iso avatar
         if (table_has_image_role && !found_image_for_this_row) {
             const image_div = document.createElement('div');
             image_div.classList.add('big_card_image');
@@ -1341,7 +912,7 @@ export async function open_big_card_modal(row_item, table_name) {
             card_modal_content_div.appendChild(image_div);
         }
 
-        // Jos EI ole image-roolia => iso avatar
+        // Jos ei image-roolia ollenkaan => iso avatar
         if (!table_has_image_role) {
             const avatar_div = document.createElement('div');
             avatar_div.classList.add('big_card_image');
@@ -1362,14 +933,51 @@ export async function open_big_card_modal(row_item, table_name) {
             for (const descObj of description_entries) {
                 const d = document.createElement('div');
                 d.classList.add('single_big_description');
-                d.setAttribute('data-column', descObj.column);
 
-                if (descObj.hasLangKey) {
-                    d.setAttribute('data-lang-key', descObj.rawValue);
+                // Käytetään lyhennystä vain jos summary_details on true
+                if (summary_details) {
+                    // Jos teksti on kovin pitkä, piilotetaan loput <details>-elementtiin
+                    if (!descObj.hasLangKey && descObj.rawValue.length > 300) {
+                        const details_el = document.createElement('details');
+                        const summary_el = document.createElement('summary');
+                        summary_el.textContent = descObj.rawValue.slice(0, 300) + '...';
+                        details_el.appendChild(summary_el);
+
+                        const restText = descObj.rawValue.slice(300);
+                        const kvElem = createKeyValueElement(
+                            descObj.label,
+                            restText,
+                            descObj.column,
+                            descObj.hasLangKey,
+                            'big_description_value'
+                        );
+                        details_el.appendChild(kvElem);
+
+                        d.appendChild(details_el);
+
+                    } else {
+                        // Teksti lyhyt tai on kieliavain – näytetään suoraan
+                        const kvElem = createKeyValueElement(
+                            descObj.label,
+                            descObj.rawValue,
+                            descObj.column,
+                            descObj.hasLangKey,
+                            'big_description_value'
+                        );
+                        d.appendChild(kvElem);
+                    }
                 } else {
-                    d.textContent = descObj.textWithLabel;
-                    d.style.whiteSpace = 'pre-wrap';
+                    // summary_details = false => näytetään koko teksti suoraan
+                    const kvElem = createKeyValueElement(
+                        descObj.label,
+                        descObj.rawValue,
+                        descObj.column,
+                        descObj.hasLangKey,
+                        'big_description_value'
+                    );
+                    d.appendChild(kvElem);
                 }
+
                 desc_container.appendChild(d);
             }
             card_modal_content_div.appendChild(desc_container);
@@ -1382,20 +990,22 @@ export async function open_big_card_modal(row_item, table_name) {
             for (const kwObj of keywords_list) {
                 const k = document.createElement('div');
                 k.classList.add('big_card_keyword_item');
-                k.setAttribute('data-column', kwObj.column);
 
-                if (kwObj.hasLangKey) {
-                    k.setAttribute('data-lang-key', kwObj.rawValue);
-                } else {
-                    k.textContent = kwObj.textWithLabel;
-                    k.style.whiteSpace = 'pre-wrap';
-                }
+                const kvElem = createKeyValueElement(
+                    kwObj.label,
+                    kwObj.rawValue,
+                    kwObj.column,
+                    kwObj.hasLangKey,
+                    'big_card_keyword_value'
+                );
+                k.appendChild(kvElem);
+
                 kw_container.appendChild(k);
             }
             card_modal_content_div.appendChild(kw_container);
         }
 
-        // details
+        // details-osio
         if (details_entries.length > 0) {
             const details_container = document.createElement('div');
             details_container.classList.add('big_card_details_container');
@@ -1406,27 +1016,47 @@ export async function open_big_card_modal(row_item, table_name) {
             for (const detailObj of details_entries) {
                 const detail_item = document.createElement('div');
                 detail_item.classList.add('big_card_detail_item');
-                detail_item.setAttribute('data-column', detailObj.column);
 
-                if (detailObj.hasLangKey) {
-                    detail_item.setAttribute('data-lang-key', detailObj.rawValue);
-                } else {
-                    if (detailObj.textWithLabel.length > 300) {
+                if (summary_details) {
+                    // summary_details = true => piilotetaan loppu jos teksti on kovin pitkä
+                    if (!detailObj.hasLangKey && detailObj.rawValue.length > 300) {
                         const details_el = document.createElement('details');
                         const summary_el = document.createElement('summary');
-                        summary_el.textContent = detailObj.textWithLabel.slice(0, 300) + '...';
+                        summary_el.textContent = detailObj.rawValue.slice(0, 300) + '...';
                         details_el.appendChild(summary_el);
 
-                        const restText = document.createElement('span');
-                        restText.textContent = detailObj.textWithLabel.slice(300);
-                        restText.style.whiteSpace = 'pre-wrap';
-                        details_el.appendChild(restText);
+                        const restText = detailObj.rawValue.slice(300);
+                        const kvElem = createKeyValueElement(
+                            detailObj.label,
+                            restText,
+                            detailObj.column,
+                            detailObj.hasLangKey,
+                            'big_card_detail_value'
+                        );
+                        details_el.appendChild(kvElem);
                         detail_item.appendChild(details_el);
                     } else {
-                        detail_item.textContent = detailObj.textWithLabel;
-                        detail_item.style.whiteSpace = 'pre-wrap';
+                        const kvElem = createKeyValueElement(
+                            detailObj.label,
+                            detailObj.rawValue,
+                            detailObj.column,
+                            detailObj.hasLangKey,
+                            'big_card_detail_value'
+                        );
+                        detail_item.appendChild(kvElem);
                     }
+                } else {
+                    // summary_details = false => näytetään aina koko teksti
+                    const kvElem = createKeyValueElement(
+                        detailObj.label,
+                        detailObj.rawValue,
+                        detailObj.column,
+                        detailObj.hasLangKey,
+                        'big_card_detail_value'
+                    );
+                    detail_item.appendChild(kvElem);
                 }
+
                 details_container.appendChild(detail_item);
             }
             card_modal_content_div.appendChild(details_container);
@@ -1481,12 +1111,8 @@ export async function open_big_card_modal(row_item, table_name) {
 
         big_card_div.appendChild(card_modal_content_div);
 
-        //
-        // --- LISÄTÄÄN MUOKKAUSNAPPI ---
-        //
+        // --- MUOKKAUSNAPPI ---
         let editModeActive = false;
-
-        // Luo nappi muokkaustilaan / tallennukseen
         const editButton = document.createElement('button');
         editButton.textContent = 'Muokkaa';
         editButton.addEventListener('click', async () => {
@@ -1511,8 +1137,9 @@ export async function open_big_card_modal(row_item, table_name) {
         });
         big_card_div.appendChild(editButton);
 
+        // Luodaan modaali, mutta emme luo otsikkoa createModal-funktiossa (skipModalTitle: true)
         createModal({
-            titlePlainText: modal_header_text || 'card_details_big',
+            skipModalTitle: true,
             tableName: table_name,
             contentElements: [big_card_div],
             width: '70vw'
@@ -1526,17 +1153,11 @@ export async function open_big_card_modal(row_item, table_name) {
 
 /**
  * Lähettää kerralla kortin päivittyneet sarake-arvot palvelimelle.
- * Käyttää yksinkertaista "id + column + value" -formaattia
- * (sama idea kuin edit_cell.js -puolella).
- *
- * @param {string} table_name  Taulun nimi
- * @param {number|string} rowId  Muokattavan rivin PK
- * @param {object} updatedData  { colName: newValue, colName2: newValue2, ... }
+ * Käyttää yksitellen 'id + column + value' -formaattia.
  */
 export async function sendCardUpdates(table_name, rowId, updatedData) {
     console.log(`[${table_name}] Lähetetään kortin uudet arvot, rowId=${rowId}`, updatedData);
 
-    // Käydään läpi jokainen muokattu sarake ja lähetetään yksitellen
     for (const [column, value] of Object.entries(updatedData)) {
         const payload = {
             id: rowId,
@@ -1560,21 +1181,19 @@ export async function sendCardUpdates(table_name, rowId, updatedData) {
 
         } catch (err) {
             console.error("virhe: " + err.message);
-            // Tässä voisi olla esim. alert() tai muu käyttöliittymän virheilmoitus
         }
     }
 }
+
 /**
  * Korvaa tekstisisällöt <input>- tai <textarea>-kentillä,
  * mutta vain, jos rakenteessa editable_in_ui on true kyseiselle sarakkeelle ja taululle.
- * Muodostaa pienen logiikan: jos teksti on kovin pitkä, käytetään <textarea>.
- * Tulostaa lisäksi konsoliin, muokataanko vai ei.
  */
 export function enableEditing(container, table_name) {
     console.log('enabling editing... table= ' + table_name);
     let parsedFullTreeData = null;
 
-    // Haetaan editable_in_ui -tiedot localStoragesta
+    // Haetaan schema-/column-tiedot localStoragesta
     try {
         const rawFullTreeData = localStorage.getItem('full_tree_data');
         if (rawFullTreeData) {
@@ -1584,15 +1203,15 @@ export function enableEditing(container, table_name) {
         console.warn(`enableEditing: ei voitu jäsentää full_tree_data taululle ${table_name}:`, e);
     }
 
-    /**
-     * Muodostetaan nopeat hakurakenteet: { column_name -> editable_in_ui:boolean },
-     * mutta vain niille sarakkeille, joiden table_name vastaa käsiteltävää taulua.
-     */
-    const editableLookup = {};
+    // Muodostetaan nopeat hakurakenteet: { column_name -> { editable_in_ui, data_type } }
+    const columnInfoMap = {};
     if (parsedFullTreeData && Array.isArray(parsedFullTreeData.column_details)) {
         for (const colObj of parsedFullTreeData.column_details) {
             if (colObj.table_name === table_name && colObj.column_name) {
-                editableLookup[colObj.column_name] = !!colObj.editable_in_ui;
+                columnInfoMap[colObj.column_name] = {
+                    editable_in_ui: !!colObj.editable_in_ui,
+                    data_type: colObj.data_type || 'text'
+                };
             }
         }
     }
@@ -1601,40 +1220,74 @@ export function enableEditing(container, table_name) {
     const textFields = container.querySelectorAll('[data-column]');
     textFields.forEach((fieldElem) => {
         const columnName = fieldElem.getAttribute('data-column');
-        const isEditable = editableLookup[columnName] === true;
+        if (!columnInfoMap[columnName]) {
+            console.log(`[${table_name}] sarakkeelle ${columnName} ei löydy columnInfoMap:ia => ei muokata.`);
+            return;
+        }
 
-        // Jos sisällä on <details>-elementti, ei muuteta sitä (voi olla "näytä lisää" -osio).
+        const isEditable = columnInfoMap[columnName].editable_in_ui;
+        const dataType = columnInfoMap[columnName].data_type;
+
+        // Jos sisällä on <details>, ohitetaan
         if (fieldElem.querySelector('details')) {
             console.log(`[${table_name}] sarake: ${columnName}, sis. <details>, jätetään ennalleen.`);
             return;
         }
 
-        // Jos editable_in_ui ei ole tosi, jätetään kenttä lukutilaan
+        // Jos editable_in_ui ei ole true, jätetään kenttä lukutilaan
         if (!isEditable) {
             console.log(`[${table_name}] sarake: ${columnName}, editable_in_ui=false => ei muokata.`);
             return;
         }
 
-        // Muussa tapauksessa muutetaan syötekentäksi
-        const originalText = fieldElem.textContent.trim();
-        fieldElem.setAttribute('data-original-text', originalText);
-        fieldElem.textContent = '';
+        // data-raw-value
+        const rawValueAttr = fieldElem.getAttribute('data-raw-value');
+        const originalText = (rawValueAttr !== null)
+            ? rawValueAttr
+            : fieldElem.textContent.trim();
 
-        // Valitaan input vai textarea pituuden perusteella
-        if (originalText.length > 80) {
-            console.log(`[${table_name}] sarake: ${columnName}, käytetään <textarea>.`);
-            const textarea = document.createElement('textarea');
-            textarea.value = originalText;
-            textarea.style.width = '100%';
-            textarea.rows = 4;
-            fieldElem.appendChild(textarea);
+        fieldElem.setAttribute('data-original-text', originalText);
+        fieldElem.textContent = ''; // tyhjennetään
+
+        // Päätellään syötekomponentti dataType:n perusteella
+        if (dataType === 'boolean') {
+            console.log(`[${table_name}] sarake: ${columnName}, data_type=boolean => <input type="checkbox">.`);
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = (originalText.toLowerCase() === 'true' || originalText === '1');
+            fieldElem.appendChild(checkbox);
+
+        } else if (dataType === 'date') {
+            console.log(`[${table_name}] sarake: ${columnName}, data_type=date => <input type="date">.`);
+            const dateInput = document.createElement('input');
+            dateInput.type = 'date';
+            dateInput.value = (originalText.match(/^\d{4}-\d{2}-\d{2}$/)) ? originalText : '';
+            fieldElem.appendChild(dateInput);
+
+        } else if (dataType === 'int' || dataType === 'integer' || dataType === 'numeric') {
+            console.log(`[${table_name}] sarake: ${columnName}, data_type=numeric => <input type="number">.`);
+            const numberInput = document.createElement('input');
+            numberInput.type = 'number';
+            numberInput.value = originalText || '';
+            fieldElem.appendChild(numberInput);
+
         } else {
-            console.log(`[${table_name}] sarake: ${columnName}, käytetään <input type="text">.`);
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = originalText;
-            input.style.width = '100%';
-            fieldElem.appendChild(input);
+            // Teksti
+            if (originalText.length > 80) {
+                console.log(`[${table_name}] sarake: ${columnName}, data_type=text => <textarea>.`);
+                const textarea = document.createElement('textarea');
+                textarea.value = originalText;
+                textarea.style.width = '100%';
+                textarea.rows = 4;
+                fieldElem.appendChild(textarea);
+            } else {
+                console.log(`[${table_name}] sarake: ${columnName}, data_type=text => <input type="text">.`);
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = originalText;
+                input.style.width = '100%';
+                fieldElem.appendChild(input);
+            }
         }
     });
 }
@@ -1648,7 +1301,7 @@ function disableEditing(container) {
     const updatedValues = {};
 
     textFields.forEach((fieldElem) => {
-        // Jos fieldElem sisältää details, ohitetaan
+        // Jos on <details>, ohitetaan
         const detailsEl = fieldElem.querySelector('details');
         if (detailsEl) {
             return;
@@ -1658,14 +1311,23 @@ function disableEditing(container) {
         const inputEl = fieldElem.querySelector('input, textarea');
 
         if (!inputEl) {
-            // Ei ole input-kenttää => ei muokattavissa
             return;
         }
-        const newValue = inputEl.value.trim();
+
+        let newValue;
+        if (inputEl.type === 'checkbox') {
+            newValue = inputEl.checked;
+        } else {
+            newValue = inputEl.value.trim();
+        }
+
         updatedValues[columnName] = newValue;
 
-        // Palautetaan pelkkä tekstisisältö
-        fieldElem.textContent = newValue || originalText;
+        // Palautetaan tekstinä
+        fieldElem.textContent = (typeof newValue === 'boolean')
+            ? String(newValue)
+            : (newValue || originalText);
+
         fieldElem.style.whiteSpace = 'pre-wrap';
         fieldElem.removeAttribute('data-original-text');
     });
@@ -1674,2127 +1336,9 @@ function disableEditing(container) {
 }
 
 /** 
- * Pieni apufunktio sarakenimen formatointiin 
- * (alleviivaukset -> välilyönnit, iso alkukirjain).
+ * Pieni apufunktio sarakenimen siistimiseen 
  */
 function format_column_name(column) {
     const replaced = column.replace(/_/g, ' ');
     return replaced.charAt(0).toUpperCase() + replaced.slice(1);
 }
-
-
-// // card_view.js
-
-// import { createModal, showModal } from '../../../common_components/modal/modal_factory.js';
-// import { endpoint_router } from '../../endpoints/endpoint_router.js';
-// import { update_card_selection } from '../table_view/selection.js';
-
-// /**
-//  * Luo SHA-256 -pohjainen "avatar" annetusta siemenarvosta. 
-//  */
-// export async function create_seeded_avatar(seed_string, letter_for_avatar, useLargeSize = false) {
-//     // Lasketaan seed_string -> SHA-256 (hex)
-//     const msgUint8 = new TextEncoder().encode(seed_string);
-//     const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-//     const hashArray = Array.from(new Uint8Array(hashBuffer));
-//     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-//     // Otetaan osa hashista numeriseen muotoon satunnaisuutta varten
-//     const numericHashPart_for_color = parseInt(hashHex.slice(0, 8), 16);
-//     const numericHashPart_for_radius = parseInt(hashHex.slice(8, 16), 16);
-
-//     // Määritetään maksimi merkkimäärä
-//     const max_chars = 16;
-//     let final_text = '?';
-//     if (letter_for_avatar) {
-//         if (letter_for_avatar.length > max_chars) {
-//             final_text = letter_for_avatar.slice(0, max_chars) + '...';
-//         } else {
-//             final_text = letter_for_avatar;
-//         }
-//     }
-//     const final_letter = final_text.toUpperCase();
-
-//     // Taustavärin laskenta HSL-muodossa
-//     const hue_value = numericHashPart_for_color % 360;
-//     const saturation_value = 30;  // Tummahko
-//     const lightness_value = 40;
-//     const chosen_color_hsl = `hsl(${hue_value}, ${saturation_value}%, ${lightness_value}%)`;
-
-//     // Border-radiaalin laskenta
-//     const random_radius = (numericHashPart_for_radius % 30) + 1;
-//     const chosen_border_radius = `${random_radius}%`;
-
-//     // Fontit
-//     const fonts = [
-//         'Arial, sans-serif',
-//         '"Times New Roman", Times, serif',
-//         'Consolas, monospace',
-//         'Verdana, Geneva, sans-serif',
-//         '"Trebuchet MS", Helvetica, sans-serif',
-//         'Georgia, serif',
-//         '"Palatino Linotype", "Book Antiqua", Palatino, serif'
-//     ];
-//     const font_index = (numericHashPart_for_color >>> 8) % fonts.length;
-//     const chosen_font = fonts[font_index];
-
-//     // Jos haluamme ison 300x300 tai pienen 120x120
-//     const containerSize = useLargeSize ? 300 : 120;
-//     const avatarBoxSize = useLargeSize ? 220 : 120;
-
-//     // Container
-//     const container_div = document.createElement('div');
-//     container_div.style.width = containerSize + 'px';
-//     container_div.style.height = containerSize + 'px';
-//     container_div.style.display = 'flex';
-//     container_div.style.alignItems = 'center';
-//     container_div.style.justifyContent = 'center';
-//     container_div.style.overflow = 'hidden';
-
-//     // Avatar-elementti
-//     const avatar_div = document.createElement('div');
-//     avatar_div.textContent = final_letter;
-//     avatar_div.style.display = 'flex';
-//     avatar_div.style.alignItems = 'center';
-//     avatar_div.style.justifyContent = 'center';
-//     avatar_div.style.width = avatarBoxSize + 'px';
-//     avatar_div.style.height = avatarBoxSize + 'px';
-//     avatar_div.style.backgroundColor = chosen_color_hsl;
-//     avatar_div.style.fontFamily = chosen_font;
-//     avatar_div.style.fontWeight = 'bold';
-//     avatar_div.style.fontSize = useLargeSize ? '7rem' : '4rem';
-//     avatar_div.style.color = 'var(--text_color, #fff)';
-//     avatar_div.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.5)';
-//     avatar_div.style.borderRadius = chosen_border_radius;
-
-//     container_div.appendChild(avatar_div);
-//     return container_div;
-// }
-
-// /**
-//  * Luo fancy-kuvaelementin. PNG-kuville ei lisätä varjoa, sumennusta eikä pyöristettyjä kulmia.
-//  */
-// function createImageElement(image_src, useLargeSize) {
-//     const wrapper = document.createElement('div');
-//     wrapper.style.width = useLargeSize ? '300px' : '140px';
-//     wrapper.style.height = useLargeSize ? '300px' : '140px';
-//     wrapper.style.position = 'relative';
-//     // wrapper.style.overflow = 'hidden';  // avaa halutessasi
-
-//     const foregroundImg = document.createElement('img');
-//     const isPng = image_src.toLowerCase().endsWith('.png');
-
-//     if (!isPng) {
-//         // Muille kuin PNG-kuville lisätään pyöristys, varjo ja (halutessa) blur-tausta
-//         wrapper.style.background = 'var(--bg_color)';
-        
-//         wrapper.style.borderRadius = '7px';
-//         // wrapper.style.border = '1px solid var(--border_color)';
-//         foregroundImg.style.borderRadius = '6px';
-//         // foregroundImg.style.border = '1px solid var(--border_color)';
-//         wrapper.style.boxShadow = '2px 2px 4px rgba(0, 0, 0, 0.2)';
-        
-//         wrapper.style.backdropFilter = 'blur(10px)';
-//         wrapper.style.webkitBackdropFilter = 'blur(10px)';
-//         // Alla oleva blur-elementti on optio, voit avata sen kommentoimalla sisällön näkyviin:
-//         /*
-//         const blurredBg = document.createElement('div');
-//         blurredBg.style.position = 'absolute';
-//         blurredBg.style.top = '0';
-//         blurredBg.style.left = '0';
-//         blurredBg.style.right = '0';
-//         blurredBg.style.bottom = '0';
-//         blurredBg.style.backgroundImage = `url(${image_src})`;
-//         blurredBg.style.backgroundSize = 'cover';
-//         blurredBg.style.backgroundPosition = 'center';
-//         blurredBg.style.filter = 'blur(40px)';
-//         blurredBg.style.opacity = '0.8';
-//         blurredBg.style.filter += ' saturate(80%)';
-//         wrapper.appendChild(blurredBg);
-//         */
-//     }
-
-//     // Näytettävä kuva
-//     foregroundImg.src = image_src;
-//     foregroundImg.alt = 'Kuva puuttuu';
-//     foregroundImg.style.position = 'relative';
-//     foregroundImg.style.width = '100%';
-//     foregroundImg.style.height = '100%';
-//     foregroundImg.style.objectFit = 'contain';  // pidetään kuva kokonaan näkyvissä
-//     foregroundImg.style.objectPosition = 'center';
-
-//     wrapper.appendChild(foregroundImg);
-//     // add style: wrapper.backdrop-filter: blur(10px);
-//     wrapper.style.backdropFilter = 'blur(10px)';
-    
-//     // Hey copilot, add class named "random"
-//     wrapper.classList.add('wrapper');
-    
-//     /*
-//         background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-//     backdrop-filter: blur(10px);
-//     -webkit-backdrop-filter: blur(10px);
-//     border: '-webkit solid var(--border_color)';
-//     border: 1px solid rgba(255, 255, 255, 0.18);
-//     border: '1px solid var(--border_color)';
-//     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-//     position: absolute;
-//     z-index: 10001;
-//     */
-
-
-//     // wrapper.style.border = '1px solid rgba(255, 255, 255, 0.18)';
-//     // wrapper.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.37)';
-//     // wrapper.style.position = 'absolute';
-//     // wrapper.style.zIndex = '10001';
-//     // wrapper
-//     return wrapper;
-// }
-
-// /**
-//  * Lisää annettuun card_containeriin itemejä (kortteja) columns- ja data-listan perusteella.
-//  * (Yksinkertainen versio, joka luo yksinkertaiset pairDiv-labelit + -arvot.)
-//  */
-// export function appendDataToCardView(card_container, columns, data, table_name) {
-//     let data_types = {};
-//     try {
-//         data_types = JSON.parse(localStorage.getItem(`${table_name}_dataTypes`)) || {};
-//     } catch (error) {
-//         console.warn("card_view.js: could not parse data_types for table", table_name, error);
-//     }
-
-//     data.forEach(item => {
-//         const card = document.createElement('div');
-//         card.classList.add('card');
-
-//         // Asetetaan cardiin data-id attribuutti
-//         if (item.id !== undefined && item.id !== null) {
-//             card.setAttribute('data-id', item.id);
-//         } else {
-//             console.log('card_view.js: appendDataToCardView(); ei data-id:tä');
-//         }
-
-//         // Valintaruutu
-//         const checkbox = document.createElement('input');
-//         checkbox.type = 'checkbox';
-//         checkbox.classList.add('card_checkbox');
-//         checkbox.addEventListener('change', () => update_card_selection(card));
-//         card.appendChild(checkbox);
-
-//         // Sisältödivi
-//         const contentDiv = document.createElement('div');
-//         contentDiv.classList.add('card_content');
-
-//         columns.forEach((column) => {
-//             const pairDiv = document.createElement('div');
-//             pairDiv.classList.add('card_pair');
-
-//             const labelDiv = document.createElement('div');
-//             labelDiv.classList.add('card_label');
-
-//             const show_key_on_card = data_types[column]?.show_key_on_card === true;
-//             const formatted_label = format_column_name(column);
-
-//             if (show_key_on_card) {
-//                 labelDiv.textContent = `${formatted_label}:`;
-//             } else {
-//                 labelDiv.textContent = '';
-//             }
-
-//             const valueDiv = document.createElement('div');
-//             valueDiv.classList.add('card_value');
-
-//             if (Array.isArray(item[column])) {
-//                 valueDiv.textContent = item[column].join(', ');
-//                 valueDiv.style.whiteSpace = 'pre-wrap';
-//             } else if (typeof item[column] === 'object' && item[column] !== null) {
-//                 valueDiv.textContent = JSON.stringify(item[column], null, 2);
-//                 valueDiv.style.whiteSpace = 'pre-wrap';
-//             } else {
-//                 const txt = item[column] || '';
-//                 valueDiv.textContent = txt;
-//                 valueDiv.style.whiteSpace = 'pre-wrap';
-//             }
-
-//             pairDiv.appendChild(labelDiv);
-//             pairDiv.appendChild(valueDiv);
-//             contentDiv.appendChild(pairDiv);
-//         });
-
-//         card.appendChild(contentDiv);
-//         card_container.appendChild(card);
-//     });
-// }
-
-// /**
-//  * parseRoleString - tukee useita pilkulla erotettuja rooleja 
-//  * (esim. "image,header+lang-key" tai "header+lang_key").
-//  * Palauttaa:
-//  *   {
-//  *     baseRoles: [...],  // esim. ['image','header']
-//  *     hasLangKey: boolean
-//  *   }
-//  */
-// function parseRoleString(roleStr) {
-//     if (!roleStr) return { baseRoles: [], hasLangKey: false };
-
-//     const rolesRaw = roleStr.split(',').map(r => r.trim());
-//     let hasLangKey = false;
-//     const baseRoles = [];
-
-//     rolesRaw.forEach(role => {
-//         if (role.includes('+')) {
-//             // rooli esim. "header+lang-key" tai "header+lang_key"
-//             const [mainRole, extra] = role.split('+').map(r => r.trim());
-//             baseRoles.push(mainRole);
-//             if (extra === 'lang-key' || extra === 'lang_key') {
-//                 hasLangKey = true;
-//             }
-//         } else {
-//             baseRoles.push(role);
-//         }
-//     });
-
-//     return { baseRoles, hasLangKey };
-// }
-
-// /**
-//  * Asynkroninen create_card_view: rakentaa kortit data-taulukosta, 
-//  * tukee roolit: header, image, description, details, keywords, creation_spec,
-//  * sekä kieliavain "lang-key" (tai "lang_key").
-//  * 
-//  * Jokainen sarake voi sisältää useita rooleja (esim. "image,header"). 
-//  * Kaikki roolit otetaan huomioon samalle sarakkeelle.
-//  */
-// export async function create_card_view(columns, data, table_name) {
-//     const card_container = document.createElement('div');
-//     card_container.classList.add('card_container');
-
-//     let data_types = {};
-//     try {
-//         data_types = JSON.parse(localStorage.getItem(`${table_name}_dataTypes`)) || {};
-//     } catch (error) {
-//         console.warn("could not parse data_types for table", table_name, error);
-//     }
-
-//     // Järjestellään sarakkeet roolien perusteella
-//     const sorted_columns = [...columns];
-//     sorted_columns.sort((colA, colB) => {
-//         const a_card_element = data_types[colA]?.card_element || '';
-//         const b_card_element = data_types[colB]?.card_element || '';
-//         if (a_card_element && !b_card_element) return -1;
-//         if (!a_card_element && b_card_element) return 1;
-//         return 0;
-//     });
-
-//     // Katsotaan, löytyykö taululta 'image'-roolia
-//     const tableHasImageRole = sorted_columns.some(col => {
-//         const { baseRoles } = parseRoleString(data_types[col]?.card_element || '');
-//         return baseRoles.includes('image');
-//     });
-
-//     // Käydään data-rivit läpi
-//     for (const row_item of data) {
-//         const card = document.createElement('div');
-//         card.classList.add('card');
-
-//         if (row_item.id !== undefined && row_item.id !== null) {
-//             card.setAttribute('data-id', row_item.id);
-//         } else {
-//             console.log('card_view.js: create_card_view(); ei data-id:tä');
-//         }
-
-//         // Checkbox
-//         const checkbox = document.createElement('input');
-//         checkbox.type = 'checkbox';
-//         checkbox.classList.add('card_checkbox');
-//         checkbox.addEventListener('change', () => update_card_selection(card));
-//         card.appendChild(checkbox);
-
-//         // Sisällön container
-//         const card_content_div = document.createElement('div');
-//         card_content_div.classList.add('card_content');
-//         if (tableHasImageRole) {
-//             card_content_div.classList.add('card_content_large');
-//         } else {
-//             card_content_div.classList.add('card_content_small');
-//         }
-
-//         // Koontilistat
-//         const details_entries = [];
-//         const description_entries = [];
-//         const keywords_list = [];
-
-//         // Headerin eka kirjain avatarille
-//         let header_first_letter = '';
-//         const id_part = (row_item.id !== undefined) ? String(row_item.id) : 'unknown_id';
-
-//         // Haetaan luontiaika (seed)
-//         const created_part = row_item.created
-//             || row_item.created_at
-//             || row_item.luontiaika
-//             || null;
-//         let creation_seed;
-//         if (created_part) {
-//             creation_seed = `${id_part}_${created_part}`;
-//         } else {
-//             creation_seed = id_part;
-//         }
-
-//         // Poimitaan mahdollinen ensimmäinen header-kirjain
-//         for (const col of sorted_columns) {
-//             const roleFull = data_types[col]?.card_element || '';
-//             const { baseRoles } = parseRoleString(roleFull);
-//             if (baseRoles.includes('header')) {
-//                 const raw_val = row_item[col];
-//                 const val_str = (typeof raw_val === 'string') ? raw_val : String(raw_val ?? '');
-//                 const trimmed = val_str.trim();
-//                 if (trimmed) {
-//                     header_first_letter = trimmed[0];
-//                 }
-//             }
-//         }
-
-//         let found_image_for_this_row = false;
-
-//         // Käydään sarakkeet läpi
-//         for (const column of sorted_columns) {
-//             const raw_val = row_item[column];
-//             let val_str = '';
-//             if (raw_val !== null && raw_val !== undefined) {
-//                 val_str = (typeof raw_val === 'string') ? raw_val : String(raw_val);
-//             }
-
-//             const roleFull = data_types[column]?.card_element || '';
-//             const { baseRoles, hasLangKey } = parseRoleString(roleFull);
-
-//             const show_key_on_card = data_types[column]?.show_key_on_card === true;
-//             const column_label = format_column_name(column);
-
-//             // Pelkkä raaka arvo
-//             const rawValueOnly = val_str;
-//             // Mahd. label
-//             const labelTextValue = show_key_on_card
-//                 ? `${column_label}: ${val_str}`
-//                 : val_str;
-
-//             // Jos ei rooleja, tulkitaan tavallisena tekstinä
-//             if (baseRoles.length === 0) {
-//                 if (val_str.trim()) {
-//                     const elem_div = document.createElement('div');
-//                     elem_div.classList.add('card_details');
-//                     elem_div.textContent = labelTextValue;
-//                     elem_div.style.whiteSpace = 'pre-wrap';
-//                     card_content_div.appendChild(elem_div);
-//                 }
-//                 continue;
-//             }
-
-//             // Käsitellään kukin rooli
-//             for (const singleRole of baseRoles) {
-//                 // hidden
-//                 if (/^hidden(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     // Ei näytetä eikä tallenneta
-//                     continue;
-//                 }
-//                 // description
-//                 if (/^description(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     let suffix_number = Number.MAX_SAFE_INTEGER;
-//                     const match = singleRole.match(/^description(\d+)?$/);
-//                     if (match && match[1]) {
-//                         suffix_number = parseInt(match[1], 10);
-//                     }
-//                     description_entries.push({
-//                         suffix_number,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey
-//                     });
-//                     continue;
-//                 }
-
-//                 // details
-//                 if (/^details(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     let suffix_number = Number.MAX_SAFE_INTEGER;
-//                     const match = singleRole.match(/^details(\d+)?$/);
-//                     if (match && match[1]) {
-//                         suffix_number = parseInt(match[1], 10);
-//                     }
-//                     details_entries.push({
-//                         suffix_number,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey
-//                     });
-//                     continue;
-//                 }
-
-//                 // keywords
-//                 if (singleRole === 'keywords' && val_str.trim()) {
-//                     keywords_list.push({
-//                         column,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey
-//                     });
-//                     continue;
-//                 }
-
-//                 // image
-//                 if (singleRole === 'image') {
-//                     found_image_for_this_row = true;
-//                     const elem_div = document.createElement('div');
-//                     elem_div.classList.add('card_image');
-
-//                     const useLargeSize = tableHasImageRole;
-//                     if (val_str.trim()) {
-//                         let image_src = val_str.trim();
-//                         // Polun korjaus
-//                         if (
-//                             !image_src.startsWith('http://') &&
-//                             !image_src.startsWith('https://') &&
-//                             !image_src.startsWith('./') &&
-//                             !image_src.startsWith('/')
-//                         ) {
-//                             const match = image_src.match(/^(\d+)_(\d+)_(\d+)\.(\w+)$/);
-//                             if (match) {
-//                                 const mainTableId = match[1];
-//                                 const mainRowId = match[2];
-//                                 image_src = `/media/${mainTableId}/${mainRowId}/${image_src}`;
-//                             } else {
-//                                 image_src = '/media/' + image_src;
-//                             }
-//                         }
-//                         // Käytetään fancy createImageElement
-//                         const blurredImageElement = createImageElement(image_src, useLargeSize);
-//                         elem_div.appendChild(blurredImageElement);
-
-//                     } else {
-//                         // Avatar
-//                         const avatar = await create_seeded_avatar(creation_seed, header_first_letter, useLargeSize);
-//                         elem_div.appendChild(avatar);
-//                     }
-//                     card_content_div.appendChild(elem_div);
-//                     continue;
-//                 }
-
-//                 // header
-//                 if (singleRole === 'header') {
-//                     const elem_div = document.createElement('div');
-//                     elem_div.classList.add('card_header');
-//                     if (hasLangKey) {
-//                         elem_div.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         elem_div.textContent = labelTextValue;
-//                         elem_div.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     elem_div.addEventListener('click', (e) => {
-//                         e.preventDefault();
-//                         open_big_card_modal(row_item, table_name);
-//                     });
-//                     card_content_div.appendChild(elem_div);
-//                     continue;
-//                 }
-
-//                 // creation_spec
-//                 if (singleRole === 'creation_spec') {
-//                     const elem_div = document.createElement('div');
-//                     elem_div.classList.add('card_creation_spec');
-//                     if (hasLangKey) {
-//                         elem_div.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         elem_div.textContent = labelTextValue;
-//                         elem_div.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_content_div.appendChild(elem_div);
-//                     continue;
-//                 }
-
-//                 // jokin tuntematon rooli => perus tekstikenttä
-//                 if (val_str.trim()) {
-//                     const elem_div = document.createElement('div');
-//                     elem_div.classList.add('card_details');
-//                     if (hasLangKey) {
-//                         elem_div.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         elem_div.textContent = labelTextValue;
-//                         elem_div.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_content_div.appendChild(elem_div);
-//                 }
-//             }
-//         }
-
-//         // Jos taululla on image-rooli, mutta ei kuvadataa -> avatar
-//         if (tableHasImageRole && !found_image_for_this_row) {
-//             const image_div = document.createElement('div');
-//             image_div.classList.add('card_image');
-//             const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-//             image_div.appendChild(avatar);
-//             card_content_div.appendChild(image_div);
-//         }
-
-//         // Jos taululla EI ole image-roolia -> pieni avatar
-//         if (!tableHasImageRole) {
-//             const avatarDiv = document.createElement('div');
-//             avatarDiv.classList.add('card_image');
-//             const smallAvatar = await create_seeded_avatar(creation_seed, header_first_letter, false);
-//             avatarDiv.appendChild(smallAvatar);
-//             card_content_div.appendChild(avatarDiv);
-//         }
-
-//         // Lajitellaan ja lisätään description-entries
-//         description_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-//         if (description_entries.length > 0) {
-//             const desc_container = document.createElement('div');
-//             desc_container.classList.add('card_description_container');
-
-//             let anyLong = false;
-//             for (const descObj of description_entries) {
-//                 const d = document.createElement('div');
-//                 d.classList.add('single_description_item');
-
-//                 if (descObj.hasLangKey) {
-//                     d.setAttribute('data-lang-key', descObj.rawValue);
-//                 } else {
-//                     const fullText = descObj.textWithLabel;
-//                     let displayText = fullText;
-//                     if (fullText.length > 500) {
-//                         displayText = fullText.slice(0, 500) + '...';
-//                         anyLong = true;
-//                     }
-//                     d.textContent = displayText;
-//                     d.style.whiteSpace = 'pre-wrap';
-//                 }
-//                 desc_container.appendChild(d);
-//             }
-
-//             if (anyLong && !description_entries.some(e => e.hasLangKey)) {
-//                 const show_more_link = document.createElement('a');
-//                 show_more_link.href = '#';
-//                 show_more_link.textContent = 'Näytä lisää';
-//                 show_more_link.classList.add('show_more_link');
-//                 show_more_link.addEventListener('click', (e) => {
-//                     e.preventDefault();
-//                     open_big_card_modal(row_item, table_name);
-//                 });
-//                 desc_container.appendChild(show_more_link);
-//             }
-//             card_content_div.appendChild(desc_container);
-//         }
-
-//         // keywords-list
-//         if (keywords_list.length > 0) {
-//             const kw_container = document.createElement('div');
-//             kw_container.classList.add('card_keywords_container');
-//             for (const kwObj of keywords_list) {
-//                 const k = document.createElement('div');
-//                 k.classList.add('single_keyword_item');
-//                 if (kwObj.hasLangKey) {
-//                     k.setAttribute('data-lang-key', kwObj.rawValue);
-//                 } else {
-//                     k.textContent = kwObj.textWithLabel;
-//                     k.style.whiteSpace = 'pre-wrap';
-//                 }
-//                 kw_container.appendChild(k);
-//             }
-//             card_content_div.appendChild(kw_container);
-//         }
-
-//         // details-entries
-//         details_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-//         if (details_entries.length > 0) {
-//             const details_container = document.createElement('div');
-//             details_container.classList.add('card_details_container');
-
-//             const detail_count = details_entries.length;
-//             const row_count = Math.ceil(detail_count / 2);
-//             details_container.style.display = 'grid';
-//             details_container.style.gridAutoFlow = 'column';
-//             details_container.style.gridTemplateColumns = '1fr 1fr';
-//             details_container.style.gridTemplateRows = `repeat(${row_count}, auto)`;
-//             details_container.style.gap = '0.5rem';
-
-//             for (const detailObj of details_entries) {
-//                 const detail_item = document.createElement('div');
-//                 detail_item.classList.add('single_detail_item');
-
-//                 if (detailObj.hasLangKey) {
-//                     detail_item.setAttribute('data-lang-key', detailObj.rawValue);
-//                 } else {
-//                     if (detailObj.textWithLabel.length > 80) {
-//                         const details_element = document.createElement('details');
-//                         const summary_element = document.createElement('summary');
-//                         summary_element.textContent = detailObj.textWithLabel.slice(0, 80);
-//                         const rest_of_text = detailObj.textWithLabel.slice(80);
-
-//                         details_element.appendChild(summary_element);
-//                         details_element.appendChild(document.createTextNode(rest_of_text));
-//                         detail_item.appendChild(details_element);
-//                     } else {
-//                         detail_item.textContent = detailObj.textWithLabel;
-//                         detail_item.style.whiteSpace = 'pre-wrap';
-//                     }
-//                 }
-//                 details_container.appendChild(detail_item);
-//             }
-//             card_content_div.appendChild(details_container);
-//         }
-
-//         // Kortin footer
-//         const footer_div = document.createElement('div');
-//         footer_div.classList.add('card_footer');
-
-//         const footer_button = document.createElement('button');
-//         footer_button.textContent = 'Avaa modal';
-//         footer_button.addEventListener('click', (e) => {
-//             e.preventDefault();
-//             open_big_card_modal(row_item, table_name);
-//         });
-//         footer_div.appendChild(footer_button);
-
-//         card_content_div.appendChild(footer_div);
-//         card.appendChild(card_content_div);
-//         card_container.appendChild(card);
-//     }
-
-//     return card_container;
-// }
-
-// /**
-//  * Avaa ison kortin modaalin. Näyttää kootusti kortin kentät, roolit ym.
-//  * Tukee useita rooleja (esim. "image,header"), sekä kieliavainta.
-//  * Käyttää createImageElement ei-PNG-kuville. 
-//  */
-// export async function open_big_card_modal(row_item, table_name) {
-//     try {
-//         let data_types = {};
-//         try {
-//             data_types = JSON.parse(localStorage.getItem(`${table_name}_dataTypes`)) || {};
-//         } catch (error) {
-//             console.warn("could not parse data_types for table", table_name, error);
-//         }
-
-//         const columns = Object.keys(row_item);
-//         const sorted_columns = [...columns];
-//         sorted_columns.sort((colA, colB) => {
-//             const a_card_element = data_types[colA]?.card_element || '';
-//             const b_card_element = data_types[colB]?.card_element || '';
-//             if (a_card_element && !b_card_element) return -1;
-//             if (!a_card_element && b_card_element) return 1;
-//             return 0;
-//         });
-
-//         // Otsikoksi valitaan header-roolin arvo
-//         let modal_header_text = '';
-
-//         // Suuri container modalia varten
-//         const big_card_div = document.createElement('div');
-//         big_card_div.classList.add('big_card_container');
-
-//         const card_modal_content_div = document.createElement('div');
-//         card_modal_content_div.classList.add('big_card_content');
-
-//         // Headerin eka kirjain (avatar)
-//         let header_first_letter = '';
-//         for (const col of sorted_columns) {
-//             const roleFull = data_types[col]?.card_element || '';
-//             const { baseRoles } = parseRoleString(roleFull);
-//             if (baseRoles.includes('header')) {
-//                 const val_str = row_item[col] ? String(row_item[col]) : '';
-//                 if (val_str.trim()) {
-//                     header_first_letter = val_str.trim()[0];
-//                 }
-//             }
-//         }
-
-//         // Luontiaika / ID seed
-//         const created_part = row_item.created
-//             || row_item.created_at
-//             || row_item.luontiaika
-//             || null;
-//         const id_part = (row_item.id !== undefined) ? String(row_item.id) : 'unknown_id';
-//         const creation_seed = created_part ? `${id_part}_${created_part}` : id_part;
-
-//         // Onko taululla image-rooli?
-//         const table_has_image_role = sorted_columns.some(col => {
-//             const { baseRoles } = parseRoleString(data_types[col]?.card_element || '');
-//             return baseRoles.includes('image');
-//         });
-
-//         const description_entries = [];
-//         const details_entries = [];
-//         const keywords_list = [];
-//         let found_image_for_this_row = false;
-
-//         // Sarakkeiden käsittely
-//         for (const column of sorted_columns) {
-//             const raw_val = row_item[column];
-//             let val_str = '';
-//             if (raw_val !== null && raw_val !== undefined) {
-//                 val_str = (typeof raw_val === 'string') ? raw_val : String(raw_val);
-//             }
-
-//             const roleFull = data_types[column]?.card_element || '';
-//             const { baseRoles, hasLangKey } = parseRoleString(roleFull);
-
-//             const show_key_on_card = data_types[column]?.show_key_on_card === true;
-//             const column_label = format_column_name(column);
-
-//             const rawValueOnly = val_str;
-//             const labelTextValue = show_key_on_card
-//                 ? `${column_label}: ${val_str}`
-//                 : val_str;
-
-//             if (baseRoles.length === 0 && val_str.trim()) {
-//                 const detail_div = document.createElement('div');
-//                 detail_div.classList.add('big_card_generic_field');
-//                 detail_div.textContent = labelTextValue;
-//                 detail_div.style.whiteSpace = 'pre-wrap';
-//                 card_modal_content_div.appendChild(detail_div);
-//                 continue;
-//             }
-
-//             for (const singleRole of baseRoles) {
-//                 // hidden
-//                 if (/^hidden(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     // Ei näytetä eikä tallenneta
-//                     continue;
-//                 }
-                
-//                 // description
-//                 if (/^description(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     let suffix_number = Number.MAX_SAFE_INTEGER;
-//                     const match = singleRole.match(/^description(\d+)?$/);
-//                     if (match && match[1]) {
-//                         suffix_number = parseInt(match[1], 10);
-//                     }
-//                     description_entries.push({
-//                         suffix_number,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey
-//                     });
-//                     continue;
-//                 }
-
-//                 // details
-//                 if (/^details(\d+)?$/.test(singleRole) && val_str.trim()) {
-//                     let suffix_number = Number.MAX_SAFE_INTEGER;
-//                     const match = singleRole.match(/^details(\d+)?$/);
-//                     if (match && match[1]) {
-//                         suffix_number = parseInt(match[1], 10);
-//                     }
-//                     details_entries.push({
-//                         suffix_number,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey
-//                     });
-//                     continue;
-//                 }
-
-//                 // keywords
-//                 if (singleRole === 'keywords' && val_str.trim()) {
-//                     keywords_list.push({
-//                         column,
-//                         rawValue: rawValueOnly,
-//                         textWithLabel: labelTextValue,
-//                         hasLangKey
-//                     });
-//                     continue;
-//                 }
-
-//                 // image
-//                 if (singleRole === 'image') {
-//                     found_image_for_this_row = true;
-//                     const image_div = document.createElement('div');
-//                     image_div.classList.add('big_card_image');
-
-//                     if (val_str.trim()) {
-//                         let img_src = val_str.trim();
-//                         if (
-//                             !img_src.startsWith('http://') &&
-//                             !img_src.startsWith('https://') &&
-//                             !img_src.startsWith('./') &&
-//                             !img_src.startsWith('/')
-//                         ) {
-//                             const match = img_src.match(/^(\d+)_(\d+)_(\d+)\.(\w+)$/);
-//                             if (match) {
-//                                 const mainTableId = match[1];
-//                                 const mainRowId = match[2];
-//                                 img_src = `/media/${mainTableId}/${mainRowId}/${img_src}`;
-//                             } else {
-//                                 img_src = '/media/' + img_src;
-//                             }
-//                         }
-//                         // Käytetään fancy createImageElement
-//                         const fancyImgEl = createImageElement(img_src, true);
-//                         image_div.appendChild(fancyImgEl);
-//                     } else {
-//                         const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-//                         image_div.appendChild(avatar);
-//                     }
-//                     card_modal_content_div.appendChild(image_div);
-//                     continue;
-//                 }
-
-//                 // header
-//                 if (singleRole === 'header') {
-//                     if (hasLangKey) {
-//                         modal_header_text = rawValueOnly;
-//                     } else {
-//                         modal_header_text = labelTextValue;
-//                     }
-//                     const header_el = document.createElement('div');
-//                     header_el.classList.add('big_card_header');
-//                     if (hasLangKey) {
-//                         header_el.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         header_el.textContent = labelTextValue;
-//                         header_el.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_modal_content_div.appendChild(header_el);
-//                     continue;
-//                 }
-
-//                 // creation_spec
-//                 if (singleRole === 'creation_spec') {
-//                     const creation_div = document.createElement('div');
-//                     creation_div.classList.add('big_card_creation_spec');
-//                     if (hasLangKey) {
-//                         creation_div.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         creation_div.textContent = labelTextValue;
-//                         creation_div.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_modal_content_div.appendChild(creation_div);
-//                     continue;
-//                 }
-
-//                 // tuntematon rooli => perus tekstikenttä
-//                 if (val_str.trim()) {
-//                     const detail_div = document.createElement('div');
-//                     detail_div.classList.add('big_card_generic_field');
-//                     if (hasLangKey) {
-//                         detail_div.setAttribute('data-lang-key', rawValueOnly);
-//                     } else {
-//                         detail_div.textContent = labelTextValue;
-//                         detail_div.style.whiteSpace = 'pre-wrap';
-//                     }
-//                     card_modal_content_div.appendChild(detail_div);
-//                 }
-//             }
-//         }
-
-//         // Jos taululla on image-rooli, mutta ei kuvaa -> avatar
-//         if (table_has_image_role && !found_image_for_this_row) {
-//             const image_div = document.createElement('div');
-//             image_div.classList.add('big_card_image');
-//             const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-//             image_div.appendChild(avatar);
-//             card_modal_content_div.appendChild(image_div);
-//         }
-
-//         // Jos EI ole image-roolia => iso avatar
-//         if (!table_has_image_role) {
-//             const avatar_div = document.createElement('div');
-//             avatar_div.classList.add('big_card_image');
-//             const big_avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-//             avatar_div.appendChild(big_avatar);
-//             card_modal_content_div.appendChild(avatar_div);
-//         }
-
-//         // Sortataan description- ja details-listat
-//         description_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-//         details_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-
-//         // description-osiot
-//         if (description_entries.length > 0) {
-//             const desc_container = document.createElement('div');
-//             desc_container.classList.add('big_card_description_container');
-
-//             for (const descObj of description_entries) {
-//                 const d = document.createElement('div');
-//                 d.classList.add('single_big_description');
-//                 if (descObj.hasLangKey) {
-//                     d.setAttribute('data-lang-key', descObj.rawValue);
-//                 } else {
-//                     d.textContent = descObj.textWithLabel;
-//                     d.style.whiteSpace = 'pre-wrap';
-//                 }
-//                 desc_container.appendChild(d);
-//             }
-//             card_modal_content_div.appendChild(desc_container);
-//         }
-
-//         // keywords
-//         if (keywords_list.length > 0) {
-//             const kw_container = document.createElement('div');
-//             kw_container.classList.add('big_card_keywords_container');
-//             for (const kwObj of keywords_list) {
-//                 const k = document.createElement('div');
-//                 k.classList.add('big_card_keyword_item');
-//                 if (kwObj.hasLangKey) {
-//                     k.setAttribute('data-lang-key', kwObj.rawValue);
-//                 } else {
-//                     k.textContent = kwObj.textWithLabel;
-//                     k.style.whiteSpace = 'pre-wrap';
-//                 }
-//                 kw_container.appendChild(k);
-//             }
-//             card_modal_content_div.appendChild(kw_container);
-//         }
-
-//         // details
-//         if (details_entries.length > 0) {
-//             const details_container = document.createElement('div');
-//             details_container.classList.add('big_card_details_container');
-//             details_container.style.display = 'grid';
-//             details_container.style.gridTemplateColumns = '1fr 1fr';
-//             details_container.style.gap = '0.5rem';
-
-//             for (const detailObj of details_entries) {
-//                 const detail_item = document.createElement('div');
-//                 detail_item.classList.add('big_card_detail_item');
-
-//                 if (detailObj.hasLangKey) {
-//                     detail_item.setAttribute('data-lang-key', detailObj.rawValue);
-//                 } else {
-//                     if (detailObj.textWithLabel.length > 300) {
-//                         const details_el = document.createElement('details');
-//                         const summary_el = document.createElement('summary');
-//                         summary_el.textContent = detailObj.textWithLabel.slice(0, 300) + '...';
-//                         details_el.appendChild(summary_el);
-
-//                         const restText = document.createElement('span');
-//                         restText.textContent = detailObj.textWithLabel.slice(300);
-//                         restText.style.whiteSpace = 'pre-wrap';
-//                         details_el.appendChild(restText);
-//                         detail_item.appendChild(details_el);
-//                     } else {
-//                         detail_item.textContent = detailObj.textWithLabel;
-//                         detail_item.style.whiteSpace = 'pre-wrap';
-//                     }
-//                 }
-//                 details_container.appendChild(detail_item);
-//             }
-//             card_modal_content_div.appendChild(details_container);
-//         }
-
-//         // Dynaamiset lapsitiedot
-//         if (row_item.id) {
-//             try {
-//                 const dynamic_child_data = await endpoint_router('fetchDynamicChildren', {
-//                     method: 'POST',
-//                     body_data: {
-//                         parent_table: table_name,
-//                         parent_pk_value: String(row_item.id)
-//                     },
-//                 });
-//                 console.log('card_view.js: open_big_card_modal(); dynaamiset lapsitiedot:', dynamic_child_data);
-
-//                 if (dynamic_child_data && dynamic_child_data.child_tables) {
-//                     for (const child_obj of dynamic_child_data.child_tables) {
-//                         const child_table_name = child_obj.table;
-//                         const child_column_name = child_obj.column;
-//                         const child_rows = child_obj.rows || [];
-
-//                         const child_container_div = document.createElement('div');
-//                         child_container_div.classList.add('big_card_child_container');
-
-//                         const child_header = document.createElement('h3');
-//                         child_header.textContent = `${child_table_name} - ${child_column_name}`;
-//                         child_container_div.appendChild(child_header);
-
-//                         const link_elem = document.createElement('a');
-//                         link_elem.href = `/tables/${child_table_name}?${child_column_name}=${row_item.id}`;
-//                         link_elem.textContent = `Avaa /tables/${child_table_name}?${child_column_name}=${row_item.id}`;
-//                         link_elem.target = '_blank';
-//                         child_container_div.appendChild(link_elem);
-
-//                         child_rows.forEach(single_child_row => {
-//                             const row_div = document.createElement('div');
-//                             row_div.classList.add('child_item');
-//                             row_div.textContent = JSON.stringify(single_child_row, null, 2);
-//                             row_div.style.whiteSpace = 'pre-wrap';
-//                             child_container_div.appendChild(row_div);
-//                         });
-
-//                         card_modal_content_div.appendChild(child_container_div);
-//                     }
-//                 }
-//             } catch (err) {
-//                 console.error("virhe: " + err.message); // 🍀
-//             }
-//         }
-
-//         big_card_div.appendChild(card_modal_content_div);
-
-//         createModal({
-//             titlePlainText: modal_header_text || 'card_details_big',
-//             tableName: table_name,
-//             contentElements: [big_card_div],
-//             width: '70vw'
-//         });
-//         showModal();
-
-//     } catch (err) {
-//         console.error("virhe: " + err.message); // 🤖
-//     }
-// }
-
-// /** 
-//  * Pieni apufunktio sarakenimen formatointiin 
-//  * (alleviivaukset -> välilyönnit, iso alkukirjain).
-//  */
-// function format_column_name(column) {
-//     const replaced = column.replace(/_/g, ' ');
-//     return replaced.charAt(0).toUpperCase() + replaced.slice(1);
-// }
-
-
-// // // card_view.js
-
-// // import { createModal, showModal } from '../../../common_components/modal/modal_factory.js';
-// // import { endpoint_router } from '../../endpoints/endpoint_router.js';
-// // import { update_card_selection } from '../table_view/selection.js';
-
-// // /**
-// //  * Luo SHA-256 -pohjainen "avatar" annetusta siemenarvosta. 
-// //  */
-// // export async function create_seeded_avatar(seed_string, letter_for_avatar, useLargeSize = false) {
-// //     // Lasketaan seed_string -> SHA-256 (hex)
-// //     const msgUint8 = new TextEncoder().encode(seed_string);
-// //     const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-// //     const hashArray = Array.from(new Uint8Array(hashBuffer));
-// //     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-// //     // Otetaan osa hashista numeriseen muotoon satunnaisuutta varten
-// //     const numericHashPart_for_color = parseInt(hashHex.slice(0, 8), 16);
-// //     const numericHashPart_for_radius = parseInt(hashHex.slice(8, 16), 16);
-
-// //     // Määritetään maksimi merkkimäärä
-// //     const max_chars = 16;
-// //     let final_text = '?';
-// //     if (letter_for_avatar) {
-// //         if (letter_for_avatar.length > max_chars) {
-// //             final_text = letter_for_avatar.slice(0, max_chars) + '...';
-// //         } else {
-// //             final_text = letter_for_avatar;
-// //         }
-// //     }
-// //     const final_letter = final_text.toUpperCase();
-
-// //     // Taustavärin laskenta HSL-muodossa
-// //     const hue_value = numericHashPart_for_color % 360;
-// //     const saturation_value = 30;  // Tummahko
-// //     const lightness_value = 40;
-// //     const chosen_color_hsl = `hsl(${hue_value}, ${saturation_value}%, ${lightness_value}%)`;
-
-// //     // Border-radiaalin laskenta
-// //     const random_radius = (numericHashPart_for_radius % 30) + 1;
-// //     const chosen_border_radius = `${random_radius}%`;
-
-// //     // Fontit
-// //     const fonts = [
-// //         'Arial, sans-serif',
-// //         '"Times New Roman", Times, serif',
-// //         'Consolas, monospace',
-// //         'Verdana, Geneva, sans-serif',
-// //         '"Trebuchet MS", Helvetica, sans-serif',
-// //         'Georgia, serif',
-// //         '"Palatino Linotype", "Book Antiqua", Palatino, serif'
-// //     ];
-// //     const font_index = (numericHashPart_for_color >>> 8) % fonts.length;
-// //     const chosen_font = fonts[font_index];
-
-// //     // Jos haluamme ison 300x300 tai pienen 120x120
-// //     const containerSize = useLargeSize ? 300 : 120;
-// //     const avatarBoxSize = useLargeSize ? 220 : 120;
-
-// //     // Container
-// //     const container_div = document.createElement('div');
-// //     container_div.style.width = containerSize + 'px';
-// //     container_div.style.height = containerSize + 'px';
-// //     container_div.style.display = 'flex';
-// //     container_div.style.alignItems = 'center';
-// //     container_div.style.justifyContent = 'center';
-// //     container_div.style.overflow = 'hidden';
-
-// //     // Avatar-elementti
-// //     const avatar_div = document.createElement('div');
-// //     avatar_div.textContent = final_letter;
-// //     avatar_div.style.display = 'flex';
-// //     avatar_div.style.alignItems = 'center';
-// //     avatar_div.style.justifyContent = 'center';
-// //     avatar_div.style.width = avatarBoxSize + 'px';
-// //     avatar_div.style.height = avatarBoxSize + 'px';
-// //     avatar_div.style.backgroundColor = chosen_color_hsl;
-// //     avatar_div.style.fontFamily = chosen_font;
-// //     avatar_div.style.fontWeight = 'bold';
-// //     avatar_div.style.fontSize = useLargeSize ? '7rem' : '4rem';
-// //     avatar_div.style.color = '#fff';
-// //     avatar_div.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.5)';
-// //     avatar_div.style.borderRadius = chosen_border_radius;
-
-// //     container_div.appendChild(avatar_div);
-// //     return container_div;
-// // }
-
-
-// // /**
-// //  * Lisää annettuun card_containeriin itemejä (kortteja) columns- ja data-listan perusteella.
-// //  * (Yksinkertainen versio, joka luo yksinkertaiset pairDiv-labelit + -arvot.)
-// //  */
-// // export function appendDataToCardView(card_container, columns, data, table_name) {
-// //     let data_types = {};
-// //     try {
-// //         data_types = JSON.parse(localStorage.getItem(`${table_name}_dataTypes`)) || {};
-// //     } catch (error) {
-// //         console.warn("card_view.js: could not parse data_types for table", table_name, error);
-// //     }
-
-// //     data.forEach(item => {
-// //         const card = document.createElement('div');
-// //         card.classList.add('card');
-
-// //         // Asetetaan cardiin data-id attribuutti
-// //         if (item.id !== undefined && item.id !== null) {
-// //             card.setAttribute('data-id', item.id);
-// //         } else {
-// //             console.log('card_view.js: appendDataToCardView(); ei data-id:tä');
-// //         }
-
-// //         // Valintaruutu
-// //         const checkbox = document.createElement('input');
-// //         checkbox.type = 'checkbox';
-// //         checkbox.classList.add('card_checkbox');
-// //         checkbox.addEventListener('change', () => update_card_selection(card));
-// //         card.appendChild(checkbox);
-
-// //         // Sisältödivi
-// //         const contentDiv = document.createElement('div');
-// //         contentDiv.classList.add('card_content');
-
-// //         columns.forEach((column) => {
-// //             const pairDiv = document.createElement('div');
-// //             pairDiv.classList.add('card_pair');
-
-// //             const labelDiv = document.createElement('div');
-// //             labelDiv.classList.add('card_label');
-
-// //             const show_key_on_card = data_types[column]?.show_key_on_card === true;
-// //             const formatted_label = format_column_name(column);
-
-// //             if (show_key_on_card) {
-// //                 labelDiv.textContent = `${formatted_label}:`;
-// //             } else {
-// //                 labelDiv.textContent = '';
-// //             }
-
-// //             const valueDiv = document.createElement('div');
-// //             valueDiv.classList.add('card_value');
-
-// //             if (Array.isArray(item[column])) {
-// //                 // LISÄYS: valmiiksi rivinvaihdot
-// //                 valueDiv.textContent = item[column].join(', ');
-// //                 valueDiv.style.whiteSpace = 'pre-wrap';
-// //             } else if (typeof item[column] === 'object' && item[column] !== null) {
-// //                 // LISÄYS: valmiiksi rivinvaihdot
-// //                 valueDiv.textContent = JSON.stringify(item[column], null, 2);
-// //                 valueDiv.style.whiteSpace = 'pre-wrap';
-// //             } else {
-// //                 // LISÄYS: valmiiksi rivinvaihdot
-// //                 const txt = item[column] || '';
-// //                 valueDiv.textContent = txt;
-// //                 valueDiv.style.whiteSpace = 'pre-wrap';
-// //             }
-
-// //             pairDiv.appendChild(labelDiv);
-// //             pairDiv.appendChild(valueDiv);
-// //             contentDiv.appendChild(pairDiv);
-// //         });
-
-// //         card.appendChild(contentDiv);
-// //         card_container.appendChild(card);
-// //     });
-// // }
-
-
-// // /**
-// //  * parseRoleString - tukee useita pilkulla erotettuja rooleja (esim. "image,header+lang-key").
-// //  * Palauttaa:
-// //  *   {
-// //  *     baseRoles: [...],  // esim. ['image','header']
-// //  *     hasLangKey: boolean
-// //  *   }
-// //  */
-// // function parseRoleString(roleStr) {
-// //     if (!roleStr) return { baseRoles: [], hasLangKey: false };
-
-// //     // Jaetaan merkkijono pilkuilla ja trimmaa osat
-// //     const rolesRaw = roleStr.split(',').map(r => r.trim());
-// //     let hasLangKey = false;
-// //     const baseRoles = [];
-
-// //     rolesRaw.forEach(role => {
-// //         if (role.includes('+')) {
-// //             // Jos rooli sisältää esim. "header+lang-key"
-// //             const [mainRole, extra] = role.split('+').map(r => r.trim());
-// //             baseRoles.push(mainRole);
-// //             if (extra === 'lang-key') {
-// //                 hasLangKey = true;
-// //             }
-// //         } else {
-// //             baseRoles.push(role);
-// //         }
-// //     });
-
-// //     return { baseRoles, hasLangKey };
-// // }
-
-// // /** 
-// //  * Pieni apufunktio sarakenimen formatointiin 
-// //  * (alleviivaukset -> välilyönnit, iso alkukirjain)
-// //  */
-// // function format_column_name(column) {
-// //     const replaced = column.replace(/_/g, ' ');
-// //     return replaced.charAt(0).toUpperCase() + replaced.slice(1);
-// // }
-
-
-
-// // // create_card_view.js
-
-// // /**
-// //  * Tässä on uusi, suuremman blur-alueen elementti, jotta reunat eivät jää tummiksi.
-// //  * PNG-kuville ei lisätä varjoa, sumennusta eikä pyöristettyjä kulmia.
-// //  */
-// // function createImageElement(image_src, useLargeSize) {
-// //     const wrapper = document.createElement('div');
-// //     wrapper.style.width = useLargeSize ? '300px' : '140px';
-// //     wrapper.style.height = useLargeSize ? '300px' : '140px';
-// //     wrapper.style.position = 'relative';
-// //     // wrapper.style.overflow = 'hidden';
-
-// //     const foregroundImg = document.createElement('img');
-// //     const isPng = image_src.toLowerCase().endsWith('.png');
-// //     if (!isPng) {
-// //         // Muille kuin PNG-kuville lisätään pyöristys, varjo ja blur-tausta
-// //         // foregroundImg.style.border = '1px solid var(--border_color)';
-// //         foregroundImg.style.background = 'rgb(255, 255, 255, 0.1)';
-        
-// //         foregroundImg.style.borderRadius = '7px';
-// //         foregroundImg.style.boxShadow = '2px 2px 4px rgba(0, 0, 0, 0.2)';
-
-// //         // const blurredBg = document.createElement('div');
-// //         // blurredBg.style.position = 'absolute';
-// //         // blurredBg.style.top = '0';
-// //         // blurredBg.style.left = '0';
-// //         // blurredBg.style.right = '0';
-// //         // blurredBg.style.bottom = '0';
-// //         // blurredBg.style.backgroundImage = `url(${image_src})`;
-// //         // blurredBg.style.backgroundSize = 'cover';
-// //         // blurredBg.style.backgroundPosition = 'center';
-// //         // blurredBg.style.filter = 'blur(40px)';
-// //         // blurredBg.style.opacity = '0.8';
-// //         // blurredBg.style.filter += ' saturate(80%)';
-
-// //         // wrapper.appendChild(blurredBg);
-// //     }
-
-// //     // Foreground-kuva (pitkulainen kuva kokonaan näkyviin)
-    
-// //     foregroundImg.src = image_src;
-// //     foregroundImg.alt = 'Kuva puuttuu';
-// //     foregroundImg.style.position = 'relative';
-// //     foregroundImg.style.width = '100%';
-// //     foregroundImg.style.height = '100%';
-// //     foregroundImg.style.objectFit = 'contain';
-// //     foregroundImg.style.objectPosition = 'center';
-
-// //     wrapper.appendChild(foregroundImg);
-// //     return wrapper;
-// // }
-
-
-// // /**
-// //  * Asynkroninen create_card_view: rakentaa kortit data-taulukosta, 
-// //  * tukee roolit: header, image, description, details, keywords, creation_spec.
-// //  * 
-// //  * Nyt jokainen sarake voi sisältää useita rooleja, esim. "image,header".
-// //  * Kaikki roolit otetaan huomioon samalle sarakkeelle.
-// //  */
-// // export async function create_card_view(columns, data, table_name) {
-// //     const card_container = document.createElement('div');
-// //     card_container.classList.add('card_container');
-
-// //     let data_types = {};
-// //     try {
-// //         data_types = JSON.parse(localStorage.getItem(`${table_name}_dataTypes`)) || {};
-// //     } catch (error) {
-// //         console.warn("could not parse data_types for table", table_name, error);
-// //     }
-
-// //     // Järjestellään sarakkeet
-// //     const sorted_columns = [...columns];
-// //     sorted_columns.sort((colA, colB) => {
-// //         const a_card_element = data_types[colA]?.card_element || '';
-// //         const b_card_element = data_types[colB]?.card_element || '';
-// //         if (a_card_element && !b_card_element) return -1;
-// //         if (!a_card_element && b_card_element) return 1;
-// //         return 0;
-// //     });
-
-// //     // Katsotaan, löytyykö taululta 'image'-roolia
-// //     const tableHasImageRole = sorted_columns.some(col => {
-// //         const { baseRoles } = parseRoleString(data_types[col]?.card_element || '');
-// //         return baseRoles.includes('image');
-// //     });
-
-// //     // Käydään data-rivit läpi
-// //     console.log('card_view.js: create_card_view(); Käsitellään data-rivit:', data);
-// //     for (const row_item of data) {
-// //         const card = document.createElement('div');
-// //         card.classList.add('card');
-
-// //         if (row_item.id !== undefined && row_item.id !== null) {
-// //             card.setAttribute('data-id', row_item.id);
-// //         } else {
-// //             console.log('card_view.js: create_card_view(); ei data-id:tä');
-// //         }
-
-// //         // Checkbox
-// //         const checkbox = document.createElement('input');
-// //         checkbox.type = 'checkbox';
-// //         checkbox.classList.add('card_checkbox');
-// //         checkbox.addEventListener('change', () => update_card_selection(card));
-// //         card.appendChild(checkbox);
-
-// //         // Sisällön container
-// //         const card_content_div = document.createElement('div');
-// //         card_content_div.classList.add('card_content');
-// //         if (tableHasImageRole) {
-// //             card_content_div.classList.add('card_content_large');
-// //         } else {
-// //             card_content_div.classList.add('card_content_small');
-// //         }
-
-// //         // Taulukkokohtaiset koontilistat
-// //         const details_entries = [];
-// //         const description_entries = [];
-// //         const keywords_list = [];
-
-// //         // Headerin eka kirjain avatarille
-// //         let header_first_letter = '';
-// //         const id_part = (row_item.id !== undefined) ? String(row_item.id) : 'unknown_id';
-
-// //         // Haetaan luontiaika (seed)
-// //         const created_part = row_item.created
-// //             || row_item.created_at
-// //             || row_item.luontiaika
-// //             || null;
-// //         let creation_seed;
-// //         if (created_part) {
-// //             creation_seed = `${id_part}_${created_part}`;
-// //         } else {
-// //             creation_seed = id_part;
-// //         }
-
-// //         // Poimitaan mahdollinen ensimmäinen header-kirjain (jos jossain sarakkeessa on header-rooli)
-// //         for (const col of sorted_columns) {
-// //             const roleFull = data_types[col]?.card_element || '';
-// //             const { baseRoles } = parseRoleString(roleFull);
-// //             if (baseRoles.includes('header')) {
-// //                 const raw_val = row_item[col];
-// //                 const val_str = (typeof raw_val === 'string') ? raw_val : String(raw_val ?? '');
-// //                 const trimmed = val_str.trim();
-// //                 if (trimmed) {
-// //                     header_first_letter = trimmed[0];
-// //                 }
-// //             }
-// //         }
-
-// //         let found_image_for_this_row = false;
-
-// //         // Käydään sarakkeet läpi
-// //         console.log('card_view.js: create_card_view(); Käsitellään sarakkeet:', sorted_columns);
-// //         for (const column of sorted_columns) {
-// //             const raw_val = row_item[column];
-// //             let val_str = '';
-// //             if (raw_val !== null && raw_val !== undefined) {
-// //                 val_str = (typeof raw_val === 'string') ? raw_val : String(raw_val);
-// //             }
-
-// //             const roleFull = data_types[column]?.card_element || '';
-// //             const { baseRoles, hasLangKey } = parseRoleString(roleFull);
-
-// //             const show_key_on_card = data_types[column]?.show_key_on_card === true;
-// //             const column_label = format_column_name(column);
-// //             const final_text = show_key_on_card
-// //                 ? `${column_label}: ${val_str}`
-// //                 : val_str;
-
-// //             // Jos ei rooleja, käsitellään "tavallisena" tietona
-// //             if (baseRoles.length === 0) {
-// //                 if (val_str.trim()) {
-// //                     // "Tavallinen" data
-// //                     const elem_div = document.createElement('div');
-// //                     elem_div.classList.add('card_details');
-// //                     elem_div.textContent = final_text;
-// //                     elem_div.style.whiteSpace = 'pre-wrap';
-// //                     card_content_div.appendChild(elem_div);
-// //                 }
-// //                 continue;
-// //             }
-
-// //             // Käydään läpi jokainen rooli
-// //             for (const singleRole of baseRoles) {
-// //                 // 1) description-rooli (voivat olla description, description1, description2, jne.)
-// //                 if (/^description(\d+)?$/.test(singleRole) && val_str.trim()) {
-// //                     let suffix_number = Number.MAX_SAFE_INTEGER;
-// //                     const match = singleRole.match(/^description(\d+)?$/);
-// //                     if (match && match[1]) {
-// //                         suffix_number = parseInt(match[1], 10);
-// //                     }
-// //                     description_entries.push({
-// //                         suffix_number,
-// //                         text: final_text,
-// //                         hasLangKey
-// //                     });
-// //                     continue;
-// //                 }
-
-// //                 // 2) details-rooli
-// //                 if (/^details(\d+)?$/.test(singleRole) && val_str.trim()) {
-// //                     let suffix_number = Number.MAX_SAFE_INTEGER;
-// //                     const match = singleRole.match(/^details(\d+)?$/);
-// //                     if (match && match[1]) {
-// //                         suffix_number = parseInt(match[1], 10);
-// //                     }
-// //                     details_entries.push({
-// //                         suffix_number,
-// //                         text: final_text,
-// //                         hasLangKey
-// //                     });
-// //                     continue;
-// //                 }
-
-// //                 // 3) keywords
-// //                 if (singleRole === 'keywords' && val_str.trim()) {
-// //                     keywords_list.push({
-// //                         column,
-// //                         text: final_text,
-// //                         hasLangKey
-// //                     });
-// //                     continue;
-// //                 }
-
-// //                 // 4) image
-// //                 if (singleRole === 'image') {
-// //                     found_image_for_this_row = true;
-// //                     const elem_div = document.createElement('div');
-// //                     elem_div.classList.add('card_image');
-// //                     const useLargeSize = tableHasImageRole;
-
-// //                     if (val_str.trim()) {
-// //                         let image_src = val_str.trim();
-// //                         // Polun korjaus
-// //                         if (
-// //                             !image_src.startsWith('http://') &&
-// //                             !image_src.startsWith('https://') &&
-// //                             !image_src.startsWith('./') &&
-// //                             !image_src.startsWith('/')
-// //                         ) {
-// //                             // Yritetään muotoa "X_Y_Z.jpg"
-// //                             const match = image_src.match(/^(\d+)_(\d+)_(\d+)\.(\w+)$/);
-// //                             if (match) {
-// //                                 const mainTableId = match[1];
-// //                                 const mainRowId = match[2];
-// //                                 image_src = `/media/${mainTableId}/${mainRowId}/${image_src}`;
-// //                             } else {
-// //                                 image_src = '/media/' + image_src;
-// //                             }
-// //                         }
-// //                         // Tässä kutsutaan uutta createImageElement-funktiota:
-// //                         const blurredImageElement = createImageElement(image_src, useLargeSize);
-// //                         elem_div.appendChild(blurredImageElement);
-// //                     } else {
-// //                         // Avatar, jos ei varsinaista URL:ia
-// //                         const avatar = await create_seeded_avatar(creation_seed, header_first_letter, useLargeSize);
-// //                         elem_div.appendChild(avatar);
-// //                     }
-// //                     card_content_div.appendChild(elem_div);
-// //                     continue;
-// //                 }
-
-// //                 // 5) header
-// //                 if (singleRole === 'header') {
-// //                     const elem_div = document.createElement('div');
-// //                     elem_div.classList.add('card_header');
-// //                     if (hasLangKey) {
-// //                         elem_div.setAttribute('data-lang-key', final_text);
-// //                     } else {
-// //                         elem_div.textContent = final_text;
-// //                         elem_div.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                     // Klikkaus avaa modaalin
-// //                     elem_div.addEventListener('click', (e) => {
-// //                         e.preventDefault();
-// //                         open_big_card_modal(row_item, table_name);
-// //                     });
-// //                     card_content_div.appendChild(elem_div);
-// //                     continue;
-// //                 }
-
-// //                 // 6) creation_spec
-// //                 if (singleRole === 'creation_spec') {
-// //                     const elem_div = document.createElement('div');
-// //                     elem_div.classList.add('card_creation_spec');
-// //                     if (hasLangKey) {
-// //                         elem_div.setAttribute('data-lang-key', final_text);
-// //                     } else {
-// //                         elem_div.textContent = final_text;
-// //                         elem_div.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                     card_content_div.appendChild(elem_div);
-// //                     continue;
-// //                 }
-
-// //                 // Jos rooli on jokin tuntematon tai "muu", käsitellään tavallisena tekstinä
-// //                 if (val_str.trim()) {
-// //                     const elem_div = document.createElement('div');
-// //                     elem_div.classList.add('card_details');
-// //                     if (hasLangKey) {
-// //                         elem_div.setAttribute('data-lang-key', final_text);
-// //                     } else {
-// //                         elem_div.textContent = final_text;
-// //                         elem_div.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                     card_content_div.appendChild(elem_div);
-// //                 }
-// //             }
-// //         } // --- sarakkeiden loopin loppu ---
-
-// //         // Jos taululla on image-rooli, mutta ei löytynyt tälle riville kuvaa -> avatar
-// //         if (tableHasImageRole && !found_image_for_this_row) {
-// //             const image_div = document.createElement('div');
-// //             image_div.classList.add('card_image');
-// //             const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-// //             image_div.appendChild(avatar);
-// //             card_content_div.appendChild(image_div);
-// //         }
-
-// //         // Jos taululla EI ole image-roolia -> laitetaan pieni avatar
-// //         if (!tableHasImageRole) {
-// //             const avatarDiv = document.createElement('div');
-// //             avatarDiv.classList.add('card_image');
-// //             const smallAvatar = await create_seeded_avatar(creation_seed, header_first_letter, false);
-// //             avatarDiv.appendChild(smallAvatar);
-// //             card_content_div.appendChild(avatarDiv);
-// //         }
-
-// //         // Lajitellaan ja lisätään description-entries
-// //         description_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-// //         if (description_entries.length > 0) {
-// //             const desc_container = document.createElement('div');
-// //             desc_container.classList.add('card_description_container');
-
-// //             let anyLong = false; // tarkistetaan, onko joku teksti > 500 merkkiä
-// //             for (const descObj of description_entries) {
-// //                 const d = document.createElement('div');
-// //                 d.classList.add('single_description_item');
-
-// //                 if (descObj.hasLangKey) {
-// //                     d.setAttribute('data-lang-key', descObj.text);
-// //                 } else {
-// //                     const fullText = descObj.text;
-// //                     let displayText = fullText;
-// //                     if (fullText.length > 500) {
-// //                         displayText = fullText.slice(0, 500) + '...';
-// //                         anyLong = true;
-// //                     }
-// //                     d.textContent = displayText;
-// //                     d.style.whiteSpace = 'pre-wrap';
-// //                 }
-// //                 desc_container.appendChild(d);
-// //             }
-
-// //             // Lisätään "Näytä lisää" vain, jos jokin description oli pitkä (ja ei +lang-key)
-// //             if (anyLong && !description_entries.some(e => e.hasLangKey)) {
-// //                 const show_more_link = document.createElement('a');
-// //                 show_more_link.href = '#';
-// //                 show_more_link.textContent = 'Näytä lisää';
-// //                 show_more_link.classList.add('show_more_link');
-// //                 show_more_link.addEventListener('click', (e) => {
-// //                     e.preventDefault();
-// //                     open_big_card_modal(row_item, table_name);
-// //                 });
-// //                 desc_container.appendChild(show_more_link);
-// //             }
-// //             card_content_div.appendChild(desc_container);
-// //         }
-
-// //         // keywords-list
-// //         if (keywords_list.length > 0) {
-// //             const kw_container = document.createElement('div');
-// //             kw_container.classList.add('card_keywords_container');
-// //             for (const kwObj of keywords_list) {
-// //                 const k = document.createElement('div');
-// //                 k.classList.add('single_keyword_item');
-// //                 if (kwObj.hasLangKey) {
-// //                     k.setAttribute('data-lang-key', kwObj.text);
-// //                 } else {
-// //                     k.textContent = kwObj.text;
-// //                     k.style.whiteSpace = 'pre-wrap';
-// //                 }
-// //                 kw_container.appendChild(k);
-// //             }
-// //             card_content_div.appendChild(kw_container);
-// //         }
-
-// //         // details-entries
-// //         details_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-// //         if (details_entries.length > 0) {
-// //             const details_container = document.createElement('div');
-// //             details_container.classList.add('card_details_container');
-
-// //             const detail_count = details_entries.length;
-// //             const row_count = Math.ceil(detail_count / 2);
-// //             details_container.style.display = 'grid';
-// //             details_container.style.gridAutoFlow = 'column';
-// //             details_container.style.gridTemplateColumns = '1fr 1fr';
-// //             details_container.style.gridTemplateRows = `repeat(${row_count}, auto)`;
-// //             details_container.style.gap = '0.5rem';
-
-// //             for (const detailObj of details_entries) {
-// //                 const detail_item = document.createElement('div');
-// //                 detail_item.classList.add('single_detail_item');
-
-// //                 if (detailObj.hasLangKey) {
-// //                     detail_item.setAttribute('data-lang-key', detailObj.text);
-// //                 } else {
-// //                     if (detailObj.text.length > 80) {
-// //                         const details_element = document.createElement('details');
-// //                         const summary_element = document.createElement('summary');
-// //                         summary_element.textContent = detailObj.text.slice(0, 80);
-// //                         const rest_of_text = detailObj.text.slice(80);
-
-// //                         details_element.appendChild(summary_element);
-// //                         details_element.appendChild(document.createTextNode(rest_of_text));
-// //                         detail_item.appendChild(details_element);
-// //                     } else {
-// //                         detail_item.textContent = detailObj.text;
-// //                         detail_item.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                 }
-// //                 details_container.appendChild(detail_item);
-// //             }
-// //             card_content_div.appendChild(details_container);
-// //         }
-
-// //         // Kortin footer
-// //         const footer_div = document.createElement('div');
-// //         footer_div.classList.add('card_footer');
-
-// //         const footer_button = document.createElement('button');
-// //         footer_button.textContent = 'Avaa modal';
-// //         footer_button.addEventListener('click', (e) => {
-// //             e.preventDefault();
-// //             open_big_card_modal(row_item, table_name);
-// //         });
-// //         footer_div.appendChild(footer_button);
-
-// //         card_content_div.appendChild(footer_div);
-
-// //         // Lisätään card_content_div korttiin
-// //         card.appendChild(card_content_div);
-// //         // Lisätään kortti lopulliseen containeriin
-// //         card_container.appendChild(card);
-// //     }
-
-// //     return card_container;
-// // }
-
-
-// // /**
-// //  * Avaa ison kortin modaalin. Näyttää kootusti kortin kentät, roolit ym.
-// //  * Päivitetty tukemaan useita rooleja samalle sarakkeelle (esim. "image,header").
-// //  */
-// // export async function open_big_card_modal(row_item, table_name) {
-// //     try {
-// //         // Alkuvalmistelut: säilötään data_types
-// //         let data_types = {};
-// //         try {
-// //             data_types = JSON.parse(localStorage.getItem(`${table_name}_dataTypes`)) || {};
-// //         } catch (error) {
-// //             console.warn("could not parse data_types for table", table_name, error);
-// //         }
-
-// //         const columns = Object.keys(row_item);
-// //         const sorted_columns = [...columns];
-// //         sorted_columns.sort((colA, colB) => {
-// //             const a_card_element = data_types[colA]?.card_element || '';
-// //             const b_card_element = data_types[colB]?.card_element || '';
-// //             if (a_card_element && !b_card_element) return -1;
-// //             if (!a_card_element && b_card_element) return 1;
-// //             return 0;
-// //         });
-
-// //         // Otsikkoa varten kerätään headerin koko teksti
-// //         let modal_header_text = '';
-
-// //         // Luodaan modalin sisään iso container
-// //         const big_card_div = document.createElement('div');
-// //         big_card_div.classList.add('big_card_container');
-
-// //         const card_modal_content_div = document.createElement('div');
-// //         card_modal_content_div.classList.add('big_card_content');
-
-// //         // Header-kirjainta varten
-// //         let header_first_letter = '';
-// //         for (const col of sorted_columns) {
-// //             const roleFull = data_types[col]?.card_element || '';
-// //             const { baseRoles } = parseRoleString(roleFull);
-// //             if (baseRoles.includes('header')) {
-// //                 const val_str = row_item[col] ? String(row_item[col]) : '';
-// //                 if (val_str.trim()) {
-// //                     header_first_letter = val_str.trim()[0];
-// //                 }
-// //             }
-// //         }
-
-// //         // Luontiaika / ID seed avatarille
-// //         const created_part = row_item.created
-// //             || row_item.created_at
-// //             || row_item.luontiaika
-// //             || null;
-// //         const id_part = (row_item.id !== undefined) ? String(row_item.id) : 'unknown_id';
-// //         const creation_seed = created_part ? `${id_part}_${created_part}` : id_part;
-
-// //         // Onko taululla image-roolia?
-// //         const table_has_image_role = sorted_columns.some(col => {
-// //             const { baseRoles } = parseRoleString(data_types[col]?.card_element || '');
-// //             return baseRoles.includes('image');
-// //         });
-
-// //         const description_entries = [];
-// //         const details_entries = [];
-// //         const keywords_list = [];
-// //         let found_image_for_this_row = false;
-
-// //         // Sarakkeiden läpikäynti
-// //         for (const column of sorted_columns) {
-// //             const raw_val = row_item[column];
-// //             let val_str = '';
-// //             if (raw_val !== null && raw_val !== undefined) {
-// //                 val_str = (typeof raw_val === 'string') ? raw_val : String(raw_val);
-// //             }
-
-// //             const roleFull = data_types[column]?.card_element || '';
-// //             const { baseRoles, hasLangKey } = parseRoleString(roleFull);
-
-// //             const show_key_on_card = data_types[column]?.show_key_on_card === true;
-// //             const column_label = format_column_name(column);
-// //             const final_text = show_key_on_card
-// //                 ? `${column_label}: ${val_str}`
-// //                 : val_str;
-
-// //             // Jos ei rooleja ollenkaan, tulkitaan pelkkänä tekstinä
-// //             if (baseRoles.length === 0 && val_str.trim()) {
-// //                 const detail_div = document.createElement('div');
-// //                 detail_div.classList.add('big_card_generic_field');
-// //                 detail_div.textContent = final_text;
-// //                 detail_div.style.whiteSpace = 'pre-wrap';
-// //                 card_modal_content_div.appendChild(detail_div);
-// //                 continue;
-// //             }
-
-// //             // Käsitellään kunkin sarakkeen roolit
-// //             for (const singleRole of baseRoles) {
-// //                 console.log(`card_view.js: open_big_card_modal(); Korttielementti: sarake "${column}", rooli "${singleRole}", arvo: "${val_str}"`);
-                
-// //                 // 1) description
-// //                 if (/^description(\d+)?$/.test(singleRole) && val_str.trim()) {
-// //                     let suffix_number = Number.MAX_SAFE_INTEGER;
-// //                     const match = singleRole.match(/^description(\d+)?$/);
-// //                     if (match && match[1]) {
-// //                         suffix_number = parseInt(match[1], 10);
-// //                     }
-// //                     description_entries.push({ suffix_number, text: final_text, hasLangKey });
-// //                     continue;
-// //                 }
-
-// //                 // 2) details
-// //                 if (/^details(\d+)?$/.test(singleRole) && val_str.trim()) {
-// //                     let suffix_number = Number.MAX_SAFE_INTEGER;
-// //                     const match = singleRole.match(/^details(\d+)?$/);
-// //                     if (match && match[1]) {
-// //                         suffix_number = parseInt(match[1], 10);
-// //                     }
-// //                     details_entries.push({ suffix_number, text: final_text, hasLangKey });
-// //                     continue;
-// //                 }
-
-// //                 // 3) keywords
-// //                 if (singleRole === 'keywords' && val_str.trim()) {
-// //                     keywords_list.push({ column, text: final_text, hasLangKey });
-// //                     continue;
-// //                 }
-
-// //                 // 4) image
-// //                 if (singleRole === 'image') {
-// //                     found_image_for_this_row = true;
-// //                     const image_div = document.createElement('div');
-// //                     image_div.classList.add('big_card_image');
-
-// //                     if (val_str.trim()) {
-// //                         let img_src = val_str.trim();
-// //                         if (
-// //                             !img_src.startsWith('http://') &&
-// //                             !img_src.startsWith('https://') &&
-// //                             !img_src.startsWith('./') &&
-// //                             !img_src.startsWith('/')
-// //                         ) {
-// //                             const match = img_src.match(/^(\d+)_(\d+)_(\d+)\.(\w+)$/);
-// //                             if (match) {
-// //                                 const mainTableId = match[1];
-// //                                 const mainRowId = match[2];
-// //                                 img_src = `/media/${mainTableId}/${mainRowId}/${img_src}`;
-// //                             } else {
-// //                                 img_src = '/media/' + img_src;
-// //                             }
-// //                         }
-// //                         const img = document.createElement('img');
-// //                         img.src = img_src;
-// //                         img.alt = 'Kuva puuttuu';
-// //                         img.style.width = '300px';
-// //                         img.style.height = '300px';
-// //                         img.style.objectFit = 'contain';
-// //                         image_div.appendChild(img);
-// //                     } else {
-// //                         // iso avatar
-// //                         const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-// //                         image_div.appendChild(avatar);
-// //                     }
-// //                     card_modal_content_div.appendChild(image_div);
-// //                     continue;
-// //                 }
-
-// //                 // 5) header
-// //                 if (singleRole === 'header') {
-// //                     // Tallennetaan koko header-teksti modaalin otsikkoa varten
-// //                     if (hasLangKey) {
-// //                         modal_header_text = final_text; 
-// //                     } else {
-// //                         modal_header_text = final_text;
-// //                     }
-
-// //                     const header_el = document.createElement('div');
-// //                     header_el.classList.add('big_card_header');
-// //                     if (hasLangKey) {
-// //                         header_el.setAttribute('data-lang-key', final_text);
-// //                     } else {
-// //                         header_el.textContent = final_text;
-// //                         header_el.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                     card_modal_content_div.appendChild(header_el);
-// //                     continue;
-// //                 }
-
-// //                 // 6) creation_spec
-// //                 if (singleRole === 'creation_spec') {
-// //                     const creation_div = document.createElement('div');
-// //                     creation_div.classList.add('big_card_creation_spec');
-// //                     if (hasLangKey) {
-// //                         creation_div.setAttribute('data-lang-key', final_text);
-// //                     } else {
-// //                         creation_div.textContent = final_text;
-// //                         creation_div.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                     card_modal_content_div.appendChild(creation_div);
-// //                     continue;
-// //                 }
-
-// //                 // 7) rooli tuntematon => perus tekstikenttä
-// //                 if (val_str.trim()) {
-// //                     const detail_div = document.createElement('div');
-// //                     detail_div.classList.add('big_card_generic_field');
-// //                     if (hasLangKey) {
-// //                         detail_div.setAttribute('data-lang-key', final_text);
-// //                     } else {
-// //                         detail_div.textContent = final_text;
-// //                         detail_div.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                     card_modal_content_div.appendChild(detail_div);
-// //                 }
-// //             }
-// //         }
-
-// //         // Jos taululla on image-rooli, mutta ei löytynyt kuvaa -> iso avatar
-// //         if (table_has_image_role && !found_image_for_this_row) {
-// //             const image_div = document.createElement('div');
-// //             image_div.classList.add('big_card_image');
-// //             const avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-// //             image_div.appendChild(avatar);
-// //             card_modal_content_div.appendChild(image_div);
-// //         }
-
-// //         // Jos EI ole image-roolia => näytetään iso avatar
-// //         if (!table_has_image_role) {
-// //             const avatar_div = document.createElement('div');
-// //             avatar_div.classList.add('big_card_image');
-// //             const big_avatar = await create_seeded_avatar(creation_seed, header_first_letter, true);
-// //             avatar_div.appendChild(big_avatar);
-// //             card_modal_content_div.appendChild(avatar_div);
-// //         }
-
-// //         // Sortataan description- ja details-listat
-// //         description_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-// //         details_entries.sort((a, b) => a.suffix_number - b.suffix_number);
-
-// //         // 8) description-osiot
-// //         if (description_entries.length > 0) {
-// //             const desc_container = document.createElement('div');
-// //             desc_container.classList.add('big_card_description_container');
-
-// //             for (const descObj of description_entries) {
-// //                 const d = document.createElement('div');
-// //                 d.classList.add('single_big_description');
-// //                 if (descObj.hasLangKey) {
-// //                     d.setAttribute('data-lang-key', descObj.text);
-// //                 } else {
-// //                     d.textContent = descObj.text;
-// //                     d.style.whiteSpace = 'pre-wrap';
-// //                 }
-// //                 desc_container.appendChild(d);
-// //             }
-// //             card_modal_content_div.appendChild(desc_container);
-// //         }
-
-// //         // 9) keywords
-// //         if (keywords_list.length > 0) {
-// //             const kw_container = document.createElement('div');
-// //             kw_container.classList.add('big_card_keywords_container');
-// //             for (const kwObj of keywords_list) {
-// //                 const k = document.createElement('div');
-// //                 k.classList.add('big_card_keyword_item');
-// //                 if (kwObj.hasLangKey) {
-// //                     k.setAttribute('data-lang-key', kwObj.text);
-// //                 } else {
-// //                     k.textContent = kwObj.text;
-// //                     k.style.whiteSpace = 'pre-wrap';
-// //                 }
-// //                 kw_container.appendChild(k);
-// //             }
-// //             card_modal_content_div.appendChild(kw_container);
-// //         }
-
-// //         // 10) details
-// //         if (details_entries.length > 0) {
-// //             const details_container = document.createElement('div');
-// //             details_container.classList.add('big_card_details_container');
-// //             details_container.style.display = 'grid';
-// //             details_container.style.gridTemplateColumns = '1fr 1fr';
-// //             details_container.style.gap = '0.5rem';
-
-// //             for (const detailObj of details_entries) {
-// //                 const detail_item = document.createElement('div');
-// //                 detail_item.classList.add('big_card_detail_item');
-
-// //                 if (detailObj.hasLangKey) {
-// //                     detail_item.setAttribute('data-lang-key', detailObj.text);
-// //                 } else {
-// //                     if (detailObj.text.length > 300) {
-// //                         const details_el = document.createElement('details');
-// //                         const summary_el = document.createElement('summary');
-// //                         summary_el.textContent = detailObj.text.slice(0, 300) + '...';
-// //                         details_el.appendChild(summary_el);
-
-// //                         const restText = document.createElement('span');
-// //                         restText.textContent = detailObj.text.slice(300);
-// //                         restText.style.whiteSpace = 'pre-wrap';
-// //                         details_el.appendChild(restText);
-
-// //                         detail_item.appendChild(details_el);
-// //                     } else {
-// //                         detail_item.textContent = detailObj.text;
-// //                         detail_item.style.whiteSpace = 'pre-wrap';
-// //                     }
-// //                 }
-// //                 details_container.appendChild(detail_item);
-// //             }
-// //             card_modal_content_div.appendChild(details_container);
-// //         }
-
-// //         // 11) Dynaaminen lapsihaku
-// //         if (row_item.id) {
-// //             try {
-// //                 const dynamic_child_data = await endpoint_router('fetchDynamicChildren', {
-// //                     method: 'POST',
-// //                     body_data: {
-// //                         parent_table: table_name,
-// //                         parent_pk_value: String(row_item.id)
-// //                     },
-// //                 });
-// //                 console.log('card_view.js: open_big_card_modal(); dynaamiset lapsitiedot:', dynamic_child_data);
-
-// //                 if (dynamic_child_data && dynamic_child_data.child_tables) {
-// //                     for (const child_obj of dynamic_child_data.child_tables) {
-// //                         const child_table_name = child_obj.table;
-// //                         const child_column_name = child_obj.column;
-// //                         const child_rows = child_obj.rows || [];
-
-// //                         const child_container_div = document.createElement('div');
-// //                         child_container_div.classList.add('big_card_child_container');
-
-// //                         // Lapsitaulun otsikko
-// //                         const child_header = document.createElement('h3');
-// //                         child_header.textContent = `${child_table_name} - ${child_column_name}`;
-// //                         child_container_div.appendChild(child_header);
-
-// //                         // Linkki
-// //                         const link_elem = document.createElement('a');
-// //                         link_elem.href = `/tables/${child_table_name}?${child_column_name}=${row_item.id}`;
-// //                         link_elem.textContent = `Avaa /tables/${child_table_name}?${child_column_name}=${row_item.id}`;
-// //                         link_elem.target = '_blank';
-// //                         child_container_div.appendChild(link_elem);
-
-// //                         // Lapsitaulun rivit
-// //                         child_rows.forEach(single_child_row => {
-// //                             const row_div = document.createElement('div');
-// //                             row_div.classList.add('child_item');
-// //                             row_div.textContent = JSON.stringify(single_child_row, null, 2);
-// //                             row_div.style.whiteSpace = 'pre-wrap';
-// //                             child_container_div.appendChild(row_div);
-// //                         });
-
-// //                         card_modal_content_div.appendChild(child_container_div);
-// //                     }
-// //                 }
-// //             } catch (err) {
-// //                 console.error("virhe: " + err.message);
-// //             }
-// //         }
-
-// //         // Liitetään card_modal_content_div isoan big_card_diviin
-// //         big_card_div.appendChild(card_modal_content_div);
-
-// //         // Avataan modal
-// //         createModal({
-// //             titlePlainText: modal_header_text || 'card_details_big',
-// //             tableName: table_name,
-// //             contentElements: [big_card_div],
-// //             width: '70vw'
-// //         });
-
-// //         showModal();
-
-// //     } catch (err) {
-// //         console.error("virhe: " + err.message);
-// //     }
-// // }
-
-
-

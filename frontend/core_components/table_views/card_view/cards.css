@@ -116,13 +116,17 @@
     grid-area: description;
 }
 
-.card_description_container > div {
+.card_description_container>div {
     word-wrap: break-word;
 }
 
 .card_details {
     grid-area: details;
 }
+
+/* .card_details_large {
+    grid-area: details_large;
+} */
 
 .card_thumbnails {
     grid-area: thumbnails;
@@ -142,7 +146,6 @@
         "image header creation_spec"
         "image description description"
         "image keywords keywords"
-        "image list list"
         "image details details"
         "thumbnails details details"
         "footer footer footer";
@@ -198,12 +201,12 @@
 
 .card_content_small {
     grid-template-areas:
-    "image header creation_spec"
-    "image description description"
-    "image keywords keywords"
-    "details details details"
-    "details details details"
-    "footer footer footer" !important;
+        "image header creation_spec"
+        "image description description"
+        "image keywords keywords"
+        "details details details"
+        "details details details"
+        "footer footer footer" !important;
 }
 
 
@@ -243,17 +246,17 @@
 }
 
 /* Nimetty container detailsille */
-.card_details_container, .card_list_container {
-    display: grid;
+/* .card_details_container,
+.card_list_container { */
+    /* display: grid;
     grid-auto-flow: column;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; */
     /* grid-template-rows: repeat(50, auto); */
-    gap: 0.5rem;
-}
+/* } */
 
 .card_details_container {
     grid-area: details;
-} 
+}
 
 .card_list_container {
     grid-area: list;
@@ -262,22 +265,17 @@
 
 
 /* Yksittäinen detail-lauseke */
-.single_detail_item {
-    background-color: var(--bg_color);
-    /* tai haluamasi */
-    padding: 4px;
-    border-radius: 4px;
-    /* tai ihan vain plain-teksti, makuasia */
-}
+/* .single_detail_item {
+
+} */
 
 
 
 
 .card_footer {
     grid-area: footer;
-    /* Tässä vapaasti tyylejä, esim: */
     display: flex;
-    justify-content: flex-end; /* napit oikealle */
+    justify-content: flex-end;
     gap: 1rem;
     padding: 0.5rem;
     background-color: rgba(255, 255, 255, 0.1);
@@ -302,14 +300,48 @@
 
 .card_pair {
     display: grid;
-    grid-template-columns: 150px 1fr; 
+    grid-template-columns: 150px 1fr;
     gap: 0.5rem;
-  }
-  
-  .card_label {
+}
+
+.card_pair>*:only-child {
+    grid-column: 1 / -1;
+    /* venyttää elementin kahden sarakkeen yli */
+}
+
+
+.card_label {
     font-weight: bold;
-  }
-  
-  .card_value {
-    white-space: pre-wrap; /* säilytetään rivinvaihdot */
-  }
+}
+
+.card_value {
+    white-space: pre-wrap;
+    /* säilytetään rivinvaihdot */
+}
+
+
+
+
+
+
+.key_value_wrapper {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.key_value_wrapper > div {
+    background-color: var(--bg_color_text);
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.key_value_wrapper > .kv_label {
+    font-weight: bold;
+    text-align: right;
+}
+
+.single_detail_item > .key_value_wrapper {
+    grid-template-columns: 8rem 1fr;
+}

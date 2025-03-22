@@ -3,10 +3,11 @@
 export function createModal({
     titleDataLangKey,
     titleDataLangKeyFallback,
-    titlePlainText, // <-- UUSI parametri
+    titlePlainText,
     tableName,
     contentElements,
-    width = '600px'
+    width = '600px',
+    skipModalTitle = false // <-- Lisätty parametri
 }) {
     // Luo modalin taustalla oleva overlay-elementti
     let modal_overlay = document.getElementById('custom_modal_overlay');
@@ -44,26 +45,26 @@ export function createModal({
     close_button.addEventListener('click', hideModal);
     modal.appendChild(close_button);
 
-    // Otsikko (valitaan sen perusteella, millaisia parametreja on annettu)
-    if (titleDataLangKey) {
-        // Jos titleDataLangKey on annettu, käytetään data-lang-key -pohjaista otsikkoa
-        const modal_title = document.createElement('h2');
-        let combined_key = titleDataLangKey;
-        if (tableName) {
-            combined_key += `+${tableName}`;
-        }
-        modal_title.setAttribute('data-lang-key', combined_key);
+    // Näytetään otsikko vain jos skipModalTitle ei ole päällä
+    if (!skipModalTitle) {
+        if (titleDataLangKey) {
+            const modal_title = document.createElement('h2');
+            let combined_key = titleDataLangKey;
+            if (tableName) {
+                combined_key += `+${tableName}`;
+            }
+            modal_title.setAttribute('data-lang-key', combined_key);
 
-        if (titleDataLangKeyFallback) {
-            modal_title.setAttribute('data-lang-key-fallback', titleDataLangKeyFallback);
-        }
-        modal.appendChild(modal_title);
+            if (titleDataLangKeyFallback) {
+                modal_title.setAttribute('data-lang-key-fallback', titleDataLangKeyFallback);
+            }
+            modal.appendChild(modal_title);
 
-    } else if (titlePlainText) {
-        // Jos titleDataLangKey ei ole annettu, mutta titlePlainText on, näytetään puhdas teksti
-        const modal_title = document.createElement('h2');
-        modal_title.textContent = titlePlainText;
-        modal.appendChild(modal_title);
+        } else if (titlePlainText) {
+            const modal_title = document.createElement('h2');
+            modal_title.textContent = titlePlainText;
+            modal.appendChild(modal_title);
+        }
     }
 
     // Lisää sisältöelementit

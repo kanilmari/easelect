@@ -153,7 +153,7 @@ function openNavTab(table_name) {
     const svgPaths = clickedButton.querySelectorAll("svg path");
     if (svgPaths[0]) {
       svgPaths[0].setAttribute("d", ACTIVE_PATH);
-      svgPaths[0].setAttribute("fill", "var(--bg_color_2)");
+      svgPaths[0].setAttribute("fill", "var(--bg_color_text)");
     }
   }
 }

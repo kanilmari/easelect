@@ -137,9 +137,9 @@ async function do_semantic_search(table_name, user_query) {
 }
 
 /**
- * Kutsutaan generate_table(...) ja laitetaan tulos readOnlyContaineriin (esim. päivityksen jälkeen).
+ * Kutsutaan generate_table(...) ja päivitetään readOnlyContainer taulun sisällöllä.
  */
-function showReadOnlyTable(table_name, columns, data, types) {
+async function showReadOnlyTable(table_name, columns, data, types) {
     const readOnlyContainer = document.getElementById(`${table_name}_readOnlyContainer`);
     if (!readOnlyContainer) {
         console.error('Virhe: readOnlyContainer puuttuu!');
@@ -147,18 +147,16 @@ function showReadOnlyTable(table_name, columns, data, types) {
     }
     readOnlyContainer.innerHTML = '';
     console.log('create_filter_bar.js: showReadOnlyTable kutsuu funktiota generate_table');
-    const tableEl = generate_table(table_name, columns, data, types);
-    if (tableEl) {
-        readOnlyContainer.appendChild(tableEl);
-    }
+    // Odotetaan, että generate_table hoitaa DOM-päivitykset
+    await generate_table(table_name, columns, data, types);
 }
 
 /**
- * Päivitetään taulu semanttisen haun tuloksilla (tai muilla tuloksilla).
+ * Päivittää taulun semanttisen haun tuloksilla.
  */
-export function update_table_ui(table_name, result) {
+export async function update_table_ui(table_name, result) {
     const { columns, data, types } = result;
-    showReadOnlyTable(table_name, columns, data, types);
+    await showReadOnlyTable(table_name, columns, data, types);
 }
 
 /**

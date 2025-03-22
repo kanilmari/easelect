@@ -5,9 +5,14 @@
     box-sizing: border-box;
     margin: 0;
     color: var(--text_color);
-    word-wrap: break-word;
-    overflow-wrap: break-word; 
-    /* word-break: break-all; */
+    white-space: normal;
+
+  /* salli normaalit rivinvaihdot */
+  white-space: normal;
+  /* salli ylipitkien sanojen katkaisu tarvittaessa */
+  overflow-wrap: anywhere;
+  /* älä katkaise normaaleja sanoja turhaan */
+  word-break: normal;
 }
 
 /* Yleiset perustyylit */

@@ -7,68 +7,20 @@
 .row {
     display: table-row;
 }
-
-/* .cell {
-    display: table-cell;
-    padding: 20px;
-    border-width: 3px;
-    border-style: solid;
-    border-color: var(--border_color);
-    border-top: none;
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-    background-color: var(--bg_color);
-    vertical-align: middle;
-    position: relative;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-
-    min-height: 100px;
-    min-width: 100px;
-    
-    max-width: 300px;
-    max-height: 200px;
-    
-
-    width: 250px;
-    height: 150px;
-    
-    resize: both;
-    overflow: auto;
-    
-    border: 2px solid #333;
-    padding: 10px;
-    box-sizing: border-box;
-    
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-} */
-
-
   
 
 .cell {
     display: table-cell;
     vertical-align: middle;
-    box-sizing: border-box;
-    /* padding: 7px 0; */
     min-width: 80px;
-    max-width: 300px;
     width: 250px;
-
-    overflow: hidden;
-    position: relative;
     border-bottom: 0.5px solid color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%);
-    /*color mix border*/
     border-right: 0.5px solid color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%);
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    padding: 15px;
+    padding: 0 5px;
 }
 
 .cell-content {

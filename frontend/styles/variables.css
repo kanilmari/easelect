@@ -10,6 +10,7 @@
 
     --bg_color: #ccc;
     --bg_color_2: #f0f0f0;
+    --bg_color_text: var(--extreme_bg);
     --text_color: #000;
     --border_color: #888;
     --table_border_color: #ccc;
@@ -42,7 +43,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #888;
+    background: #aaa;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -52,7 +53,7 @@
 /* Firefox */
 * {
     /* Voit myös käyttää * jos haluat globaalin vaikutuksen */
-    scrollbar-color: #888 #f1f1f1;
+    scrollbar-color: #aaa #f1f1f1;
 }
 
 
@@ -60,6 +61,7 @@
     :root {
         --bg_color: #1a1a1a;
         --bg_color_2: #0a0a0a;
+        --bg_color_text: var(--extreme_bg);
         --text_color: #fff;
         --border_color: #888;
         --table_border_color: #444;
@@ -77,7 +79,6 @@
         --blended_bg: rgb(255 255 255 / 20%);
         --extreme_bg: rgb(0 0 0);
         --blended_bg_2: color-mix(in srgb, var(--bg_color) 80%, var(--extreme_bg) 20%);
-        
     }
 
     /* WebKit (Chrome, Safari) */
@@ -99,57 +100,97 @@
 
     /* Firefox */
     * {
-        /* Suositeltavaa käyttää luokkaa, jotta ei vaikuta kaikkien elementtien scrollbaareihin */
         scrollbar-color: #555 #2b2b2b;
     }
 }
+
 
 
 /* Vaalea teema */
 body.light-mode {
     --bg_color: #ccc;
     --bg_color_2: #f0f0f0;
+    --bg_color_text: var(--extreme_bg);
     --text_color: #000;
     --border_color: #888;
     --table_border_color: #ccc;
     --input_bg_color: #fff;
-  
+
     --button_bg_color: #ccc;
     --button_text_color: #000;
     --button_hover_bg_color: #888;
     --button_hover_text_color: #fff;
-  
+
     --button_active_bg_color: #fff;
     --button_active_text_color: #000;
     --button_active_border_color: #444;
     --button_pressed_scale: 0.98;
-  
+
     --blended_bg: rgb(0 0 0 / 15%);
     --extreme_bg: rgb(255 255 255);
     --blended_bg_2: color-mix(in srgb, var(--bg_color) 80%, var(--extreme_bg) 20%);
     --add_row_form_box_shadow: 0 2px 60px 30px rgb(0 0 0 / 30%);
-  }
-  
-  /* Tumma teema */
-  body.dark-mode {
+}
+
+/* Scrollbar-vaalealle teemalle (WebKit) */
+body.light-mode ::-webkit-scrollbar {
+    width: 12px;
+}
+body.light-mode ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+body.light-mode ::-webkit-scrollbar-thumb {
+    background: #aaa;
+}
+body.light-mode ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Scrollbar-vaalealle teemalle (Firefox) */
+body.light-mode * {
+    scrollbar-color: #aaa #f1f1f1;
+}
+
+/* Tumma teema */
+body.dark-mode {
     --bg_color: #1a1a1a;
     --bg_color_2: #0a0a0a;
+    --bg_color_text: var(--extreme_bg);
     --text_color: #fff;
     --border_color: #888;
     --table_border_color: #444;
     --input_bg_color: #111;
-  
+
     --button_bg_color: #333;
     --button_text_color: #fff;
     --button_hover_bg_color: #222;
     --button_hover_text_color: #fff;
-  
+
     --button_active_bg_color: #222;
     --button_active_text_color: #fff;
     --button_active_border_color: #555;
-  
+
     --blended_bg: rgb(255 255 255 / 20%);
     --extreme_bg: rgb(0 0 0);
     --blended_bg_2: color-mix(in srgb, var(--bg_color) 70%, var(--extreme_bg) 30%);
     --add_row_form_box_shadow: 0 2px 60px 30px rgb(0 0 0 / 50%);
-  }
+}
+
+/* Scrollbar-tummalle teemalle (WebKit) */
+body.dark-mode ::-webkit-scrollbar {
+    width: 12px;
+}
+body.dark-mode ::-webkit-scrollbar-track {
+    background: #2b2b2b;
+}
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: #555;
+}
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* Scrollbar-tummalle teemalle (Firefox) */
+body.dark-mode * {
+    scrollbar-color: #555 #2b2b2b;
+}
