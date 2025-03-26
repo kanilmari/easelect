@@ -1,0 +1,35 @@
+/* Voit lisätä tämän tyylitiedostoon */
+
+/* Lomakkeen perusmuotoilu */
+#table_creation_form {
+    margin-top: 20px;
+}
+
+/* Labelit pinoavat sisällön selkeästi */
+#table_creation_form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Yksittäinen "row" sarakkeelle:
+   Käytetään display: grid -asettelua taulukkomaisesti */
+.column-field {
+    display: grid;
+    grid-template-columns: 150px 200px 100px auto; /* Voit muokata leveyksiä */
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px; /* pientä tilaa riveille */
+    border: 1px solid var(--table_border_color);
+    padding: 7px;
+}
+
+/* Pienet marginaalit kentille */
+.column-field input,
+.column-field select {
+    margin-right: 5px;
+}
+
+/* Poista-painikkeen pientä marginaalia */
+.column-field button {
+    margin-left: 5px;
+}

@@ -1,0 +1,287 @@
+/* Painikkeiden yleiset tyylit */
+#navbar {
+    position: fixed;
+    width: var(--navbar_width);
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    background-color: var(--bg_color);
+    /* border-right: 2px solid var(--border_color); */
+    /* box-shadow: inset -2px 0 0 0 var(--border_color); */
+    box-shadow: inset -2px 0 0 0 var(--border_color), 0 0 10px 10px var(--bg_color_2);
+    grid-auto-rows: min-content;
+    padding: var(--navbar_padding);
+    /* height: 100vh; */
+    overflow-y: auto;
+    overflow-x: hidden;
+    direction: rtl;
+}
+
+#navbar * {
+    direction: ltr;
+}
+
+
+
+.vertical-nav {
+    overflow-y: auto;
+    height: 100vh;
+    direction: rtl;
+}
+
+#navbar #navContainer button,
+#navbar #nav_tree button {
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    font-size: 16px;
+    height: auto;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: none;
+    margin-top: 5px !important;
+}
+
+#navContainer button:hover,
+#nav_tree button:hover {
+    background-color: color-mix(in srgb, var(--button_bg_color) 50%, var(--button_hover_bg_color) 50%);
+    /* outline: 2px solid color-mix(in srgb, var(--button_bg_color) 50%, var(--button_hover_bg_color) 50%); */
+    border: none;
+    color: var(--button_hover_text_color);
+}
+
+#nav_tree button.active,
+#navContainer button.active {
+    background-color: rgb(0 70 255 / 0.2);
+    color: var(--button_active_text_color);
+    outline: 2px solid var(--border_color);
+}
+
+#navContainer button:active,
+#nav_tree button:active {
+    transform: scale(var(--button_pressed_scale));
+}
+
+.collapsible.child-active::after {
+    content: "•";
+    color: rgb(0 70 255);
+    margin-left: 0.5em;
+    font-weight: bold;
+}
+
+/* child-rv: himmeä korostus, jos ryhmässä on vain RV-nappeja */
+.collapsible.child-rv::after {
+    content: "•";
+    color: rgb(20 35 128);
+    /* himmeämpi punainen */
+    margin-left: 0.5em;
+    font-weight: bold;
+}
+
+#navbar button.recently_viewed {
+    /* background-color: rgba(70, 100, 127, 0.2); */
+    /* background-color: rgba(89, 110, 166, 0.2); */
+    background-color: rgb(77 104 179 / 0.2);
+    outline: 2px solid rgb(77 104 179 / 0.2);
+    /* background-color: rgba(124, 89, 166, 0.2); */
+    color: var(--button_active_text_color);
+}
+
+#navbar button:disabled {
+    background-color: var(--table_border_color);
+    color: var(--border_color);
+    cursor: not-allowed;
+}
+
+#navbar h3 {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+#navbar * {
+    max-width: calc(var(--navbar_width) - 2*var(--navbar_padding) - 1px);
+}
+
+/* Style the collapsible buttons */
+.collapsible,
+.toolbar button {
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 16px;
+    margin: 4px 0;
+}
+
+/* Add an active class to highlight the collapsible button when it is clicked */
+.collapsible.active,
+.collapsible:hover {
+    background-color: rgb(255 255 255 / 0.1);
+}
+
+/* Style the collapsible content */
+.content {
+    display: grid;
+    gap: 4px;
+    padding: 0 10px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease-out;
+    background-color: rgb(0 0 0 / 0.1);
+}
+
+/* Style for navigation buttons inside content */
+.navigation_buttons {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* Voit lisätä oman muuttujan: */
+:root {
+    --recently_visited_bg_color: rgb(255 165 0 / 0.2);
+}
+
+/* Luokka, joka näyttää viimeksi vieraillun n. 2h sisällä */
+.navigation_buttons.recently_visited:not(.active) {
+    background-color: var(--recently_visited_bg_color);
+    /* Halutessasi muita efektejä */
+}
+
+/* #navContainer {
+      width: calc(var(--navbar_width) - 22px);
+  } */
+
+.top-button-bar {
+    /* display grid vierekkäisille napeille */
+    /* display: grid;
+       grid-template-columns: auto auto auto; */
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.select-selected {
+    display: inline-grid;
+    grid-auto-flow: column;
+    /* gap: 0.25rem; */
+    white-space: nowrap;
+}
+
+#logout_button {
+    width: min-content !important;
+    height: 36px;
+    border: 1px solid var(--border_color);
+}
+
+#logout_button, #themeToggleBtn {
+    padding-top: 5px;
+}
+
+/* old nav tabs */
+.navtabs_relative {
+    right: 0;
+    position: relative;
+    z-index: 50;
+}
+
+.navtabs {
+    right: calc(-1 * (var(--navbar_padding) + 30px));
+    position: absolute;
+    top: 30px;
+    z-index: 100;
+    transition: right 0.3s ease, left 0.3s ease;
+}
+
+#navbar.collapsed {
+    transform: translateX(-100%);
+    pointer-events: none;
+    opacity: 0;
+}
+
+#navbar {
+    opacity: 1;
+    transition: transform 0.3s ease, opacity 0.15s ease;
+}
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+#custom_modal_overlay {
+    /* background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)); */
+    background-image: url("/media/noise.png");
+    /* background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
+        url("/media/noise2.png"); */
+    background-blend-mode: overlay;
+    /* tai multiply, soft-light, tms. */
+    background-repeat: repeat;
+    background-size: cover;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    position: absolute;
+    z-index: 10001;
+}
+
+
+#menuButton {
+    position: absolute;
+    top: var(--navbar_padding);
+    left: var(--navbar_padding);
+    background-color: var(--button_bg_color);
+    color: var(--button_text_color);
+    border: 1px solid var(--border_color);
+    z-index: 10000;
+    cursor: pointer;
+    height: 36px;
+    width: 36px;
+}
+
+.inset {
+    box-shadow: inset 5px 5px 5px 0px rgba(0 0 0 / 30%);
+}
+
+#menuButton:hover {
+    background-color: var(--button_hover_bg_color);
+    color: var(--button_hover_text_color);
+}
+
+.language-selection {
+    /* position: absolute; */
+    top: 10px;
+    left: 80px;
+    /* z-index: 10000; */
+}
+
+.language-button {
+    display: flex;
+    align-items: center;
+}
+
+.language-button > svg {
+    margin-right: -2px;
+}

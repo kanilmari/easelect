@@ -1,0 +1,37 @@
+.big_card_container {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    border: 1px solid var(--border_color);
+    background-color: var(--bg_color);
+}
+
+.big_card_content {
+    display: grid;
+    gap: 1.5rem;
+    max-width: inherit !important;
+}
+
+.big_card_image img {
+    max-width: 300px;
+    max-height: 300px;
+    object-fit: cover;
+}
+
+.big_card_header {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text_color);
+}
+
+
+
+.big_card_content * {
+    max-width: inherit !important;
+}
+
+.big_card_child_container > div {
+    white-space: normal;       /* Mahdollistaa normaalin rivittymisen */
+    word-wrap: break-word;     /* Salli sanojen katkeaminen tarvittaessa, vanhempi synonyymi  */
+    overflow-wrap: break-word; /* Modernimpi vastaava ominaisuus       */
+}

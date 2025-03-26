@@ -1,0 +1,133 @@
+.language-selection .custom-select {
+	position: relative;
+	cursor: pointer;
+
+}
+
+.select-selected {
+	display: flex;
+	align-items: center;
+	border: 1px solid var(--border_color);
+    cursor: pointer;
+}
+
+/* .select-selected svg,
+.select-items svg {
+	transform: translateY(1px);
+} */
+
+.text-and-arrow {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+
+}
+
+.select-items {
+	display: block;
+
+	position: absolute;
+	width: 270px;
+	background-color: var(--bg_color);
+	/* top: 100%; */
+	/* left: 50%; */
+	/* transform: translateX(-50%); */
+	border: 1px solid #ccc;
+	border-radius: var(--border_radius);
+	box-shadow: 0 -8px 16px 0 rgba(0, 0, 0, 0.5);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity var(--transition-time) ease, visibility 0.3s ease;
+	z-index: 1500;
+}
+
+.inner-select-area {
+	background-color: var(--bg-color-content);
+}
+
+.select-arrow-active+.select-items {
+	opacity: 1;
+	visibility: visible;
+
+}
+
+.select-items .section {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+
+}
+
+.select-items .select-option {
+	margin-left: 10px;
+}
+
+.select-items .select-option input {
+	margin-right: 10px;
+}
+
+.section {
+
+	margin: 5px;
+	border-radius: var(--border_radius_small);
+	padding: 5px;
+}
+
+.svg-icon {
+	fill: var(--text_color);
+	/* margin-bottom: 5px; */
+}
+
+/*
+//p?
+.long-spaces {
+	margin-right: 5px;
+
+} */
+
+#service-language-link {
+	color: var(--link-color);
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+/*
+//p?
+.flex-container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+} */
+
+.sort-select {
+	height: 36px;
+	padding: 5px;
+	border: 1px solid #ccc;
+	border-radius: var(--border_radius);
+	cursor: pointer;
+}
+
+.language-selection .custom-select .select-items {
+	left: auto;
+	transform: none;
+}
+
+.language-selection .custom-select .inner-select-area div.language-option {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 5px;
+	margin-right: 10px;
+}
+
+.language-option input {
+	margin-left: 5px;
+}
+
+.menu-language-selection {
+    /* position: fixed; */
+    /* top: 5px; */
+    /* left: 45px; */
+    z-index: 2000;
+}

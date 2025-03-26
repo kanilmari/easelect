@@ -1,0 +1,131 @@
+.filterBar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    padding: 10px;
+    position: relative;
+}
+
+/* Kolme ensimmäistä eivät veny, vaan asettuvat yläreunaan */
+.filterBar>div:nth-child(1),
+.filterBar>div:nth-child(2),
+.filterBar>div:nth-child(3) {
+    flex: 0 0 auto;
+}
+
+.filterBar>div:nth-child(4) {
+    overflow-y: auto;
+}
+
+.filterBar>div:nth-child(5) {
+    /* margin-top: auto; */
+    overflow-y: auto;
+    position: absolute;
+    bottom: 0;
+    background-color: var(--bg_color);
+    max-height: 100vh;
+}
+
+.chat_container {
+    max-height: calc(100vh - 150px);
+}
+
+.filterBar-search-row {
+    padding: 0.5rem;
+}
+
+.filterBar-tabs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.filterBar-tabs-row button {
+    background-color: var(--button_bg_color);
+    color: var(--button_text_color);
+    border: 1px solid var(--button_active_border_color);
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.filterBar-tabs-row button:hover {
+    background-color: var(--button_hover_bg_color);
+    color: var(--button_hover_text_color);
+}
+
+.tab-button-active {
+    background-color: var(--button_active_bg_color) !important;
+    color: var(--button_active_text_color) !important;
+    border-color: var(--button_active_border_color) !important;
+}
+
+.tabs_content_container {
+    position: relative;
+    overflow: hidden;
+}
+
+.sort_filter_section,
+.chat_section {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.top-sections {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+/* Esimerkkirakenne yläosan ”riviin” */
+.filterBar-top-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 0.5rem;
+}
+
+.top-row-first-line {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 10px;
+    padding: 10px;
+}
+
+.top-row-first-line span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border: 1px solid var(--border_color);
+    border-radius: var(--border_radius);
+}
+
+.filterBar-button-container {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    gap: 10px;
+}
+
+.view-selector-buttons, .management-buttons {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    gap: 10px;
+    padding: 10px;
+}
+
+/* Blur efekti kun chat on avoinna */
+.filter-blur > *:not(:nth-child(5)) {
+    filter: blur(3px);
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.3s ease;
+}
+
+.filter-blur > *:nth-child(5) {
+    z-index: 10; /* Varmistaa että chat on sumennetun sisällön päällä */
+    position: relative;
+}

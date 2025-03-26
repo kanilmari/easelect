@@ -1,0 +1,89 @@
+/* modals.css */
+
+/* Modaalin tausta */
+.modal_overlay {
+    position: fixed;
+    inset: 0; /* korvaa top, left, right, bottom: 0; */
+    background: rgb(0 0 0 / 60%);
+    display: none; /* Piilotettu oletuksena */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Modaalin sisältö */
+.modal {
+    background-color: var(--bg_color);
+    /* color: #000; */
+    padding: 20px;
+    /* border-radius: 8px; */
+    border: 1px solid var(--border_color);
+    border-radius: var(--border_radius);
+    width: 100%;
+    max-width: 700px;
+    box-sizing: border-box;
+    box-shadow: var(--add_row_form_box_shadow);
+    max-height: 95vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal h2 {
+    margin-top: 0;
+}
+
+.modal label {
+    margin: 10px 0 5px;
+}
+
+.modal input,
+.modal select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.modal .form-actions button {
+    padding: 8px 16px;
+    margin-left: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.modal .form-actions .cancel-button {
+    background-color: var(--bg_color);
+}
+
+.modal .form-actions .submit-button {
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+.modal .form-actions .submit-button:hover {
+    background-color: #45a049;
+}
+
+/* Sulkemispainike */
+.modal_close_button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal_close_button:hover,
+.modal_close_button:focus {
+    color: var(--text_color);;
+    text-decoration: none;
+    cursor: pointer;
+}

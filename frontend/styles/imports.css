@@ -1,0 +1,61 @@
+@import url("./variables.css");
+
+@import url("../core_components/table_views/card_view/cards_big.css");
+
+/* tables.css */
+@import url("../core_components/table_views/table_view/tables.css");
+
+
+
+@import url("../core_components/navigation/navbar.css");
+
+/* filterbar */
+@import url("../core_components/filterbar/filterbar.css");
+
+/* chat */
+@import url("../common_components/ai_features/table_chat/chat.css");
+
+/* import  logical_components  vanilla_tree vanilla_tree.css */
+
+@import url("../common_components/vanilla_tree/vanilla_tree.css");
+
+/* import logical_components/windows/windows.css */
+
+@import url("../common_components/windows/windows.css");
+
+/* /logical_components/vanilla_dropdown/vanilla_dropdown.css */
+
+@import url("../common_components/vanilla_dropdown/vanilla_dropdown.css");
+
+/* /logical_components/notification_triggers/add_notification.css */
+
+@import url("../core_components/admin_tools/notification_triggers.css");
+
+/* /navbar/lang_panel/lang_panel.css */
+
+@import url("../core_components/lang/lang_panel.css");
+
+
+
+@import url("./base.css");
+
+@import url("../common_components/modal/modals.css");
+
+@import url("./dropdowns.css");
+
+@import url("./form.css");
+
+@import url("../core_components/general_tables/gt_3_table_crud/gt_3_1_table_create/create_table_admin.css");
+
+/* @impo url("./html_table_views/cards_view/card_view.css"); */
+
+
+/* @import url("../core_components/table_views/card_view/cards.css"); */
+@import url("../core_components/table_views/card_view/cards.css");
+@import url("../core_components/table_views/table_view/cells.css");
+
+@import url("../core_components/navigation/tabs.css");
+
+@import url("../core_components/table_views/table_views.css");
+
+@import url("../common_components/collapsible-section/collapsible_section.css");

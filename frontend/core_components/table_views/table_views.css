@@ -1,0 +1,144 @@
+/* table_views.css */
+/* Yleinen taulukkotyyli (normaali + vertailu) */
+.table {
+    display: table;
+    margin: 20px 0;
+    border-spacing: 50px 0;
+}
+
+.row {
+    display: table-row;
+    box-shadow: 0px -1px 0px inset color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%);
+}
+  
+
+.cell {
+    display: table-cell;
+    vertical-align: middle;
+    min-width: 80px;
+    /* width: 250px; */
+    /* border-bottom: 1px solid color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%); */
+    /* border-right: 1px solid color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%); */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    padding: 8px 0;
+    /* border-radius: 5px; */
+}
+
+.cell-content {
+    max-height: 80px;
+    max-width: 300px;
+    overflow: auto;
+    /* padding-right: 5px; */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+}
+
+.header {
+    font-weight: bold;
+    padding-bottom: 5px;
+    box-shadow: 0px -3px 0px inset color-mix(in srgb, var(--bg_color) 90%, var(--border_color) 10%);
+    /* Jos haluat vaihtaa taustavärin myös otsikoissa:
+       background-color: var(--header_bg_color); */
+}
+
+.sortable {
+    cursor: pointer;
+}
+
+.sortable:hover {
+    background-color: var(--bg_color);
+}
+
+/* DRAG HANDLE -tyylit */
+.drag-handle {
+    display: none;
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    cursor: grab;
+    user-select: none;
+}
+
+/* Näytä drag-handle hoverissa otsikkosoluissa */
+.cell.header.sortable:hover .drag-handle {
+    display: inline-block;
+}
+
+/* Suodatuskentät ja näkymävalinnan sijoittelu */
+#controls {
+    margin: 20px 0;
+}
+
+#controls label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+#controls input {
+    margin-right: 20px;
+}
+
+#viewSelector {
+    margin-left: 20px;
+    padding: 5px 10px;
+}
+
+/* Tikettinäkymän perusmuotoilu */
+.ticket-container {
+    margin-top: 20px;
+}
+
+.ticket {
+    border: 1px solid var(--border_color);
+    border-radius: 5px;
+    background-color: var(--bg_color);
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.ticket div {
+    margin: 3px 0;
+}
+
+.ticket .label {
+    font-weight: bold;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.ticket .label:hover {
+    text-decoration: underline;
+}
+
+/* Korostus: käytetään mukautettuja värejä */
+.cell.selected {
+    color: white;
+    background-color: var(--extreme_bg);
+    /* text-shadow: var(--text_shadow); */
+    transition: all 0.15s ease;
+    outline: 3px solid var(--outline_color);
+}
+
+/* Pieni valikko (context menu -tyyppinen) */
+#selectionMenu {
+    position: absolute;
+    display: none;
+    background: var(--menu_bg_color);
+    border: 1px solid var(--menu_border_color);
+    border-radius: 5px;
+    padding: 8px;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+}
+
+#selectionMenu button {
+    margin: 5px 0;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+}

@@ -1,0 +1,83 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="fi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+  <!-- Tell mobile browsers to use the device's full width and scale -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Disable automatic phone number detection for better design control -->
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- Add to home screen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+  <!-- Add to home screen for Chrome on Android -->
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Content Security Policy (CSP) - Suositus:
+         - Rajaa ulkopuoliset resurssit vain tunnetuille lähteille (tässä esimerkissä cdn.jsdelivr.net käytössä).
+         - Mieti, voitko välttää 'unsafe-inline' ja käyttää nonce/hashi-tapaa inline-koodille.
+         - Pidä domain-luettelo mahdollisimman suppeana ja kiristä tarvittaessa.-->
+  <!-- <meta
+      http-equiv="Content-Security-Policy"
+      content="
+         default-src 'self';
+         object-src 'none';
+         script-src 'self';
+         style-src 'self';
+         connect-src 'self';
+         img-src 'self';
+         font-src 'self';
+         base-uri 'self';
+         form-action 'self';
+         frame-ancestors 'self';
+     "
+    /> -->
+  <title>Easelect</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="/styles/imports.css" />
+</head>
+
+<body>
+  <div class="body_wrapper">
+    <div id="overlay"></div>
+    <!-- Sisältö -->
+    <div class="body_content">
+      <button id="menuButton">☰</button>
+      <!-- <div class="vertical-nav"> -->
+        <div id="navbar">
+          <div class="top-button-bar">
+            <div class="menu-button-placeholder transparent">placeholder</div>
+            <button id="themeToggleBtn" class="smallButtons"></button>
+            <div class="language-selection menu-language-selection"></div>
+            <!-- <button id="logout_button" onclick="window.location.href='/logout'">
+                </button> -->
+            <div class="logout-container"></div>
+          </div>
+          <div id="navContainer"></div>
+          <div id="nav_tree"></div>
+          <div class="navtabs_relative">
+            <div id="navmenu" class="navtabs"></div>
+          </div>
+          <a href="/register_ndYOyXV0INOK3F">Lisää uusi kaveri</a>
+
+        </div>
+      <!-- </div> -->
+
+      <div id="tabs_container">
+        <!-- Dynaamisesti generoidut taulukot ja näkymät tulevat tänne -->
+      </div>
+      <div id="add_row_modal_overlay" class="modal_overlay hidden">
+        <div id="add_row_modal" class="modal"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/frontend/main.js"></script>
+</body>
+
+</html>

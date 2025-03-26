@@ -1,0 +1,15 @@
+# Check JS imports with Eslint:
+npx eslint . --fix
+
+# Fix GO imports
+node fix_go_imports.js --file=main.go --fix-imports
+
+# Check & fix JS imports with manual script
+node .\frontend\check_js_imports2.js .\frontend\main.js --exclude=others/**,frontend/styles/**,frontend/check_js_imports*.js
+node .\frontend\check_js_imports2.js .\frontend\main.js --exclude=others/**,frontend/styles/**,frontend/check_js_imports*.js,node_modules/ --fix-imports
+node ./frontend/check_js_imports2.js ./frontend/main.js --exclude=others/**,frontend/styles/**,node_modules/**,frontend/check_js_imports*.js --fix-imports
+
+# Check css imports with manual script
+node .\frontend\css\check_css_imports.js .\frontend\css\imports.css
+node .\frontend\css\check_css_imports.js .\frontend\css\imports.css --fix-imports
+node ./frontend/styles/check_css_imports.js ./frontend/styles/imports.css --fix-imports

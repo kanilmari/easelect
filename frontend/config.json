@@ -1,0 +1,32 @@
+{
+    "editor_comments": {
+        "info": "This is a json file that contains the configuration for the frontend of the app. It is used to configure the available frontend features."
+    },
+    "view_profile": {
+        "serlog_mvp": {
+            "html_table": false,
+            "card": true,
+            "tree": false,
+            "list": false,
+            "transposed_list": false,
+            "ticket": false
+        },
+        "serlog_dev": {
+            "html_table": false,
+            "card": true,
+            "tree": false,
+            "list": true,
+            "transposed_list": true,
+            "ticket": true
+        },
+        "dev_mode": {
+            "html_table": true,
+            "card": true,
+            "tree": true,
+            "list": true,
+            "transposed_list": true,
+            "ticket": true
+        }
+    },
+    "languages": { "in_use": "true" }
+}

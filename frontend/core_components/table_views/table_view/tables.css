@@ -1,0 +1,157 @@
+/* table_views.css */
+
+/* Taulukon tyylit */
+/* #tabs_container { */
+    /* padding: 20px; */
+    /* overflow: auto; */
+    /* height: 100vh; */
+    /* margin-right: 270px; */
+/* } */
+
+table {
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 2px solid rgb(0 0 0 / 70%);
+    padding: 8px;
+    text-align: left;
+    max-width: 500px;
+}
+
+td {
+    
+    min-width: 50px;
+    /* max-width: 300px; */
+    /* overflow-x: hidden; */
+}
+
+th {
+    background-color: var(--table_border_color);
+}
+
+
+
+/* Vierasavainten taulukko */
+#foreign_keys_container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#foreign_keys_container th,
+#foreign_keys_container td {
+    border: 1px solid var(--border_color);
+    padding: 8px;
+    text-align: left;
+}
+
+
+
+.selected {
+    background-color: rgb(255 0 0 / 20%);
+}
+
+
+input[type="checkbox"], input[type="radio"] {
+    width: 14px;
+    height: 14px;
+}
+
+/* styles.css */
+
+/* Style the table for better appearance */
+#foreign_keys_table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#foreign_keys_table th, #foreign_keys_table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left; /* Default alignment */
+}
+
+/* Center the content in select-cell */
+.select-cell {
+    text-align: center;
+    vertical-align: middle; /* Vertically center the content */
+    width: 50px; /* Adjust width as needed */
+}
+
+/* Optional: Center the radio button itself */
+.select-cell input[type="radio"] {
+    margin: 0 auto;
+    display: block;
+}
+
+/* Style the delete button */
+#foreign_keys_table + button {
+    margin-top: 10px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.float_right {
+    float: right;
+}
+
+
+
+
+
+/* Set fixed table layout */
+
+/* table th, table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+} */
+
+.selected_for_editing {
+    outline: 2px solid skyblue;
+}
+
+.editing {
+    background-color: rgb(128 128 0 / 0.5);
+    padding: 0;
+    overflow: auto !important;
+    width: 300px;
+}
+
+.editing input {
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    background: none;
+    box-sizing: border-box;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+
+
+
+
+
+
+
+.table_row_numbering {
+    color: color-mix(in srgb, var(--bg_color) 50%, var(--text_color) 50%);
+    /* align left */
+    text-align: left !important;
+}

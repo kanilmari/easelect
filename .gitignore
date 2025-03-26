@@ -1,0 +1,6 @@
+easelect
+easelect.exe
+node_modules/
+.env
+easelect.code-workspace
+*.csv
