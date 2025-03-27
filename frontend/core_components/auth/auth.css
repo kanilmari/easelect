@@ -61,3 +61,7 @@ input[type="submit"]:active {
 #submit {
     margin-top: 20px;
 }
+
+.hp {
+    display: none;
+}

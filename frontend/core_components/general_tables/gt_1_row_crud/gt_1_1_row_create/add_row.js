@@ -235,7 +235,8 @@ function buildRegularField(form, table_name, column) {
 
     if (data_type_lower === 'text' ||
         data_type_lower.includes('varchar') ||
-        data_type_lower.startsWith('character varying')) {
+        data_type_lower.startsWith('character varying') || 
+        data_type_lower === 'jsonb') {
         const textarea = document.createElement('textarea');
         textarea.name = column.column_name;
         textarea.required = column.is_nullable.toLowerCase() === 'no';

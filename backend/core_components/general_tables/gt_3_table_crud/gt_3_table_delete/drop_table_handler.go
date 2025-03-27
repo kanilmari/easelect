@@ -1,3 +1,4 @@
+// drop_table_handler.go
 package gt_3_table_delete
 
 import (

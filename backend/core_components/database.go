@@ -23,72 +23,74 @@ var (
 
 func InitDB() error {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("Virhe .env-latauksessa:", err)
+		fmt.Printf("\033[31mvirhe .env-latauksessa: %s\033[0m\n", err.Error())
 		// Ei välttämättä lopeteta, jos halutaan tukea myös
 		// tilannetta ilman .env-tiedostoa.
 	}
 
-	// Luetaan tarvittavat environment-muuttujat
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
-
-	dbUser := os.Getenv("DB_USER") // Pääkäyttäjä
-	dbPassword := os.Getenv("DB_PASSWORD")
-
-	dbROUser := os.Getenv("DB_READONLY_USER")
-	dbROPass := os.Getenv("DB_READONLY_PASSWORD")
-
-	// Rajattu käyttäjä restricted-skeemaan
-	dbRestrictedUser := os.Getenv("DB_RESTRICTED_USER")
-	dbRestrictedPass := os.Getenv("DB_RESTRICTED_PASSWORD")
-
 	dbName := os.Getenv("DB_NAME")
 
-	// 1) Pääyhteyden connect-string
-	connMain := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPassword, dbName,
-	)
-
-	// 2) Read-only-käyttäjän connect-string
-	connReadOnly := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbROUser, dbROPass, dbName,
-	)
-
-	// 3) Rajatun käyttäjän connect-string
-	connRestricted := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbRestrictedUser, dbRestrictedPass, dbName,
-	)
-
-	var err error
-
-	// Avataan pääyhteys
-	Db, err = sql.Open("postgres", connMain)
-	if err != nil {
-		return fmt.Errorf("virhe pääyhteyden avauksessa: %v", err)
-	}
-	if err := Db.Ping(); err != nil {
-		return fmt.Errorf("ping-virhe pääyhteydelle: %v", err)
+	// Rakennetaan “taulukko” (slice) tietokantayhteyksistä,
+	// jotta voimme avata jokaisen luupissa:
+	type DbConnectionInfo struct {
+		roleDescription   string
+		dbUserEnv         string
+		dbPasswordEnv     string
+		dbPointer         **sql.DB
+		specialPrivileges bool // Onko kyseessä korvaamaton tunnus, eli onko roolilla oikeuksia, joita millään muulla roolilla ei ole
 	}
 
-	// Avataan read-only-yhteys
-	DbReaderOnly, err = sql.Open("postgres", connReadOnly)
-	if err != nil {
-		return fmt.Errorf("virhe read-only-yhteyden avauksessa: %v", err)
-	}
-	if err := DbReaderOnly.Ping(); err != nil {
-		return fmt.Errorf("ping-virhe read-only-yhteydelle: %v", err)
+	dbConnectionList := []DbConnectionInfo{
+		{
+			roleDescription:   "access-to-public",
+			dbUserEnv:         os.Getenv("DB_USER"),
+			dbPasswordEnv:     os.Getenv("DB_PASSWORD"),
+			dbPointer:         &Db,
+			specialPrivileges: true,
+		},
+		{
+			roleDescription:   "read-public",
+			dbUserEnv:         os.Getenv("DB_READONLY_USER"),
+			dbPasswordEnv:     os.Getenv("DB_READONLY_PASSWORD"),
+			dbPointer:         &DbReaderOnly,
+			specialPrivileges: false,
+		},
+		{
+			roleDescription:   "access-to-restricted",
+			dbUserEnv:         os.Getenv("DB_RESTRICTED_USER"),
+			dbPasswordEnv:     os.Getenv("DB_RESTRICTED_PASSWORD"),
+			dbPointer:         &DbRestricted,
+			specialPrivileges: true,
+		},
 	}
 
-	// Avataan rajatun käyttäjän yhteys restricted-tauluihin
-	DbRestricted, err = sql.Open("postgres", connRestricted)
-	if err != nil {
-		return fmt.Errorf("virhe rajatun yhteyden avauksessa: %v", err)
-	}
-	if err := DbRestricted.Ping(); err != nil {
-		return fmt.Errorf("ping-virhe rajatulle yhteydelle: %v", err)
+	for _, conn := range dbConnectionList {
+		connectionString := fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			dbHost, dbPort, conn.dbUserEnv, conn.dbPasswordEnv, dbName,
+		)
+
+		dbInstance, err := sql.Open("postgres", connectionString)
+		if err != nil {
+			fmt.Printf("\033[31mvirhe %s avauksessa: %s\033[0m\n",
+				conn.roleDescription, err.Error())
+			return err
+		}
+
+		if err := dbInstance.Ping(); err != nil {
+			fmt.Printf("\033[31mvirhe %s pingissä: %s\033[0m\n",
+				conn.roleDescription, err.Error())
+			return err
+		}
+
+		// Asetetaan osoitettu globaali *sql.DB tämän yhteyden instanssiin
+		*conn.dbPointer = dbInstance
+
+		// Voidaan samalla logittaa, onko yhteydellä “erityisoikeuksia”
+		fmt.Printf("Rooli: %s, specialPrivileges: %v\n",
+			conn.roleDescription, conn.specialPrivileges)
 	}
 
 	fmt.Println("Tietokantayhteydet avattu onnistuneesti.")
@@ -125,29 +127,35 @@ func CloseDB() {
 
 // 	// DbReaderOnly = AI:n read-only -yhteys
 // 	DbReaderOnly *sql.DB
+
+// 	// DbRestricted = rajattu yhteys restricted.user_data -tauluun
+// 	DbRestricted *sql.DB
 // )
 
 // func InitDB() error {
-// 	// Ladataan .env
 // 	if err := godotenv.Load(); err != nil {
 // 		fmt.Println("Virhe .env-latauksessa:", err)
-// 		// Ei välttämättä palauteta erroria, jos haluaa tukea myös
-// 		// tilannetta ilman .env-tiedostoa. Makuasia.
+// 		// Ei välttämättä lopeteta, jos halutaan tukea myös
+// 		// tilannetta ilman .env-tiedostoa.
 // 	}
 
 // 	// Luetaan tarvittavat environment-muuttujat
 // 	dbHost := os.Getenv("DB_HOST")
 // 	dbPort := os.Getenv("DB_PORT")
 
-// 	dbUser := os.Getenv("DB_USER")
+// 	dbUser := os.Getenv("DB_USER") // Pääkäyttäjä
 // 	dbPassword := os.Getenv("DB_PASSWORD")
 
 // 	dbROUser := os.Getenv("DB_READONLY_USER")
 // 	dbROPass := os.Getenv("DB_READONLY_PASSWORD")
 
+// 	// Rajattu käyttäjä restricted-skeemaan
+// 	dbRestrictedUser := os.Getenv("DB_RESTRICTED_USER")
+// 	dbRestrictedPass := os.Getenv("DB_RESTRICTED_PASSWORD")
+
 // 	dbName := os.Getenv("DB_NAME")
 
-// 	// 1) Pääkäyttäjän connect-string
+// 	// 1) Pääyhteyden connect-string
 // 	connMain := fmt.Sprintf(
 // 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 // 		dbHost, dbPort, dbUser, dbPassword, dbName,
@@ -159,13 +167,19 @@ func CloseDB() {
 // 		dbHost, dbPort, dbROUser, dbROPass, dbName,
 // 	)
 
-// 	// Avataan pääyhteys
+// 	// 3) Rajatun käyttäjän connect-string
+// 	connRestricted := fmt.Sprintf(
+// 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+// 		dbHost, dbPort, dbRestrictedUser, dbRestrictedPass, dbName,
+// 	)
+
 // 	var err error
+
+// 	// Avataan pääyhteys
 // 	Db, err = sql.Open("postgres", connMain)
 // 	if err != nil {
 // 		return fmt.Errorf("virhe pääyhteyden avauksessa: %v", err)
 // 	}
-// 	// Testataan
 // 	if err := Db.Ping(); err != nil {
 // 		return fmt.Errorf("ping-virhe pääyhteydelle: %v", err)
 // 	}
@@ -179,6 +193,15 @@ func CloseDB() {
 // 		return fmt.Errorf("ping-virhe read-only-yhteydelle: %v", err)
 // 	}
 
+// 	// Avataan rajatun käyttäjän yhteys restricted-tauluihin
+// 	DbRestricted, err = sql.Open("postgres", connRestricted)
+// 	if err != nil {
+// 		return fmt.Errorf("virhe rajatun yhteyden avauksessa: %v", err)
+// 	}
+// 	if err := DbRestricted.Ping(); err != nil {
+// 		return fmt.Errorf("ping-virhe rajatulle yhteydelle: %v", err)
+// 	}
+
 // 	fmt.Println("Tietokantayhteydet avattu onnistuneesti.")
 // 	return nil
 // }
@@ -190,4 +213,92 @@ func CloseDB() {
 // 	if DbReaderOnly != nil {
 // 		DbReaderOnly.Close()
 // 	}
+// 	if DbRestricted != nil {
+// 		DbRestricted.Close()
+// 	}
 // }
+
+// // // database.go
+// // package backend
+
+// // import (
+// // 	"database/sql"
+// // 	"fmt"
+// // 	"os"
+
+// // 	"github.com/joho/godotenv"
+// // 	_ "github.com/lib/pq"
+// // )
+
+// // var (
+// // 	// Db = pääyhteys koko sovellukselle (kaikki oikeudet)
+// // 	Db *sql.DB
+
+// // 	// DbReaderOnly = AI:n read-only -yhteys
+// // 	DbReaderOnly *sql.DB
+// // )
+
+// // func InitDB() error {
+// // 	// Ladataan .env
+// // 	if err := godotenv.Load(); err != nil {
+// // 		fmt.Println("Virhe .env-latauksessa:", err)
+// // 		// Ei välttämättä palauteta erroria, jos haluaa tukea myös
+// // 		// tilannetta ilman .env-tiedostoa. Makuasia.
+// // 	}
+
+// // 	// Luetaan tarvittavat environment-muuttujat
+// // 	dbHost := os.Getenv("DB_HOST")
+// // 	dbPort := os.Getenv("DB_PORT")
+
+// // 	dbUser := os.Getenv("DB_USER")
+// // 	dbPassword := os.Getenv("DB_PASSWORD")
+
+// // 	dbROUser := os.Getenv("DB_READONLY_USER")
+// // 	dbROPass := os.Getenv("DB_READONLY_PASSWORD")
+
+// // 	dbName := os.Getenv("DB_NAME")
+
+// // 	// 1) Pääkäyttäjän connect-string
+// // 	connMain := fmt.Sprintf(
+// // 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+// // 		dbHost, dbPort, dbUser, dbPassword, dbName,
+// // 	)
+
+// // 	// 2) Read-only-käyttäjän connect-string
+// // 	connReadOnly := fmt.Sprintf(
+// // 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+// // 		dbHost, dbPort, dbROUser, dbROPass, dbName,
+// // 	)
+
+// // 	// Avataan pääyhteys
+// // 	var err error
+// // 	Db, err = sql.Open("postgres", connMain)
+// // 	if err != nil {
+// // 		return fmt.Errorf("virhe pääyhteyden avauksessa: %v", err)
+// // 	}
+// // 	// Testataan
+// // 	if err := Db.Ping(); err != nil {
+// // 		return fmt.Errorf("ping-virhe pääyhteydelle: %v", err)
+// // 	}
+
+// // 	// Avataan read-only-yhteys
+// // 	DbReaderOnly, err = sql.Open("postgres", connReadOnly)
+// // 	if err != nil {
+// // 		return fmt.Errorf("virhe read-only-yhteyden avauksessa: %v", err)
+// // 	}
+// // 	if err := DbReaderOnly.Ping(); err != nil {
+// // 		return fmt.Errorf("ping-virhe read-only-yhteydelle: %v", err)
+// // 	}
+
+// // 	fmt.Println("Tietokantayhteydet avattu onnistuneesti.")
+// // 	return nil
+// // }
+
+// // func CloseDB() {
+// // 	if Db != nil {
+// // 		Db.Close()
+// // 	}
+// // 	if DbReaderOnly != nil {
+// // 		DbReaderOnly.Close()
+// // 	}
+// // }

@@ -75,7 +75,7 @@ func WithUserLogging(original_handler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Haetaan ryhmät
-		rows, err_groups := backend.DbRestricted.Query(`
+		rows, err_groups := backend.Db.Query(`
             SELECT g.name
             FROM auth_user_groups g
             JOIN auth_user_group_memberships ug 
@@ -151,28 +151,28 @@ func userHasFunctionPermission(userID int, functionName, tableName string) bool 
 	if tableName == "" {
 		query = `
 			SELECT 1
-			FROM restricted.auth_group_table_func_rights gf
-			JOIN restricted.functions f ON gf.function_id = f.id
-			JOIN restricted.auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
+			FROM auth_group_table_func_rights gf
+			JOIN functions f ON gf.function_id = f.id
+			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
 			WHERE f.name = $1
 			  AND ug.user_id = $2
 			  AND (gf.target_table_name = '' OR gf.target_table_name IS NULL)
 			LIMIT 1
 		`
-		err = backend.DbRestricted.QueryRow(query, functionName, userID).Scan(&dummy)
+		err = backend.Db.QueryRow(query, functionName, userID).Scan(&dummy)
 	} else {
 		// Jos taulunimi on annettu, pitää löytyä täsmälleen sama taulu
 		query = `
 			SELECT 1
-			FROM restricted.auth_group_table_func_rights gf
-			JOIN restricted.functions f ON gf.function_id = f.id
-			JOIN restricted.auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
+			FROM auth_group_table_func_rights gf
+			JOIN functions f ON gf.function_id = f.id
+			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
 			WHERE f.name = $1
 			  AND ug.user_id = $2
 			  AND gf.target_table_name = $3
 			LIMIT 1
 		`
-		err = backend.DbRestricted.QueryRow(query, functionName, userID, tableName).Scan(&dummy)
+		err = backend.Db.QueryRow(query, functionName, userID, tableName).Scan(&dummy)
 	}
 
 	if err == sql.ErrNoRows {
@@ -188,54 +188,6 @@ func userHasFunctionPermission(userID int, functionName, tableName string) bool 
 		functionName, tableName, userID)
 	return true
 }
-
-// // Yhdistetty tarkistusfunktio: tarkistaa sekä function-level että (tarvittaessa) table-level -oikeudet.
-// func userHasFunctionPermission(userID int, functionName, tableName string) bool {
-// 	var query string
-// 	var dummy int
-// 	var err error
-
-// 	// Jos kutsussa ei ole taulua, pitää löytyä tauluton rivi (target_table_name = '' tai IS NULL).
-// 	if tableName == "" {
-// 		query = `
-// 			SELECT 1
-// 			FROM auth_group_table_func_rights gf
-// 			JOIN functions f ON gf.function_id = f.id
-// 			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
-// 			WHERE f.name = $1
-// 			  AND ug.user_id = $2
-// 			  AND (gf.target_table_name = '' OR gf.target_table_name IS NULL)
-// 			LIMIT 1
-// 		`
-// 		err = backend.Db.QueryRow(query, functionName, userID).Scan(&dummy)
-// 	} else {
-// 		// Jos taulunimi on annettu, pitää löytyä täsmälleen sama taulu
-// 		query = `
-// 			SELECT 1
-// 			FROM auth_group_table_func_rights gf
-// 			JOIN functions f ON gf.function_id = f.id
-// 			JOIN auth_user_group_memberships ug ON gf.auth_user_group_id = ug.group_id
-// 			WHERE f.name = $1
-// 			  AND ug.user_id = $2
-// 			  AND gf.target_table_name = $3
-// 			LIMIT 1
-// 		`
-// 		err = backend.Db.QueryRow(query, functionName, userID, tableName).Scan(&dummy)
-// 	}
-
-// 	if err == sql.ErrNoRows {
-// 		log.Printf("\033[31m[userHasFunctionPermission] Ei löytynyt oikeusriviä funktiolle='%s', taululle='%s' (userID=%d)\033[0m",
-// 			functionName, tableName, userID)
-// 		return false
-// 	} else if err != nil {
-// 		log.Printf("\033[31m[userHasFunctionPermission] Tietokantavirhe: %v\033[0m", err)
-// 		return false
-// 	}
-
-// 	log.Printf("\033[32m[userHasFunctionPermission] OK - Löytyi oikeus funktiolle='%s', taululle='%s' (userID=%d)\033[0m",
-// 		functionName, tableName, userID)
-// 	return true
-// }
 
 func WithAccessControl(handlerName string, originalHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

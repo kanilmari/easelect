@@ -44,6 +44,28 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func showLoginForm(w http.ResponseWriter, r *http.Request, errorMsg string) {
+	session, err := store.Get(r, "session")
+	if err != nil {
+		log.Printf("\033[31mvirhe: session haku epäonnistui: %s\033[0m\n", err.Error())
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// CSRF-token haetaan sessiosta tai luodaan, jos puuttuu
+	csrfToken, ok := session.Values["csrf_token"].(string)
+	if !ok || csrfToken == "" {
+		csrfToken = uuid.NewString()
+		session.Values["csrf_token"] = csrfToken
+
+		// Tallennetaan session uudet arvot
+		err = saveSession(w, r, session)
+		if err != nil {
+			log.Printf("\033[31mvirhe: session tallennus epäonnistui csrf-tokenin luomisen jälkeen: %s\033[0m\n", err.Error())
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	templatePath := filepath.Join(frontend_dir, "templates", "login.html")
 
 	tmpl, err := template.ParseFiles(templatePath)
@@ -54,9 +76,11 @@ func showLoginForm(w http.ResponseWriter, r *http.Request, errorMsg string) {
 	}
 
 	data := struct {
-		ErrorMsg string
+		ErrorMsg  string
+		CSRFToken string
 	}{
-		ErrorMsg: errorMsg,
+		ErrorMsg:  errorMsg,
+		CSRFToken: csrfToken,
 	}
 
 	err = tmpl.Execute(w, data)
@@ -66,6 +90,7 @@ func showLoginForm(w http.ResponseWriter, r *http.Request, errorMsg string) {
 	}
 }
 
+// Käsitellään POST-lähetys. Lisätty CSRF-tarkistus.
 func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -74,10 +99,24 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// --- CSRF-tarkistus ---
+	session, err := store.Get(r, "session")
+	if err != nil {
+		log.Printf("\033[31mvirhe: session get epäonnistui: %s\033[0m\n", err.Error())
+		showLoginForm(w, r, "Istuntovirhe. Yritä uudelleen.")
+		return
+	}
+	postedToken := r.FormValue("csrf_token")
+	sessionToken, _ := session.Values["csrf_token"].(string)
+	if postedToken == "" || sessionToken == "" || postedToken != sessionToken {
+		showLoginForm(w, r, "Virheellinen CSRF-token. Yritä uudelleen.")
+		return
+	}
+
+	// --- Käyttäjätunnus & salasana ---
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	// 1) Haetaan userID public.auth_users -taulusta
 	var userID int
 	err = backend.Db.QueryRow(`
         SELECT id
@@ -95,17 +134,13 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2) Haetaan hashattu salasana restricted.user_data -taulusta
 	var hashedPassword string
 	err = backend.DbRestricted.QueryRow(`
         SELECT password
           FROM restricted.user_data
          WHERE id = $1
     `, userID).Scan(&hashedPassword)
-
 	if err == sql.ErrNoRows {
-		// Käyttäjällä ei ole merkintää restricted-taulussa?
-		// Ilmoitetaan vain "väärä salasana", jotta ei paljasteta liikaa
 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
 		return
 	} else if err != nil {
@@ -114,20 +149,14 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3) Verrataan annettua salasanaa tallennettuun bcrypt-hashiin
+	// Bcrypt-tarkistus
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
 		return
 	}
 
-	// 4) Luodaan session ja asetetaan evästeet
-	session, err := store.Get(r, "session")
-	if err != nil {
-		log.Printf("\033[31mvirhe: session get epäonnistui: %s\033[0m\n", err.Error())
-		showLoginForm(w, r, "Istuntovirhe. Yritä uudelleen.")
-		return
-	}
+	// Tästä eteenpäin kirjautuminen onnistui.
 	session.Values["authenticated"] = true
 	session.Values["user_id"] = userID
 
@@ -141,22 +170,23 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 	session.Values["device_id"] = deviceID
 
-	// Sormenjälki (fingerprint)
+	// Sormenjälki (fingerprint) on pakollinen
 	fingerprint := r.FormValue("fingerprint")
-	if fingerprint != "" {
-		log.Printf("lomakkeen fingerprint: %s", fingerprint)
-		session.Values["fingerprint_hash"] = fingerprint
-
-		http.SetCookie(w, &http.Cookie{
-			Name:     "fingerprint",
-			Value:    fingerprint,
-			Path:     "/",
-			HttpOnly: false,
-			Expires:  time.Now().Add(7 * 24 * time.Hour),
-		})
-	} else {
-		log.Println("käyttäjä ei lähettänyt fingerprint-arvoa. ei tallenneta sormenjälkeä sessioon.")
+	if fingerprint == "" {
+		log.Println("käyttäjä ei lähettänyt fingerprint-arvoa. lopetetaan kirjautuminen.")
+		showLoginForm(w, r, "Kirjautuminen vaatii sormenjäljen.")
+		return
 	}
+	log.Printf("lomakkeen fingerprint: %s", fingerprint)
+	session.Values["fingerprint_hash"] = fingerprint
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "fingerprint",
+		Value:    fingerprint,
+		Path:     "/",
+		HttpOnly: false,
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
+	})
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "device_id",
@@ -176,6 +206,228 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	log.Printf("käyttäjä '%s' (id=%d) kirjautui sisään onnistuneesti", username, userID)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
+
+// func handleLoginPost(w http.ResponseWriter, r *http.Request) {
+// 	err := r.ParseForm()
+// 	if err != nil {
+// 		log.Printf("\033[31mvirhe: lomakkeen parsinta epäonnistui: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Virhe lomakkeen käsittelyssä.")
+// 		return
+// 	}
+
+// 	username := r.FormValue("username")
+// 	password := r.FormValue("password")
+
+// 	// 1) Haetaan userID public.auth_users -taulusta
+// 	var userID int
+// 	err = backend.Db.QueryRow(`
+//         SELECT id
+//           FROM auth_users
+//          WHERE username = $1
+//            AND disabled = false
+//     `, username).Scan(&userID)
+
+// 	if err == sql.ErrNoRows {
+// 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
+// 		return
+// 	} else if err != nil {
+// 		log.Printf("\033[31mvirhe: db virhe käyttäjän haussa: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Tapahtui virhe. Yritä uudelleen.")
+// 		return
+// 	}
+
+// 	// 2) Haetaan hashattu salasana restricted.user_data -taulusta
+// 	var hashedPassword string
+// 	err = backend.DbRestricted.QueryRow(`
+//         SELECT password
+//           FROM restricted.user_data
+//          WHERE id = $1
+//     `, userID).Scan(&hashedPassword)
+
+// 	if err == sql.ErrNoRows {
+// 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
+// 		return
+// 	} else if err != nil {
+// 		log.Printf("\033[31mvirhe: rajatun db:n virhe salasanan haussa: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Tapahtui virhe. Yritä uudelleen.")
+// 		return
+// 	}
+
+// 	// 3) Verrataan annettua salasanaa tallennettuun bcrypt-hashiin
+// 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+// 	if err != nil {
+// 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
+// 		return
+// 	}
+
+// 	// 4) Luodaan session ja asetetaan evästeet
+// 	session, err := store.Get(r, "session")
+// 	if err != nil {
+// 		log.Printf("\033[31mvirhe: session get epäonnistui: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Istuntovirhe. Yritä uudelleen.")
+// 		return
+// 	}
+// 	session.Values["authenticated"] = true
+// 	session.Values["user_id"] = userID
+
+// 	// device_id-käsittely
+// 	deviceCookie, err := r.Cookie("device_id")
+// 	var deviceID string
+// 	if err != nil || deviceCookie.Value == "" {
+// 		deviceID = uuid.NewString()
+// 	} else {
+// 		deviceID = deviceCookie.Value
+// 	}
+// 	session.Values["device_id"] = deviceID
+
+// 	// Sormenjälki (fingerprint) on nyt pakollinen
+// 	fingerprint := r.FormValue("fingerprint")
+// 	if fingerprint == "" {
+// 		log.Println("käyttäjä ei lähettänyt fingerprint-arvoa. lopetetaan kirjautuminen.")
+// 		showLoginForm(w, r, "Kirjautuminen vaatii sormenjäljen.")
+// 		return
+// 	}
+
+// 	log.Printf("lomakkeen fingerprint: %s", fingerprint)
+// 	session.Values["fingerprint_hash"] = fingerprint
+
+// 	http.SetCookie(w, &http.Cookie{
+// 		Name:     "fingerprint",
+// 		Value:    fingerprint,
+// 		Path:     "/",
+// 		HttpOnly: false,
+// 		Expires:  time.Now().Add(7 * 24 * time.Hour),
+// 	})
+
+// 	http.SetCookie(w, &http.Cookie{
+// 		Name:     "device_id",
+// 		Value:    deviceID,
+// 		Path:     "/",
+// 		HttpOnly: false,
+// 		Expires:  time.Now().Add(7 * 24 * time.Hour),
+// 	})
+
+// 	err = saveSession(w, r, session)
+// 	if err != nil {
+// 		log.Printf("\033[31mvirhe: session tallennus epäonnistui: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Istuntovirhe. Yritä uudelleen.")
+// 		return
+// 	}
+
+// 	log.Printf("käyttäjä '%s' (id=%d) kirjautui sisään onnistuneesti", username, userID)
+// 	http.Redirect(w, r, "/", http.StatusSeeOther)
+// }
+
+// func handleLoginPost(w http.ResponseWriter, r *http.Request) {
+// 	err := r.ParseForm()
+// 	if err != nil {
+// 		log.Printf("\033[31mvirhe: lomakkeen parsinta epäonnistui: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Virhe lomakkeen käsittelyssä.")
+// 		return
+// 	}
+
+// 	username := r.FormValue("username")
+// 	password := r.FormValue("password")
+
+// 	// 1) Haetaan userID public.auth_users -taulusta
+// 	var userID int
+// 	err = backend.Db.QueryRow(`
+//         SELECT id
+//           FROM auth_users
+//          WHERE username = $1
+//            AND disabled = false
+//     `, username).Scan(&userID)
+
+// 	if err == sql.ErrNoRows {
+// 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
+// 		return
+// 	} else if err != nil {
+// 		log.Printf("\033[31mvirhe: db virhe käyttäjän haussa: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Tapahtui virhe. Yritä uudelleen.")
+// 		return
+// 	}
+
+// 	// 2) Haetaan hashattu salasana restricted.user_data -taulusta
+// 	var hashedPassword string
+// 	err = backend.DbRestricted.QueryRow(`
+//         SELECT password
+//           FROM restricted.user_data
+//          WHERE id = $1
+//     `, userID).Scan(&hashedPassword)
+
+// 	if err == sql.ErrNoRows {
+// 		// Käyttäjällä ei ole merkintää restricted-taulussa?
+// 		// Ilmoitetaan vain "väärä salasana", jotta ei paljasteta liikaa
+// 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
+// 		return
+// 	} else if err != nil {
+// 		log.Printf("\033[31mvirhe: rajatun db:n virhe salasanan haussa: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Tapahtui virhe. Yritä uudelleen.")
+// 		return
+// 	}
+
+// 	// 3) Verrataan annettua salasanaa tallennettuun bcrypt-hashiin
+// 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+// 	if err != nil {
+// 		showLoginForm(w, r, "Väärä käyttäjätunnus tai salasana.")
+// 		return
+// 	}
+
+// 	// 4) Luodaan session ja asetetaan evästeet
+// 	session, err := store.Get(r, "session")
+// 	if err != nil {
+// 		log.Printf("\033[31mvirhe: session get epäonnistui: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Istuntovirhe. Yritä uudelleen.")
+// 		return
+// 	}
+// 	session.Values["authenticated"] = true
+// 	session.Values["user_id"] = userID
+
+// 	// device_id-käsittely
+// 	deviceCookie, err := r.Cookie("device_id")
+// 	var deviceID string
+// 	if err != nil || deviceCookie.Value == "" {
+// 		deviceID = uuid.NewString()
+// 	} else {
+// 		deviceID = deviceCookie.Value
+// 	}
+// 	session.Values["device_id"] = deviceID
+
+// 	// Sormenjälki (fingerprint)
+// 	fingerprint := r.FormValue("fingerprint")
+// 	if fingerprint != "" {
+// 		log.Printf("lomakkeen fingerprint: %s", fingerprint)
+// 		session.Values["fingerprint_hash"] = fingerprint
+
+// 		http.SetCookie(w, &http.Cookie{
+// 			Name:     "fingerprint",
+// 			Value:    fingerprint,
+// 			Path:     "/",
+// 			HttpOnly: false,
+// 			Expires:  time.Now().Add(7 * 24 * time.Hour),
+// 		})
+// 	} else {
+// 		log.Println("käyttäjä ei lähettänyt fingerprint-arvoa. ei tallenneta sormenjälkeä sessioon.")
+// 	}
+
+// 	http.SetCookie(w, &http.Cookie{
+// 		Name:     "device_id",
+// 		Value:    deviceID,
+// 		Path:     "/",
+// 		HttpOnly: false,
+// 		Expires:  time.Now().Add(7 * 24 * time.Hour),
+// 	})
+
+// 	err = saveSession(w, r, session)
+// 	if err != nil {
+// 		log.Printf("\033[31mvirhe: session tallennus epäonnistui: %s\033[0m\n", err.Error())
+// 		showLoginForm(w, r, "Istuntovirhe. Yritä uudelleen.")
+// 		return
+// 	}
+
+// 	log.Printf("käyttäjä '%s' (id=%d) kirjautui sisään onnistuneesti", username, userID)
+// 	http.Redirect(w, r, "/", http.StatusSeeOther)
+// }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("logoutHandler called")

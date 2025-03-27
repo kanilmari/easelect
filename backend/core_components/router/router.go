@@ -82,12 +82,12 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 
 	// --- Access-kontrolloidut reitit ---
 	// general_tables -kutsut aakkosjärjestyksessä
-	functionRegisterHandler("/add_foreign_key", foreign_keys.AddForeignKeyHandler, "general_tables.AddForeignKeyHandler")
-	functionRegisterHandler("/api/table-names", foreign_keys.GetTableNamesHandler, "general_tables.GetTableNamesHandler")
+	functionRegisterHandler("/add_foreign_key", foreign_keys.AddForeignKeyHandler, "foreign_keys.AddForeignKeyHandler")
+	functionRegisterHandler("/api/table-names", foreign_keys.GetTableNamesHandler, "foreign_keys.GetTableNamesHandler")
 	functionRegisterHandler("/api/table_permissions", general_tables.PermissionsHandler, "general_tables.PermissionsHandler")
 	functionRegisterHandler("/api/tables", general_tables.GetGroupedTables, "general_tables.GetGroupedTables")
-	functionRegisterHandler("/delete_foreign_key", foreign_keys.DeleteForeignKeyHandler, "general_tables.DeleteForeignKeyHandler")
-	functionRegisterHandler("/foreign_keys", foreign_keys.GetForeignKeys, "general_tables.GetForeignKeys")
+	functionRegisterHandler("/delete_foreign_key", foreign_keys.DeleteForeignKeyHandler, "foreign_keys.DeleteForeignKeyHandler")
+	functionRegisterHandler("/foreign_keys", foreign_keys.GetForeignKeys, "foreign_keys.GetForeignKeys")
 	functionRegisterHandler("/update-oids", general_tables.HandleUpdateOidsAndTableNames, "general_tables.HandleUpdateOidsAndTableNames")
 
 	// järjestetään reitit, joita add_row.js kutsuu:
@@ -97,7 +97,7 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/api/get-1m-relations", gt_1_row_create.GetOneToManyRelationsHandlerWrapper, "gt_1_row_create.GetOneToManyRelationsHandlerWrapper")
 	functionRegisterHandler("/api/get-many-to-many", gt_1_row_create.GetManyToManyTablesHandlerWrapper, "gt_1_row_create.GetManyToManyTablesHandlerWrapper")
 	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
-	functionRegisterHandler("/api/add-row-multipart", gt_1_row_create.AddRowMultipartHandlerWrapper, "gt_1_row_create.AddRowHandlerWrapper")
+	functionRegisterHandler("/api/add-row-multipart", gt_1_row_create.AddRowMultipartHandlerWrapper, "gt_1_row_create.AddRowMultipartHandlerWrapper")
 	functionRegisterHandler("/api/geocode-address", gt_1_row_create.GeocodeAddressHandler, "gt_1_row_create.GeocodeAddressHandler")
 	// --------------------------------------------------------------
 
@@ -223,12 +223,12 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 		"router.rootHandler":    true,
 		"auth.LoginHandler":     true,
 		"router.handleFrontend": true,
+		"auth.LogoutHandler":    true,
 	}
 
 	// Reitit, jotka vaativat kirjautumisen,
 	// mutta EI function/table-level -tarkistusta
 	loginOnlyNeeded := map[string]bool{
-		"auth.LogoutHandler":   true,
 		"auth.RegisterHandler": true,
 	}
 
@@ -267,7 +267,7 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 		registeredFunctions[rd.HandlerName] = true
 	}
 
-	// Päivitetään restricted.functions -taulu
+	// Päivitetään *functions*-taulu
 	for handlerName := range registeredFunctions {
 		packageName := getPackageNameFromHandler(handlerName)
 
@@ -278,7 +278,7 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 		}
 
 		_, err := db.Exec(`
-            INSERT INTO restricted.functions (name, "package", disabled, specific_table_related)
+            INSERT INTO functions (name, "package", disabled, specific_table_related)
             VALUES ($1, $2, false, $3)
             ON CONFLICT (name)
             DO UPDATE 
@@ -287,7 +287,7 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
                     specific_table_related = EXCLUDED.specific_table_related
         `, handlerName, packageName, generalTableRelated)
 		if err != nil {
-			log.Printf("\033[31mvirhe tallennettaessa funktiota %s: %v\033[0m", handlerName, err)
+			log.Printf("virhe tallennettaessa funktiota %s: %v", handlerName, err)
 		}
 	}
 
