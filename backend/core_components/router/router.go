@@ -14,6 +14,7 @@ import (
 	"easelect/backend/common_components/vanilla_tree"
 	backend "easelect/backend/core_components"
 	"easelect/backend/core_components/auth"
+	devtools "easelect/backend/core_components/dev_tools"
 	"easelect/backend/core_components/general_tables"
 	"easelect/backend/core_components/general_tables/crud_workflows"
 	"easelect/backend/core_components/general_tables/foreign_keys"
@@ -26,6 +27,7 @@ import (
 	"easelect/backend/core_components/general_tables/gt_3_table_crud/gt_3_table_read"
 	"easelect/backend/core_components/general_tables/table_folders"
 	gt_triggers "easelect/backend/core_components/general_tables/triggers"
+	lang "easelect/backend/core_components/lang"
 	"easelect/backend/core_components/middlewares"
 	e_sessions "easelect/backend/core_components/sessions"
 )
@@ -80,6 +82,9 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/register_ndYOyXV0INOK3F", auth.RegisterHandler, "auth.RegisterHandler")
 	functionRegisterHandler("/api/update-folder", table_folders.HandleUpdateFolder, "table_folders.HandleUpdateFolder")
 
+	// --- DevTools-reitit ---
+	functionRegisterHandler("/api/sessioninfo", devtools.SessionHandler, "devtools.SessionHandler")
+
 	// --- Access-kontrolloidut reitit ---
 	// general_tables -kutsut aakkosjärjestyksessä
 	functionRegisterHandler("/add_foreign_key", foreign_keys.AddForeignKeyHandler, "foreign_keys.AddForeignKeyHandler")
@@ -117,7 +122,8 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	// Muut reitit aakkosjärjestyksessä
 	functionRegisterHandler("/api/modify-columns", crud_workflows.ModifyColumnsHandler, "crud_workflows.ModifyColumnsHandler")
 	functionRegisterHandler("/api/refresh_file_structure", refresh_file_structure.RefreshFileStructureHandler, "refresh_file_structure.RefreshFileStructureHandler")
-	functionRegisterHandler("/api/translations", vanilla_tree.GetTranslationsHandler, "vanilla_tree.GetTranslationsHandler")
+	functionRegisterHandler("/api/translations", lang.GetTranslationsHandler, "lang.GetTranslationsHandler")
+	functionRegisterHandler("/api/generateTranslations", lang.GenerateTranslationsHandler, "lang.GenerateTranslationsHandler")
 	functionRegisterHandler("/api/tree_data", vanilla_tree.GetTreeDataHandler, "vanilla_tree.GetTreeDataHandler")
 	functionRegisterHandler("/create_table", crud_workflows.CreateTableHandler, "crud_workflows.CreateTableHandler")
 	functionRegisterHandler("/openai_chat_stream_handler", openai.OpenaiChatStreamHandler, "openai.OpenaiChatStreamHandler")
@@ -216,6 +222,57 @@ func functionRegisterHandler(urlPattern string, handlerFunc http.HandlerFunc, ha
 }
 
 // RegisterAllRoutesAndUpdateFunctions tekee varsinaiset http.HandleFunc-kytkennät
+// func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
+// 	// Reitit, jotka eivät vaadi kirjautumista EIKÄ oikeustarkistusta
+// 	noAccessControlNeeded := map[string]bool{
+// 		"router.faviconHandler": true,
+// 		"router.rootHandler":    true,
+// 		"auth.LoginHandler":     true,
+// 		"router.handleFrontend": true,
+// 		"auth.LogoutHandler":    true,
+// 	}
+
+// 	// Reitit, jotka vaativat kirjautumisen,
+// 	// mutta EI function/table-level -tarkistusta
+// 	loginOnlyNeeded := map[string]bool{
+// 		"auth.RegisterHandler": true,
+// 	}
+
+// 	for _, rd := range routeDefinitions {
+// 		var finalHandler http.HandlerFunc
+
+// 		switch {
+// 		case noAccessControlNeeded[rd.HandlerName]:
+// 			// Pelkkä lokitus
+// 			finalHandler = middlewares.WithUserLogging(rd.HandlerFunc)
+
+// 		case loginOnlyNeeded[rd.HandlerName]:
+// 			// Käyttäjän pitää olla kirjautuneena,
+// 			// haluamme myös sormenjälkitarkistuksen
+// 			finalHandler = middlewares.WithUserLogging(
+// 				middlewares.WithLoginCheck(
+// 					middlewares.WithFingerprintCheck(
+// 						middlewares.WithDeviceIDCheck(rd.HandlerFunc),
+// 					),
+// 				),
+// 			)
+
+// 		default:
+// 			// Täysi AccessControl + laitetarkistus + sormenjälkitarkistukset + lokitus
+// 			finalHandler = middlewares.WithUserLogging(
+// 				middlewares.WithAccessControl(
+// 					rd.HandlerName,
+// 					middlewares.WithFingerprintCheck(
+// 						middlewares.WithDeviceIDCheck(rd.HandlerFunc),
+// 					),
+// 				),
+// 			)
+// 		}
+
+// 		http.HandleFunc(rd.UrlPattern, finalHandler)
+// 		registeredFunctions[rd.HandlerName] = true
+// 	}
+
 func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 	// Reitit, jotka eivät vaadi kirjautumista EIKÄ oikeustarkistusta
 	noAccessControlNeeded := map[string]bool{
@@ -237,12 +294,9 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 
 		switch {
 		case noAccessControlNeeded[rd.HandlerName]:
-			// Pelkkä lokitus
 			finalHandler = middlewares.WithUserLogging(rd.HandlerFunc)
 
 		case loginOnlyNeeded[rd.HandlerName]:
-			// Käyttäjän pitää olla kirjautuneena,
-			// haluamme myös sormenjälkitarkistuksen
 			finalHandler = middlewares.WithUserLogging(
 				middlewares.WithLoginCheck(
 					middlewares.WithFingerprintCheck(
@@ -262,6 +316,9 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 				),
 			)
 		}
+
+		// --- LISÄTÄÄN TÄHÄN RATE LIMITING:
+		finalHandler = middlewares.WithFunctionRateLimiting(db, rd.HandlerName, finalHandler)
 
 		http.HandleFunc(rd.UrlPattern, finalHandler)
 		registeredFunctions[rd.HandlerName] = true

@@ -1,4 +1,4 @@
-// auth/getAdminMode.go
+// get_admin_mode.go
 package auth
 
 import (
@@ -38,7 +38,7 @@ func GetAdminModeHandler(response_writer http.ResponseWriter, request *http.Requ
 		// Palautetaan aina false
 		adminMode = false
 	case "auto":
-		// Tarkistetaan, onko käyttäjä ryhmässä "Admins"
+		// Tarkistetaan, onko käyttäjä ryhmässä "admins"
 		rows, errGroupFetch := backend.Db.Query(`
 			SELECT g.id, g.name
 			FROM auth_user_groups g
@@ -65,8 +65,8 @@ func GetAdminModeHandler(response_writer http.ResponseWriter, request *http.Requ
 				log.Printf("[GetAdminModeHandler] Käyttäjä %d on ryhmässä %d nimeltä '%s'",
 					userID, groupID, groupName)
 
-				// Jos jokin näistä ryhmistä on "Admins", merkitään adminMode = true
-				if groupName == "Admins" {
+				// Jos jokin näistä ryhmistä on "admins", merkitään adminMode = true
+				if groupName == "admins" {
 					userIsInAdmins = true
 					// Halutessasi voit breakata heti löydyttyä:
 					break

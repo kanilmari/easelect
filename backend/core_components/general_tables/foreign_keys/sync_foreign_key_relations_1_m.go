@@ -12,7 +12,7 @@ import (
 // Nyt rajataan mukaan vain ne ulkoavaimet, joissa *lähdetaululla*
 // on yksisarakkeinen PK. "1" viittaa siis lähdetauluun.
 func SyncOneToManyFKConstraints(db *sql.DB) error {
-	log.Println("[INFO] Synchronizing 1-to-many foreign keys...")
+	// log.Println("[INFO] Synchronizing 1-to-many foreign keys...")
 
 	// 1. Haetaan kaikki ulkoavaimet tietokannasta.
 	const qryAllFKs = `
@@ -67,8 +67,8 @@ func SyncOneToManyFKConstraints(db *sql.DB) error {
 				c.SourceTable, checkErr)
 		}
 		if !singlePK {
-			log.Printf("[INFO] Skipping constraint %s: source table %s does NOT have a single-col PK.",
-				key, c.SourceTable)
+			// log.Printf("[INFO] Skipping constraint %s: source table %s does NOT have a single-col PK.",
+			// 	key, c.SourceTable)
 			continue
 		}
 

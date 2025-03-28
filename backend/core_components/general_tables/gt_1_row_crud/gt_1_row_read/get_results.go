@@ -81,7 +81,7 @@ func GetResults(response_writer http.ResponseWriter, request *http.Request) {
 	}
 
 	// Tulostetaan sarakeasetukset palvelimen konsoliin
-	log.Printf("User column settings for table '%s': %+v", table_name, userColumnSettings)
+	// log.Printf("User column settings for table '%s': %+v", table_name, userColumnSettings)
 
 	// 4. Haetaan muun datan osalta saraketietoja, tietotyyppejä ym.
 	column_data_types, err := getColumnDataTypesWithFK(table_name)
@@ -328,7 +328,7 @@ func buildColumnsByName(colsMap map[int]models.ColumnInfo) map[string]models.Col
 }
 
 func getColumnDataTypesWithFK(tableName string) (map[string]interface{}, error) {
-	fmt.Printf("\033[36m[getColumnDataTypesWithFK] haetaan taulun '%s' sarake- ja fk-tiedot...\033[0m\n", tableName)
+	// fmt.Printf("\033[36m[getColumnDataTypesWithFK] haetaan taulun '%s' sarake- ja fk-tiedot...\033[0m\n", tableName)
 
 	query := `
         SELECT
@@ -400,7 +400,7 @@ func getColumnDataTypesWithFK(tableName string) (map[string]interface{}, error) 
 		}
 
 		// Lisätään pieni loki tämän sarakkeen tiedoista
-		fmt.Printf("  - Sarake '%s' -> %+v\n", columnName, columnInfo)
+		// fmt.Printf("  - Sarake '%s' -> %+v\n", columnName, columnInfo)
 		data_types[columnName] = columnInfo
 	}
 

@@ -1,0 +1,6 @@
+#session_debug {
+    margin: 1rem;
+    white-space: pre-wrap;
+    position: fixed;
+    bottom: 0;
+}

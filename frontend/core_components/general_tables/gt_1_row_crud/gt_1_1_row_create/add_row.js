@@ -1,8 +1,12 @@
 // add_row.js
 
-import { createModal, showModal, hideModal } from '../../../../common_components/modal/modal_factory.js';
-import { refreshTableUnified } from '../gt_1_2_row_read/table_refresh_collector.js';
-import { createVanillaDropdown } from '../../../../common_components/vanilla_dropdown/vanilla_dropdown.js';
+import {
+    createModal,
+    showModal,
+    hideModal,
+} from "../../../../common_components/modal/modal_factory.js";
+import { refreshTableUnified } from "../gt_1_2_row_read/table_refresh_collector.js";
+import { createVanillaDropdown } from "../../../../common_components/vanilla_dropdown/vanilla_dropdown.js";
 
 var debug = true;
 
@@ -10,10 +14,10 @@ var debug = true;
 let modal_form_state = {};
 
 // Auto-resize logiikka kaikille textareille
-document.addEventListener('input', (event) => {
-    if (event.target.classList.contains('auto_resize_textarea')) {
-        event.target.style.height = 'auto';
-        event.target.style.height = event.target.scrollHeight + 'px';
+document.addEventListener("input", (event) => {
+    if (event.target.classList.contains("auto_resize_textarea")) {
+        event.target.style.height = "auto";
+        event.target.style.height = event.target.scrollHeight + "px";
     }
 });
 
@@ -23,21 +27,21 @@ document.addEventListener('input', (event) => {
  * -----------------------------------------------
  */
 export async function open_add_row_modal(table_name) {
-    console.log('open_add_row_modal, table:', table_name);
+    console.log("open_add_row_modal, table:", table_name);
 
     // 1) Haetaan saraketiedot
     const columns_info = await fetchColumnsInfo(table_name);
     if (!columns_info || columns_info.length === 0) {
-        console.error('No column information received.');
-        alert('Taululle ei ole saatavilla sarakkeita.');
+        console.error("No column information received.");
+        alert("Taululle ei ole saatavilla sarakkeita.");
         return;
     }
 
     // 2) Ei enää frontin filtteröintiä – käytetään sellaisenaan backendistä saatuja sarakkeita
     const columns = columns_info;
     if (!columns || columns.length === 0) {
-        console.error('No columns available to display in the modal.');
-        alert('Taululle ei ole lisättäviä sarakkeita.');
+        console.error("No columns available to display in the modal.");
+        alert("Taululle ei ole lisättäviä sarakkeita.");
         return;
     }
 
@@ -49,7 +53,12 @@ export async function open_add_row_modal(table_name) {
     if (!manyToManyInfos) manyToManyInfos = [];
 
     // 4) Rakennetaan lomake
-    const form = buildMainForm(table_name, columns, oneToManyRelations, manyToManyInfos);
+    const form = buildMainForm(
+        table_name,
+        columns,
+        oneToManyRelations,
+        manyToManyInfos
+    );
 
     // 5) Lomakkeen loppuun painikkeet ja submit
     appendFormActions(form, table_name, columns);
@@ -59,10 +68,10 @@ export async function open_add_row_modal(table_name) {
         titleDataLangKey: `add_row_${table_name}`,
         titleDataLangKeyFallback: `add_row`,
         contentElements: [form],
-        width: '600px',
+        width: "600px",
     });
     showModal();
-    console.log('Modal displayed successfully.');
+    console.log("Modal displayed successfully.");
 }
 
 /* --------------------------------------------
@@ -76,30 +85,40 @@ async function fetchColumnsInfo(table_name) {
             throw new Error(`http error! status: ${response.status}`);
         }
         const columns_info = await response.json();
-        console.log('columns_info:', columns_info);
+        console.log("columns_info:", columns_info);
         return columns_info;
     } catch (error) {
-        console.error(`Error fetching column information for table ${table_name}:`, error);
-        alert('Virhe haettaessa saraketietoja.');
+        console.error(
+            `Error fetching column information for table ${table_name}:`,
+            error
+        );
+        alert("Virhe haettaessa saraketietoja.");
         return null;
     }
 }
 
 async function fetchOneToManyRelations(tableName) {
     try {
-        const response = await fetch(`/api/get-1m-relations?table=${tableName}`);
+        const response = await fetch(
+            `/api/get-1m-relations?table=${tableName}`
+        );
         if (!response.ok) {
             if (debug) {
-                console.debug(`Ei löytynyt 1->m-suhteita taululle ${tableName}, status: ${response.status}`);
+                console.debug(
+                    `Ei löytynyt 1->m-suhteita taululle ${tableName}, status: ${response.status}`
+                );
             }
             return [];
         }
         const data = await response.json();
-        console.log('1->m-suhteet backendistä:', data);
+        console.log("1->m-suhteet backendistä:", data);
         return data;
     } catch (error) {
         if (debug) {
-            console.debug(`virhe haettaessa 1->m-suhteita taululle ${tableName}:`, error);
+            console.debug(
+                `virhe haettaessa 1->m-suhteita taululle ${tableName}:`,
+                error
+            );
         }
         return [];
     }
@@ -107,17 +126,24 @@ async function fetchOneToManyRelations(tableName) {
 
 export async function fetchManyToManyInfos(table_name) {
     try {
-        const response = await fetch(`/api/get-many-to-many?table=${table_name}`);
+        const response = await fetch(
+            `/api/get-many-to-many?table=${table_name}`
+        );
         if (!response.ok) {
             if (debug) {
-                console.debug(`Ei löytynyt monesta-moneen-liitoksia taululle ${table_name}, status: ${response.status}`);
+                console.debug(
+                    `Ei löytynyt monesta-moneen-liitoksia taululle ${table_name}, status: ${response.status}`
+                );
             }
             return [];
         }
         return await response.json();
     } catch (error) {
         if (debug) {
-            console.debug(`virhe haettaessa monesta-moneen-liitoksia taululle ${table_name}:`, error);
+            console.debug(
+                `virhe haettaessa monesta-moneen-liitoksia taululle ${table_name}:`,
+                error
+            );
         }
         return [];
     }
@@ -125,18 +151,26 @@ export async function fetchManyToManyInfos(table_name) {
 
 export async function fetchReferencedData(foreign_table_name) {
     try {
-        const response = await fetch(`/referenced-data?table=${foreign_table_name}`);
+        const response = await fetch(
+            `/referenced-data?table=${foreign_table_name}`
+        );
         if (!response.ok) {
             throw new Error(`http error! status: ${response.status}`);
         }
         const data = await response.json();
         if (!Array.isArray(data)) {
-            console.warn(`fetchReferencedData: odotettiin taulukkoa, mutta saatiin:`, data);
+            console.warn(
+                `fetchReferencedData: odotettiin taulukkoa, mutta saatiin:`,
+                data
+            );
             return [];
         }
         return data;
     } catch (error) {
-        console.error(`virhe haettaessa dataa taulusta ${foreign_table_name}:`, error);
+        console.error(
+            `virhe haettaessa dataa taulusta ${foreign_table_name}:`,
+            error
+        );
         return [];
     }
 }
@@ -145,11 +179,16 @@ export async function fetchReferencedData(foreign_table_name) {
    LOMAKKEEN RAKENTAMISEN APUFUNKTIOITA
    -------------------------------------------- */
 
-function buildMainForm(table_name, columns, oneToManyRelations, manyToManyInfos) {
-    const form = document.createElement('form');
-    form.id = 'add_row_form';
-    form.style.display = 'flex';
-    form.style.flexDirection = 'column';
+function buildMainForm(
+    table_name,
+    columns,
+    oneToManyRelations,
+    manyToManyInfos
+) {
+    const form = document.createElement("form");
+    form.id = "add_row_form";
+    form.style.display = "flex";
+    form.style.flexDirection = "column";
 
     for (const column of columns) {
         if (column.foreign_table_name) {
@@ -160,59 +199,65 @@ function buildMainForm(table_name, columns, oneToManyRelations, manyToManyInfos)
     }
 
     // 1->m-suhteet
-    modal_form_state['_childRowsArray'] = [];
+    modal_form_state["_childRowsArray"] = [];
     buildOneToManySection(form, oneToManyRelations);
 
     // m2m-suhteet
-    modal_form_state['_manyToManyRows'] = [];
+    modal_form_state["_manyToManyRows"] = [];
     buildManyToManySection(form, manyToManyInfos);
 
     return form;
 }
 
 function buildForeignKeyField(form, table_name, column) {
-    const label = document.createElement('label');
-    label.textContent = column.column_name;
+    const label = document.createElement("label");
+    // label.textContent = column.column_name;
+    label.setAttribute("data-lang-key", column.column_name);
     label.htmlFor = `${table_name}-${column.column_name}-input`;
-    label.style.margin = '10px 0 5px';
+    label.style.margin = "10px 0 5px";
 
-    const dropdown_container = document.createElement('div');
+    const dropdown_container = document.createElement("div");
     dropdown_container.id = `${table_name}-${column.column_name}-input`;
-    dropdown_container.style.marginBottom = '10px';
+    dropdown_container.style.marginBottom = "10px";
 
-    const hidden_input = document.createElement('input');
-    hidden_input.type = 'hidden';
+    const hidden_input = document.createElement("input");
+    hidden_input.type = "hidden";
     hidden_input.name = column.column_name;
     form.appendChild(hidden_input);
 
     createVanillaDropdown({
         containerElement: dropdown_container,
         options: [],
-        placeholder: 'Valitse...',
-        searchPlaceholder: 'Hae...',
+        placeholder: "Valitse...",
+        searchPlaceholder: "Hae...",
         showClearButton: true,
         useSearch: true,
         onChange: (val) => {
-            hidden_input.value = val || '';
+            hidden_input.value = val || "";
             modal_form_state[column.column_name] = val;
         },
     });
 
     // Hae data
     fetchReferencedData(column.foreign_table_name)
-        .then(options => {
+        .then((options) => {
             if (!Array.isArray(options)) return;
-            const mapped_options = options.map(opt => {
-                const pk_column = Object.keys(opt).find(key => key !== 'display');
+            const mapped_options = options.map((opt) => {
+                const pk_column = Object.keys(opt).find(
+                    (key) => key !== "display"
+                );
                 return {
                     value: opt[pk_column],
-                    label: `${opt[pk_column]} - ${opt['display']}`
+                    label: `${opt[pk_column]} - ${opt["display"]}`,
                 };
             });
             // Tässä demossa ohitamme dropdownin setOptions -logiikan
         })
-        .catch(err => {
-            console.error(`virhe haettaessa dataa taulusta ${column.foreign_table_name}:`, err);
+        .catch((err) => {
+            console.error(
+                `virhe haettaessa dataa taulusta ${column.foreign_table_name}:`,
+                err
+            );
         });
 
     form.appendChild(label);
@@ -220,59 +265,65 @@ function buildForeignKeyField(form, table_name, column) {
 }
 
 function buildRegularField(form, table_name, column) {
-    const label = document.createElement('label');
-    label.textContent = column.column_name;
+    const label = document.createElement("label");
+    // label.textContent = column.column_name;
+    label.setAttribute("data-lang-key", column.column_name);
     label.htmlFor = `${table_name}-${column.column_name}-input`;
-    label.style.margin = '10px 0 5px';
+    label.style.margin = "10px 0 5px";
 
     const data_type_lower = column.data_type.toLowerCase();
 
     // Esimerkki: geometry/position
-    if (data_type_lower.includes('geometry') && column.column_name.toLowerCase() === 'position') {
+    if (
+        data_type_lower.includes("geometry") &&
+        column.column_name.toLowerCase() === "position"
+    ) {
         buildGeometryField(form, column);
         return;
     }
 
-    if (data_type_lower === 'text' ||
-        data_type_lower.includes('varchar') ||
-        data_type_lower.startsWith('character varying') || 
-        data_type_lower === 'jsonb') {
-        const textarea = document.createElement('textarea');
+    if (
+        data_type_lower === "text" ||
+        data_type_lower.includes("varchar") ||
+        data_type_lower.startsWith("character varying") ||
+        data_type_lower === "jsonb"
+    ) {
+        const textarea = document.createElement("textarea");
         textarea.name = column.column_name;
-        textarea.required = column.is_nullable.toLowerCase() === 'no';
+        textarea.required = column.is_nullable.toLowerCase() === "no";
         textarea.rows = 1;
-        textarea.classList.add('auto_resize_textarea');
-        textarea.style.lineHeight = '1.2em';
-        textarea.style.minHeight = '2em';
-        textarea.style.padding = '4px 6px';
-        textarea.style.border = '1px solid var(--border_color)';
-        textarea.style.borderRadius = '4px';
-        textarea.style.height = 'auto';
-        textarea.value = modal_form_state[column.column_name] || '';
-        textarea.style.height = textarea.scrollHeight + 'px';
-        textarea.dispatchEvent(new Event('input'));
+        textarea.classList.add("auto_resize_textarea");
+        textarea.style.lineHeight = "1.2em";
+        textarea.style.minHeight = "2em";
+        textarea.style.padding = "4px 6px";
+        textarea.style.border = "1px solid var(--border_color)";
+        textarea.style.borderRadius = "4px";
+        textarea.style.height = "auto";
+        textarea.value = modal_form_state[column.column_name] || "";
+        textarea.style.height = textarea.scrollHeight + "px";
+        textarea.dispatchEvent(new Event("input"));
 
-        textarea.addEventListener('input', (e) => {
+        textarea.addEventListener("input", (e) => {
             modal_form_state[column.column_name] = e.target.value;
         });
 
         form.appendChild(label);
         form.appendChild(textarea);
     } else {
-        const input = document.createElement('input');
+        const input = document.createElement("input");
         input.type = get_input_type(column.data_type);
         input.id = `${table_name}-${column.column_name}-input`;
         input.name = column.column_name;
-        input.required = column.is_nullable.toLowerCase() === 'no';
-        input.style.padding = '8px';
-        input.style.border = '1px solid var(--border_color)';
-        input.style.borderRadius = '4px';
+        input.required = column.is_nullable.toLowerCase() === "no";
+        input.style.padding = "8px";
+        input.style.border = "1px solid var(--border_color)";
+        input.style.borderRadius = "4px";
 
         if (modal_form_state[column.column_name]) {
             input.value = modal_form_state[column.column_name];
         }
 
-        input.addEventListener('input', (e) => {
+        input.addEventListener("input", (e) => {
             modal_form_state[column.column_name] = e.target.value;
         });
 
@@ -282,24 +333,35 @@ function buildRegularField(form, table_name, column) {
 }
 
 function buildOneToManySection(form, oneToManyRelations) {
-    modal_form_state['_childRowsArray'] = modal_form_state['_childRowsArray'] || [];
+    modal_form_state["_childRowsArray"] =
+        modal_form_state["_childRowsArray"] || [];
 
     for (const ref of oneToManyRelations) {
-        console.log(`Suhteen ${ref.source_table_name}->${ref.target_table_name} insert_new_source_with_target:`, JSON.stringify(ref.insert_new_source_with_target));
-        if (ref.insert_new_source_with_target && ref.insert_new_source_with_target.Bool === false) {
-            console.log(`Ohitetaan suhde ${ref.source_table_name}->${ref.target_table_name}, Bool on false`);
+        console.log(
+            `Suhteen ${ref.source_table_name}->${ref.target_table_name} insert_new_source_with_target:`,
+            JSON.stringify(ref.insert_new_source_with_target)
+        );
+        if (
+            ref.insert_new_source_with_target &&
+            ref.insert_new_source_with_target.Bool === false
+        ) {
+            console.log(
+                `Ohitetaan suhde ${ref.source_table_name}->${ref.target_table_name}, Bool on false`
+            );
             continue;
         }
 
         fetch(`/api/get-columns?table=${ref.source_table_name}`)
-            .then(resp => {
+            .then((resp) => {
                 if (!resp.ok) {
                     throw new Error(`http error: ${resp.status}`);
                 }
                 return resp.json();
             })
-            .then(childColumns => {
-                childColumns = childColumns.filter(cc => cc.column_name !== ref.source_column_name);
+            .then((childColumns) => {
+                childColumns = childColumns.filter(
+                    (cc) => cc.column_name !== ref.source_column_name
+                );
 
                 let targetInsertSpecs = null;
                 try {
@@ -307,60 +369,118 @@ function buildOneToManySection(form, oneToManyRelations) {
                         targetInsertSpecs = JSON.parse(ref.target_insert_specs);
                     }
                 } catch (parseErr) {
-                    console.error('virhe target_insert_specs JSON-parsinnassa:', parseErr);
+                    console.error(
+                        "virhe target_insert_specs JSON-parsinnassa:",
+                        parseErr
+                    );
                 }
                 const fileUploadSpec = targetInsertSpecs?.file_upload || null;
 
-                if (fileUploadSpec && fileUploadSpec.enabled && fileUploadSpec.filename_column) {
-                    childColumns = childColumns.filter(cc => cc.column_name !== fileUploadSpec.filename_column);
+                if (
+                    fileUploadSpec &&
+                    fileUploadSpec.enabled &&
+                    fileUploadSpec.filename_column
+                ) {
+                    childColumns = childColumns.filter(
+                        (cc) =>
+                            cc.column_name !== fileUploadSpec.filename_column
+                    );
                 }
 
                 if (childColumns.length > 0) {
-                    const fieldset = document.createElement('fieldset');
-                    fieldset.style.marginTop = '20px';
+                    const fieldset = document.createElement("fieldset");
+                    fieldset.style.marginTop = "20px";
 
-                    const legend = document.createElement('legend');
-                    legend.textContent = `Lisää aliobjekti (1-m): ${ref.source_table_name}`;
+                    // const legend = document.createElement('legend');
+                    // legend.textContent = `Lisää aliobjekti: ${ref.source_table_name}`;
+                    // fieldset.appendChild(legend);
+
+                    // const childObjectState = {
+                    //     tableName: ref.source_table_name,
+                    //     referencingColumn: ref.source_column_name,
+                    //     data: {},
+                    //     fileUploadSpec: fileUploadSpec
+                    // };
+                    // modal_form_state['_childRowsArray'].push(childObjectState);
+
+                    // for (const ccol of childColumns) {
+                    // Luodaan legend, johon tulee kaksi data-lang-key -elementtiä peräkkäin.
+                    const legend = document.createElement("legend");
+
+                    // 1) elementti "add_child_item" (esim. "Lisää aliobjekti")
+                    const addChildSpan = document.createElement("span");
+                    addChildSpan.setAttribute(
+                        "data-lang-key",
+                        "add_child_item"
+                    );
+
+                    // 2) perään samaan legendiin taulun nimi omalla data-lang-keyllään
+                    const tableNameSpan = document.createElement("span");
+                    tableNameSpan.setAttribute(
+                        "data-lang-key",
+                        ref.source_table_name
+                    );
+
+                    // Liitetään molemmat legendin sisälle
+                    legend.appendChild(addChildSpan);
+                    legend.appendChild(document.createTextNode(" ")); // pieni väli
+                    legend.appendChild(tableNameSpan);
+
                     fieldset.appendChild(legend);
 
+                    // Lomakkeelle on muistettava säilöä lapsiobjektin data
                     const childObjectState = {
                         tableName: ref.source_table_name,
                         referencingColumn: ref.source_column_name,
                         data: {},
-                        fileUploadSpec: fileUploadSpec
+                        fileUploadSpec: fileUploadSpec,
                     };
-                    modal_form_state['_childRowsArray'].push(childObjectState);
+                    modal_form_state["_childRowsArray"].push(childObjectState);
 
                     for (const ccol of childColumns) {
-                        const label = document.createElement('label');
-                        label.textContent = ccol.column_name;
+                        const label = document.createElement("label");
+                        // label.textContent = ccol.column_name;
+                        label.setAttribute("data-lang-key", ccol.column_name);
                         label.htmlFor = `child-${ref.source_table_name}-${ccol.column_name}`;
-                        label.style.margin = '10px 0 5px';
+                        label.style.margin = "10px 0 5px";
 
                         const dataTypeLower = ccol.data_type.toLowerCase();
-                        if (dataTypeLower.includes('geometry') && ccol.column_name.toLowerCase() === 'position') {
-                            buildChildGeometryField(fieldset, ccol, childObjectState);
+                        if (
+                            dataTypeLower.includes("geometry") &&
+                            ccol.column_name.toLowerCase() === "position"
+                        ) {
+                            buildChildGeometryField(
+                                fieldset,
+                                ccol,
+                                childObjectState
+                            );
                         } else {
                             let childInput;
                             if (
-                                dataTypeLower === 'text' ||
-                                dataTypeLower.includes('varchar') ||
-                                dataTypeLower.startsWith('character varying')
+                                dataTypeLower === "text" ||
+                                dataTypeLower.includes("varchar") ||
+                                dataTypeLower.startsWith("character varying")
                             ) {
-                                childInput = document.createElement('textarea');
+                                childInput = document.createElement("textarea");
                                 childInput.rows = 1;
-                                childInput.classList.add('auto_resize_textarea');
+                                childInput.classList.add(
+                                    "auto_resize_textarea"
+                                );
                             } else {
-                                childInput = document.createElement('input');
-                                childInput.type = get_input_type(ccol.data_type);
+                                childInput = document.createElement("input");
+                                childInput.type = get_input_type(
+                                    ccol.data_type
+                                );
                             }
                             childInput.name = ccol.column_name;
-                            childInput.style.marginBottom = '5px';
-                            childInput.style.border = '1px solid var(--border_color)';
-                            childInput.style.borderRadius = '4px';
+                            childInput.style.marginBottom = "5px";
+                            childInput.style.border =
+                                "1px solid var(--border_color)";
+                            childInput.style.borderRadius = "4px";
 
-                            childInput.addEventListener('input', (e) => {
-                                childObjectState.data[ccol.column_name] = e.target.value;
+                            childInput.addEventListener("input", (e) => {
+                                childObjectState.data[ccol.column_name] =
+                                    e.target.value;
                             });
 
                             fieldset.appendChild(label);
@@ -369,34 +489,46 @@ function buildOneToManySection(form, oneToManyRelations) {
                     }
 
                     if (fileUploadSpec?.enabled) {
-                        buildFileUploadField(fieldset, fileUploadSpec, childObjectState);
+                        buildFileUploadField(
+                            fieldset,
+                            fileUploadSpec,
+                            childObjectState
+                        );
                     }
 
                     form.appendChild(fieldset);
                 }
             })
-            .catch(err => {
-                console.error('virhe lapsitaulun sarakkeiden haussa:', err);
+            .catch((err) => {
+                console.error("virhe lapsitaulun sarakkeiden haussa:", err);
             });
     }
 }
 
 function buildFileUploadField(fieldset, fileUploadSpec, childObjectState) {
-    const label = document.createElement('label');
-    label.textContent = 'Valitse tiedosto';
-    label.style.margin = '10px 0 5px';
+    const label = document.createElement("label");
+    // label.textContent = 'Valitse tiedosto';
+    label.setAttribute("data-lang-key", "choose_file");
+    label.style.margin = "10px 0 5px";
 
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = fileUploadSpec.allowed_file_types.map(ext => `.${ext}`).join(',');
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = fileUploadSpec.allowed_file_types
+        .map((ext) => `.${ext}`)
+        .join(",");
     fileInput.required = true;
-    fileInput.style.marginBottom = '10px';
+    fileInput.style.marginBottom = "10px";
 
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener("change", (e) => {
         const file = e.target.files[0];
-        if (file && file.size / (1024 * 1024) > fileUploadSpec.max_file_size_mb) {
-            alert(`Tiedoston maksimikoko on ${fileUploadSpec.max_file_size_mb} MB.`);
-            fileInput.value = '';
+        if (
+            file &&
+            file.size / (1024 * 1024) > fileUploadSpec.max_file_size_mb
+        ) {
+            alert(
+                `Tiedoston maksimikoko on ${fileUploadSpec.max_file_size_mb} MB.`
+            );
+            fileInput.value = "";
             return;
         }
         childObjectState.data[fileUploadSpec.filename_column] = file.name;
@@ -409,35 +541,37 @@ function buildFileUploadField(fieldset, fileUploadSpec, childObjectState) {
 
 /** Lisää lomakkeen alalaitaan Peruuta- ja Lisää-painikkeet */
 function appendFormActions(form, table_name, columns) {
-    const form_actions = document.createElement('div');
-    form_actions.style.display = 'flex';
-    form_actions.style.justifyContent = 'flex-end';
-    form_actions.style.marginTop = '20px';
+    const form_actions = document.createElement("div");
+    form_actions.style.display = "flex";
+    form_actions.style.justifyContent = "flex-end";
+    form_actions.style.marginTop = "20px";
 
-    const cancel_button = document.createElement('button');
-    cancel_button.type = 'button';
-    cancel_button.textContent = 'Peruuta';
-    cancel_button.style.padding = '8px 16px';
-    cancel_button.style.marginLeft = '10px';
-    cancel_button.style.border = 'none';
-    cancel_button.style.borderRadius = '4px';
-    cancel_button.style.cursor = 'pointer';
-    cancel_button.addEventListener('click', hideModal);
+    const cancel_button = document.createElement("button");
+    cancel_button.type = "button";
+    // cancel_button.textContent = 'Peruuta';
+    cancel_button.setAttribute("data-lang-key", "cancel");
+    cancel_button.style.padding = "8px 16px";
+    cancel_button.style.marginLeft = "10px";
+    cancel_button.style.border = "none";
+    cancel_button.style.borderRadius = "4px";
+    cancel_button.style.cursor = "pointer";
+    cancel_button.addEventListener("click", hideModal);
 
-    const submit_button = document.createElement('button');
-    submit_button.type = 'submit';
-    submit_button.textContent = 'Lisää';
-    submit_button.style.padding = '8px 16px';
-    submit_button.style.marginLeft = '10px';
-    submit_button.style.border = 'none';
-    submit_button.style.borderRadius = '4px';
-    submit_button.style.cursor = 'pointer';
+    const submit_button = document.createElement("button");
+    submit_button.type = "submit";
+    // submit_button.textContent = 'Lisää';
+    submit_button.setAttribute("data-lang-key", "add");
+    submit_button.style.padding = "8px 16px";
+    submit_button.style.marginLeft = "10px";
+    submit_button.style.border = "none";
+    submit_button.style.borderRadius = "4px";
+    submit_button.style.cursor = "pointer";
 
     form_actions.appendChild(cancel_button);
     form_actions.appendChild(submit_button);
     form.appendChild(form_actions);
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
         if (!e.submitter || e.submitter !== submit_button) {
             return;
@@ -449,21 +583,21 @@ function appendFormActions(form, table_name, columns) {
 /** Päätellään input-tyyppi datatyypin perusteella */
 function get_input_type(data_type) {
     switch (data_type.toLowerCase()) {
-        case 'integer':
-        case 'bigint':
-        case 'smallint':
-        case 'numeric':
-            return 'number';
-        case 'boolean':
-            return 'checkbox';
-        case 'date':
-            return 'date';
-        case 'timestamp':
-        case 'timestamp without time zone':
-        case 'timestamp with time zone':
-            return 'datetime-local';
+        case "integer":
+        case "bigint":
+        case "smallint":
+        case "numeric":
+            return "number";
+        case "boolean":
+            return "checkbox";
+        case "date":
+            return "date";
+        case "timestamp":
+        case "timestamp without time zone":
+        case "timestamp with time zone":
+            return "datetime-local";
         default:
-            return 'text';
+            return "text";
     }
 }
 
@@ -472,37 +606,45 @@ async function submit_new_row(table_name, form, columns) {
     const formData = new FormData();
 
     const mainData = {};
-    columns.forEach(column => {
-        let value = form.elements[column.column_name]?.value ?? '';
-        if (column.data_type.toLowerCase() === 'boolean') {
+    columns.forEach((column) => {
+        let value = form.elements[column.column_name]?.value ?? "";
+        if (column.data_type.toLowerCase() === "boolean") {
             value = form.elements[column.column_name].checked;
         }
         mainData[column.column_name] = value;
     });
 
     let childRowsToSend = [];
-    if (modal_form_state['_childRowsArray'] && modal_form_state['_childRowsArray'].length > 0) {
-        modal_form_state['_childRowsArray'].forEach((child, index) => {
+    if (
+        modal_form_state["_childRowsArray"] &&
+        modal_form_state["_childRowsArray"].length > 0
+    ) {
+        modal_form_state["_childRowsArray"].forEach((child, index) => {
             const safeChild = { ...child };
             childRowsToSend.push(safeChild);
         });
     }
     if (childRowsToSend.length > 0) {
-        mainData['_childRows'] = childRowsToSend;
+        mainData["_childRows"] = childRowsToSend;
     }
 
     let finalM2M = [];
-    if (modal_form_state['_manyToManyRows'] && modal_form_state['_manyToManyRows'].length > 0) {
-        for (let m2m of modal_form_state['_manyToManyRows']) {
-            const modeInputs = form.querySelectorAll(`input[name="${m2m.modeRadioName}"]`);
-            let selectedMode = 'existing';
-            modeInputs.forEach(radio => {
+    if (
+        modal_form_state["_manyToManyRows"] &&
+        modal_form_state["_manyToManyRows"].length > 0
+    ) {
+        for (let m2m of modal_form_state["_manyToManyRows"]) {
+            const modeInputs = form.querySelectorAll(
+                `input[name="${m2m.modeRadioName}"]`
+            );
+            let selectedMode = "existing";
+            modeInputs.forEach((radio) => {
                 if (radio.checked) {
                     selectedMode = radio.value;
                 }
             });
 
-            if (selectedMode === 'existing') {
+            if (selectedMode === "existing") {
                 const existingVal = m2m.existingHiddenInput.value;
                 if (existingVal) {
                     finalM2M.push({
@@ -511,7 +653,7 @@ async function submit_new_row(table_name, form, columns) {
                         thirdTableName: m2m.thirdTableName,
                         thirdTableFkColumn: m2m.thirdTableFkColumn,
                         selectedValue: existingVal,
-                        isNewRow: false
+                        isNewRow: false,
                     });
                 }
             } else {
@@ -523,18 +665,18 @@ async function submit_new_row(table_name, form, columns) {
                         thirdTableName: m2m.thirdTableName,
                         thirdTableFkColumn: m2m.thirdTableFkColumn,
                         isNewRow: true,
-                        newRowData: newData
+                        newRowData: newData,
                     });
                 }
             }
         }
     }
     if (finalM2M.length > 0) {
-        mainData['_manyToMany'] = finalM2M;
+        mainData["_manyToMany"] = finalM2M;
     }
 
     const mainDataJSON = JSON.stringify(mainData);
-    formData.append('jsonPayload', mainDataJSON);
+    formData.append("jsonPayload", mainDataJSON);
 
     childRowsToSend.forEach((child, index) => {
         if (child._actualFileObject) {
@@ -543,10 +685,13 @@ async function submit_new_row(table_name, form, columns) {
     });
 
     try {
-        const response = await fetch(`/api/add-row-multipart?table=${table_name}`, {
-            method: 'POST',
-            body: formData
-        });
+        const response = await fetch(
+            `/api/add-row-multipart?table=${table_name}`,
+            {
+                method: "POST",
+                body: formData,
+            }
+        );
 
         if (!response.ok) {
             const error_data = await response.json();
@@ -554,22 +699,20 @@ async function submit_new_row(table_name, form, columns) {
             return;
         }
 
-        alert('Rivi lisätty onnistuneesti!');
+        alert("Rivi lisätty onnistuneesti!");
         hideModal();
         modal_form_state = {};
 
         // Uusi "refresh" unifyed-tavalla:
         await refreshTableUnified(table_name, {
-            offsetOverride: 0,   // Aloitetaan nollasta, jotta uusi rivi näkyy ylhäältä
-            skipUrlParams: true  // Ei huomioida URL-parametreja
+            offsetOverride: 0, // Aloitetaan nollasta, jotta uusi rivi näkyy ylhäältä
+            skipUrlParams: true, // Ei huomioida URL-parametreja
         });
-
     } catch (error) {
-        console.error('virhe uuden rivin lisäämisessä (multipart):', error);
-        alert('virhe uuden rivin lisäämisessä (multipart).');
+        console.error("virhe uuden rivin lisäämisessä (multipart):", error);
+        alert("virhe uuden rivin lisäämisessä (multipart).");
     }
 }
-
 
 /////////////////
 /////////////////
@@ -597,98 +740,108 @@ async function submit_new_row(table_name, form, columns) {
 function fillAdditionalGeometryFields(form, suggestion) {
     // Näitä voi säätää tilanteen mukaan.
     const fieldMap = [
-        'title',
-        'label',
-        'country_code',
-        'country_name',
-        'state',
-        'county',
-        'city',
-        'district',
-        'street',
-        'house_number',
-        'postal_code',
+        "title",
+        "label",
+        "country_code",
+        "country_name",
+        "state",
+        "county",
+        "city",
+        "district",
+        "street",
+        "house_number",
+        "postal_code",
     ];
-    fieldMap.forEach(fieldName => {
+    fieldMap.forEach((fieldName) => {
         const field = form.querySelector(`[name="${fieldName}"]`);
         if (field) {
-            field.value = suggestion[fieldName] || '';
-            modal_form_state[fieldName] = suggestion[fieldName] || '';
+            field.value = suggestion[fieldName] || "";
+            modal_form_state[fieldName] = suggestion[fieldName] || "";
         }
     });
 }
 
 /** Geometriakentän HERE-validointi (päätaulun position) */
 function buildGeometryField(form, column) {
-    const label = document.createElement('label');
-    label.textContent = column.column_name;
+    const label = document.createElement("label");
+    // label.textContent = column.column_name;
+    label.setAttribute("data-lang-key", column.column_name);
 
-    const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.gap = '6px';
+    const container = document.createElement("div");
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.gap = "6px";
 
-    const addrLabel = document.createElement('label');
-    addrLabel.textContent = 'Anna osoite (HERE-validointi)';
+    const addrLabel = document.createElement("label");
+    // addrLabel.textContent = 'Anna osoite (HERE-validointi)';
+    addrLabel.setAttribute("data-lang-key", "enter_address_here");
 
-    const addrInput = document.createElement('input');
-    addrInput.type = 'text';
-    addrInput.placeholder = 'Esim. Mannerheimintie 10, Helsinki';
+    const addrInput = document.createElement("input");
+    addrInput.type = "text";
+    addrInput.placeholder = "Esim. Mannerheimintie 10, Helsinki";
 
-    const suggestionsDiv = document.createElement('div');
-    suggestionsDiv.style.marginTop = '10px';
+    const suggestionsDiv = document.createElement("div");
+    suggestionsDiv.style.marginTop = "10px";
 
-    const hiddenGeom = document.createElement('input');
-    hiddenGeom.type = 'hidden';
+    const hiddenGeom = document.createElement("input");
+    hiddenGeom.type = "hidden";
     hiddenGeom.name = column.column_name;
-    hiddenGeom.value = modal_form_state[column.column_name] || '';
+    hiddenGeom.value = modal_form_state[column.column_name] || "";
 
-    const validateBtn = document.createElement('button');
-    validateBtn.type = 'button';
-    validateBtn.textContent = 'Validoi HEREllä';
+    const validateBtn = document.createElement("button");
+    validateBtn.type = "button";
+    // validateBtn.textContent = 'Validoi HEREllä';
+    validateBtn.setAttribute("data-lang-key", "validate");
 
-    validateBtn.addEventListener('click', async () => {
+    validateBtn.addEventListener("click", async () => {
         const addr = addrInput.value.trim();
         if (!addr) {
-            alert('Syötä osoite ennen validointia');
+            alert("Syötä osoite ennen validointia");
             return;
         }
         try {
-            const resp = await fetch('/api/geocode-address', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const resp = await fetch("/api/geocode-address", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ address: addr }),
             });
             if (!resp.ok) {
                 const errData = await resp.json();
-                alert('Geokoodaus epäonnistui: ' + (errData.message || 'Tuntematon virhe'));
+                alert(
+                    "Geokoodaus epäonnistui: " +
+                        (errData.message || "Tuntematon virhe")
+                );
                 return;
             }
             const suggestions = await resp.json();
             suggestionsDiv.replaceChildren();
             if (!Array.isArray(suggestions) || suggestions.length === 0) {
-                alert('Ei tuloksia');
+                alert("Ei tuloksia");
                 return;
             }
             suggestions.slice(0, 5).forEach((sug) => {
-                const sugDiv = document.createElement('div');
-                sugDiv.style.border = '1px solid var(--border_color)';
-                sugDiv.style.padding = '6px';
-                sugDiv.style.marginBottom = '4px';
-                sugDiv.style.cursor = 'pointer';
+                const sugDiv = document.createElement("div");
+                sugDiv.style.border = "1px solid var(--border_color)";
+                sugDiv.style.padding = "6px";
+                sugDiv.style.marginBottom = "4px";
+                sugDiv.style.cursor = "pointer";
                 sugDiv.textContent = `${sug.label || sug.title}`;
-                sugDiv.addEventListener('click', () => {
+                sugDiv.addEventListener("click", () => {
                     const wkt = `POINT(${sug.lon} ${sug.lat})`;
                     hiddenGeom.value = wkt;
                     modal_form_state[column.column_name] = wkt;
                     fillAdditionalGeometryFields(form, sug);
-                    alert(`Valitsit: ${sug.label || sug.title}.\nKoordinaatit tallennettu!`);
+                    alert(
+                        `Valitsit: ${
+                            sug.label || sug.title
+                        }.\nKoordinaatit tallennettu!`
+                    );
                 });
                 suggestionsDiv.appendChild(sugDiv);
             });
         } catch (err) {
-            console.error('Geokoodausvirhe:', err);
-            alert('Geokoodausvirhe (tarkista konsoli).');
+            console.error("Geokoodausvirhe:", err);
+            alert("Geokoodausvirhe (tarkista konsoli).");
         }
     });
 
@@ -704,96 +857,108 @@ function buildGeometryField(form, column) {
 
 /** Lapsitaulun geometriakentän HERE-validointi */
 function buildChildGeometryField(fieldset, column, childObjectState) {
-    const label = document.createElement('label');
-    label.textContent = column.column_name;
+    const label = document.createElement("label");
+    // label.textContent = column.column_name;
+    label.setAttribute("data-lang-key", column.column_name);
 
-    const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.gap = '6px';
+    const container = document.createElement("div");
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.gap = "6px";
 
-    const addrLabel = document.createElement('label');
-    addrLabel.textContent = 'Anna osoite (HERE-validointi)';
+    const addrLabel = document.createElement("label");
+    // addrLabel.textContent = 'Anna osoite (HERE-validointi)';
+    addrLabel.setAttribute("data-lang-key", "enter_address");
 
-    const addrInput = document.createElement('input');
-    addrInput.type = 'text';
-    addrInput.placeholder = 'Esim. Mikonkatu 8, Helsinki';
+    const addrInput = document.createElement("input");
+    addrInput.type = "text";
+    addrInput.placeholder = "Esim. Mikonkatu 8, Helsinki";
 
-    const suggestionsDiv = document.createElement('div');
-    suggestionsDiv.style.marginTop = '10px';
+    const suggestionsDiv = document.createElement("div");
+    suggestionsDiv.style.marginTop = "10px";
 
-    const hiddenGeom = document.createElement('input');
-    hiddenGeom.type = 'hidden';
+    const hiddenGeom = document.createElement("input");
+    hiddenGeom.type = "hidden";
     hiddenGeom.name = column.column_name;
-    hiddenGeom.value = '';
+    hiddenGeom.value = "";
 
-    const validateBtn = document.createElement('button');
-    validateBtn.type = 'button';
-    validateBtn.textContent = 'Validoi HEREllä';
-    validateBtn.addEventListener('click', async () => {
+    const validateBtn = document.createElement("button");
+    validateBtn.type = "button";
+    // validateBtn.textContent = 'Validoi';
+    validateBtn.setAttribute("data-lang-key", "validate");
+    validateBtn.addEventListener("click", async () => {
         const addr = addrInput.value.trim();
         if (!addr) {
-            alert('Syötä osoite ennen validointia');
+            alert("Syötä osoite ennen validointia");
             return;
         }
         try {
-            const resp = await fetch('/api/geocode-address', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const resp = await fetch("/api/geocode-address", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ address: addr }),
             });
             if (!resp.ok) {
                 const errData = await resp.json();
-                alert('Geokoodaus epäonnistui: ' + (errData.message || 'Tuntematon virhe'));
+                alert(
+                    "Geokoodaus epäonnistui: " +
+                        (errData.message || "Tuntematon virhe")
+                );
                 return;
             }
             const suggestions = await resp.json();
             suggestionsDiv.replaceChildren();
             if (!Array.isArray(suggestions) || suggestions.length === 0) {
-                alert('Ei tuloksia');
+                alert("Ei tuloksia");
                 return;
             }
             suggestions.slice(0, 5).forEach((sug) => {
-                const sugDiv = document.createElement('div');
-                sugDiv.style.border = '1px solid var(--border_color)';
-                sugDiv.style.padding = '6px';
-                sugDiv.style.marginBottom = '4px';
-                sugDiv.style.cursor = 'pointer';
+                const sugDiv = document.createElement("div");
+                sugDiv.style.border = "1px solid var(--border_color)";
+                sugDiv.style.padding = "6px";
+                sugDiv.style.marginBottom = "4px";
+                sugDiv.style.cursor = "pointer";
                 sugDiv.textContent = `${sug.label || sug.title}`;
-                sugDiv.addEventListener('click', () => {
+                sugDiv.addEventListener("click", () => {
                     const wkt = `POINT(${sug.lon} ${sug.lat})`;
                     hiddenGeom.value = wkt;
                     childObjectState.data[column.column_name] = wkt;
 
                     // Täytetään muita kenttiä lapsitaulusta, jos sellaisia on
                     const fillIfPresent = (fieldName, val) => {
-                        const field = fieldset.querySelector(`[name="${fieldName}"]`);
+                        const field = fieldset.querySelector(
+                            `[name="${fieldName}"]`
+                        );
                         if (field) {
-                            field.value = val || '';
-                            childObjectState.data[fieldName] = val || '';
+                            field.value = val || "";
+                            childObjectState.data[fieldName] = val || "";
                         }
                     };
-                    fillIfPresent('title', sug.title);
-                    fillIfPresent('label', sug.label);
-                    fillIfPresent('here_id', sug.hereId);
-                    fillIfPresent('result_type', sug.resultType);
-                    fillIfPresent('country_code', sug.countryCode);
-                    fillIfPresent('country_name', sug.countryName);
-                    fillIfPresent('state', sug.state);
-                    fillIfPresent('county', sug.county);
-                    fillIfPresent('city', sug.city);
-                    fillIfPresent('district', sug.district);
-                    fillIfPresent('street', sug.street);
-                    fillIfPresent('house_number', sug.houseNumber);
-                    fillIfPresent('postal_code', sug.postalCode);
+                    fillIfPresent("title", sug.title);
+                    fillIfPresent("label", sug.label);
+                    fillIfPresent("here_id", sug.hereId);
+                    fillIfPresent("result_type", sug.resultType);
+                    fillIfPresent("country_code", sug.countryCode);
+                    fillIfPresent("country_name", sug.countryName);
+                    fillIfPresent("state", sug.state);
+                    fillIfPresent("county", sug.county);
+                    fillIfPresent("city", sug.city);
+                    fillIfPresent("district", sug.district);
+                    fillIfPresent("street", sug.street);
+                    fillIfPresent("house_number", sug.houseNumber);
+                    fillIfPresent("postal_code", sug.postalCode);
 
-                    alert(`Valitsit: ${sug.label || sug.title}.\nKoordinaatit tallennettu!`);
+                    alert(
+                        `Valitsit: ${
+                            sug.label || sug.title
+                        }.\nKoordinaatit tallennettu!`
+                    );
                 });
                 suggestionsDiv.appendChild(sugDiv);
             });
         } catch (err) {
-            console.error('[CHILD] Geokoodausvirhe:', err);
-            alert('Geokoodausvirhe (tarkista konsoli).');
+            console.error("[CHILD] Geokoodausvirhe:", err);
+            alert("Geokoodausvirhe (tarkista konsoli).");
         }
     });
 
@@ -810,48 +975,64 @@ function buildChildGeometryField(fieldset, column, childObjectState) {
 /** Rakentaa monesta->moneen-lomakesektion */
 function buildManyToManySection(form, manyToManyInfos) {
     for (const info of manyToManyInfos) {
-        const fieldset = document.createElement('fieldset');
-        fieldset.style.marginTop = '20px';
-        const legend = document.createElement('legend');
+        const fieldset = document.createElement("fieldset");
+        fieldset.style.marginTop = "20px";
+        const legend = document.createElement("legend");
         legend.textContent = `Lisää monesta-moneen-liitos: ${info.third_table_name}`;
         fieldset.appendChild(legend);
 
         // Haetaan "kolmannen taulun" sarakkeet
         fetch(`/api/get-columns?table=${info.third_table_name}`)
-            .then(resp => {
+            .then((resp) => {
                 if (!resp.ok) throw new Error(`http error: ${resp.status}`);
                 return resp.json();
             })
-            .then(thirdTableColumns => {
-                const exclude_cols = ['id', 'created', 'updated', 'openai_embedding', 'creation_spec'];
-                const sanitizedThirdCols = thirdTableColumns.filter(tc => {
-                    if (exclude_cols.includes(tc.column_name.toLowerCase())) return false;
-                    if ((tc.column_default && tc.column_default.trim() !== '') ||
-                        (tc.is_identity && tc.is_identity.toLowerCase() === 'yes')) {
+            .then((thirdTableColumns) => {
+                const exclude_cols = [
+                    "id",
+                    "created",
+                    "updated",
+                    "openai_embedding",
+                    "creation_spec",
+                ];
+                const sanitizedThirdCols = thirdTableColumns.filter((tc) => {
+                    if (exclude_cols.includes(tc.column_name.toLowerCase()))
+                        return false;
+                    if (
+                        (tc.column_default &&
+                            tc.column_default.trim() !== "") ||
+                        (tc.is_identity &&
+                            tc.is_identity.toLowerCase() === "yes")
+                    ) {
                         return false;
                     }
                     return true;
                 });
 
                 // Valinta: olemassaoleva rivi / uusi rivi
-                const radioContainer = document.createElement('div');
-                radioContainer.style.display = 'flex';
-                radioContainer.style.gap = '1em';
+                const radioContainer = document.createElement("div");
+                radioContainer.style.display = "flex";
+                radioContainer.style.gap = "1em";
 
-                const existingRadio = document.createElement('input');
-                existingRadio.type = 'radio';
+                const existingRadio = document.createElement("input");
+                existingRadio.type = "radio";
                 existingRadio.name = `m2m_mode_${info.third_table_name}`;
-                existingRadio.value = 'existing';
+                existingRadio.value = "existing";
                 existingRadio.checked = true;
-                const existingRadioLabel = document.createElement('label');
-                existingRadioLabel.textContent = 'Valitse olemassaolevista';
+                const existingRadioLabel = document.createElement("label");
+                // existingRadioLabel.textContent = 'Valitse olemassaolevista';
+                existingRadioLabel.setAttribute(
+                    "data-lang-key",
+                    "choose_from_existing"
+                );
 
-                const newRadio = document.createElement('input');
-                newRadio.type = 'radio';
+                const newRadio = document.createElement("input");
+                newRadio.type = "radio";
                 newRadio.name = `m2m_mode_${info.third_table_name}`;
-                newRadio.value = 'new';
-                const newRadioLabel = document.createElement('label');
-                newRadioLabel.textContent = 'Luo kokonaan uusi rivi';
+                newRadio.value = "new";
+                const newRadioLabel = document.createElement("label");
+                // newRadioLabel.textContent = 'Luo kokonaan uusi rivi';
+                newRadioLabel.setAttribute("data-lang-key", "create_new_row");
 
                 radioContainer.appendChild(existingRadio);
                 radioContainer.appendChild(existingRadioLabel);
@@ -860,24 +1041,26 @@ function buildManyToManySection(form, manyToManyInfos) {
                 fieldset.appendChild(radioContainer);
 
                 // Dropdown + hidden input
-                const dropdown_container = document.createElement('div');
-                dropdown_container.style.marginTop = '1em';
+                const dropdown_container = document.createElement("div");
+                dropdown_container.style.marginTop = "1em";
 
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
                 hiddenInput.name = `_m2m_existing_${info.link_table_name}_${info.third_table_name}`;
                 dropdown_container.appendChild(hiddenInput);
 
                 // Haetaan kolmannen taulun data
                 fetchReferencedData(info.third_table_name)
-                    .then(thirdTableOptions => {
+                    .then((thirdTableOptions) => {
                         let mapped_options = [];
                         if (Array.isArray(thirdTableOptions)) {
-                            mapped_options = thirdTableOptions.map(opt => {
-                                const pk_column = Object.keys(opt).find(key => key !== 'display');
+                            mapped_options = thirdTableOptions.map((opt) => {
+                                const pk_column = Object.keys(opt).find(
+                                    (key) => key !== "display"
+                                );
                                 return {
                                     value: opt[pk_column],
-                                    label: `${opt[pk_column]} - ${opt['display']}`
+                                    label: `${opt[pk_column]} - ${opt["display"]}`,
                                 };
                             });
                         }
@@ -885,50 +1068,60 @@ function buildManyToManySection(form, manyToManyInfos) {
                             containerElement: dropdown_container,
                             options: mapped_options,
                             placeholder: `Valitse ${info.third_table_name}...`,
-                            searchPlaceholder: 'Hae...',
+                            searchPlaceholder: "Hae...",
                             showClearButton: true,
                             useSearch: true,
                             onChange: (val) => {
-                                hiddenInput.value = val || '';
-                            }
+                                hiddenInput.value = val || "";
+                            },
                         });
                     })
-                    .catch(err => console.error('virhe kolmannen taulun datan haussa:', err));
+                    .catch((err) =>
+                        console.error(
+                            "virhe kolmannen taulun datan haussa:",
+                            err
+                        )
+                    );
 
                 fieldset.appendChild(dropdown_container);
 
                 // Uuden rivin luontikentät
-                const newRowFieldset = document.createElement('div');
-                newRowFieldset.style.display = 'none';
+                const newRowFieldset = document.createElement("div");
+                newRowFieldset.style.display = "none";
 
                 const newM2MObjectState = {
                     tableName: info.third_table_name,
-                    data: {}
+                    data: {},
                 };
 
                 for (const ccol of sanitizedThirdCols) {
-                    const label = document.createElement('label');
-                    label.textContent = ccol.column_name;
-                    label.style.display = 'block';
+                    const label = document.createElement("label");
+                    // label.textContent = ccol.column_name;
+                    label.setAttribute("data-lang-key", ccol.column_name);
+                    label.style.display = "block";
 
                     let inputElem;
                     const data_type_lower = ccol.data_type.toLowerCase();
-                    if (data_type_lower.includes('text') || data_type_lower.includes('char')) {
-                        inputElem = document.createElement('textarea');
+                    if (
+                        data_type_lower.includes("text") ||
+                        data_type_lower.includes("char")
+                    ) {
+                        inputElem = document.createElement("textarea");
                         inputElem.rows = 1;
-                        inputElem.classList.add('auto_resize_textarea');
+                        inputElem.classList.add("auto_resize_textarea");
                     } else {
-                        inputElem = document.createElement('input');
+                        inputElem = document.createElement("input");
                         inputElem.type = get_input_type(ccol.data_type);
                     }
                     inputElem.name = ccol.column_name;
-                    inputElem.style.border = '1px solid var(--border_color)';
-                    inputElem.style.borderRadius = '4px';
-                    inputElem.style.display = 'block';
-                    inputElem.style.marginBottom = '6px';
+                    inputElem.style.border = "1px solid var(--border_color)";
+                    inputElem.style.borderRadius = "4px";
+                    inputElem.style.display = "block";
+                    inputElem.style.marginBottom = "6px";
 
-                    inputElem.addEventListener('input', (e) => {
-                        newM2MObjectState.data[ccol.column_name] = e.target.value;
+                    inputElem.addEventListener("input", (e) => {
+                        newM2MObjectState.data[ccol.column_name] =
+                            e.target.value;
                     });
 
                     newRowFieldset.appendChild(label);
@@ -938,34 +1131,37 @@ function buildManyToManySection(form, manyToManyInfos) {
                 fieldset.appendChild(newRowFieldset);
 
                 // Radiovaihdot
-                existingRadio.addEventListener('change', () => {
+                existingRadio.addEventListener("change", () => {
                     if (existingRadio.checked) {
-                        dropdown_container.style.display = 'block';
-                        newRowFieldset.style.display = 'none';
+                        dropdown_container.style.display = "block";
+                        newRowFieldset.style.display = "none";
                     }
                 });
-                newRadio.addEventListener('change', () => {
+                newRadio.addEventListener("change", () => {
                     if (newRadio.checked) {
-                        dropdown_container.style.display = 'none';
-                        newRowFieldset.style.display = 'block';
+                        dropdown_container.style.display = "none";
+                        newRowFieldset.style.display = "block";
                     }
                 });
 
                 // Muistetaan globaaliin tilaan
-                modal_form_state['_manyToManyRows'].push({
+                modal_form_state["_manyToManyRows"].push({
                     linkTableName: info.link_table_name,
                     mainTableFkColumn: info.mainTableFkColumn, // huom. varmista että sama parametri kuin backendi odottaa
                     thirdTableName: info.third_table_name,
                     thirdTableFkColumn: info.third_table_fk_column,
                     existingHiddenInput: hiddenInput,
                     newRowState: newM2MObjectState,
-                    modeRadioName: `m2m_mode_${info.third_table_name}`
+                    modeRadioName: `m2m_mode_${info.third_table_name}`,
                 });
 
                 form.appendChild(fieldset);
             })
-            .catch(err => {
-                console.error('virhe kolmannen taulun sarakkeiden haussa:', err);
+            .catch((err) => {
+                console.error(
+                    "virhe kolmannen taulun sarakkeiden haussa:",
+                    err
+                );
             });
     }
 }

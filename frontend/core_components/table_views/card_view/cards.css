@@ -143,7 +143,7 @@
     padding: 0.5rem;
     grid-template-rows: auto auto auto auto auto auto;
     grid-template-areas:
-        "image header creation_spec"
+        "image header user_name_ln"
         "image description description"
         "image keywords keywords"
         "image details details"

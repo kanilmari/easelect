@@ -208,7 +208,8 @@ export async function open_column_management_modal(table_name) {
 
     const deleteTableButton = document.createElement('button');
     deleteTableButton.type = 'button';
-    deleteTableButton.textContent = 'Poista koko taulu';
+    // instead of text content, add the data attribute data-lang-key with: deleteTableButton.textContent = 'Poista koko taulu';
+    deleteTableButton.dataset.langKey = 'delete_the_whole_table';
     deleteTableButton.style.backgroundColor = 'red';
     deleteTableButton.style.color = 'white';
     deleteTableButton.addEventListener('click', async () => {

@@ -60,7 +60,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 2) Lisätään salasanatieto restricted.user_data-tauluun (rajatulla yhteydellä)
-		_, err = backend.DbRestricted.Exec(`
+		_, err = backend.DbConfidential.Exec(`
             INSERT INTO restricted.user_data (id, password, email)
             VALUES ($1, $2, $3)
         `, newUserID, string(hashed_password), email)

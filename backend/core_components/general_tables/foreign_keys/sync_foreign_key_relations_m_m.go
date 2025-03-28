@@ -29,7 +29,7 @@ type mmConstraint struct {
 //  2. exactly 2 FKs that match the entire primary key
 //  3. max 6 columns total in the bridging table
 func SyncManyToManyFKConstraints(db *sql.DB) error {
-	log.Println("[INFO] Synchronizing many-to-many constraints...")
+	// log.Println("[INFO] Synchronizing many-to-many constraints...")
 
 	// 1) Find all tables that have exactly two foreign keys referencing two distinct tables.
 	query := `
@@ -115,7 +115,8 @@ func SyncManyToManyFKConstraints(db *sql.DB) error {
 			return fmt.Errorf("error checking bridging table %s: %w", bridgingTable, err2)
 		}
 		if !qualified {
-			log.Printf("[INFO] Skipping table %s. Reason: %s", bridgingTable, reason)
+			_ = reason
+			// log.Printf("[INFO] Skipping table %s. Reason: %s", bridgingTable, reason)
 			continue
 		}
 

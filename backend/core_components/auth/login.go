@@ -135,7 +135,7 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var hashedPassword string
-	err = backend.DbRestricted.QueryRow(`
+	err = backend.DbConfidential.QueryRow(`
         SELECT password
           FROM restricted.user_data
          WHERE id = $1
