@@ -1,7 +1,7 @@
 // navigation.js
 
 import { refreshTableUnified } from '../general_tables/gt_1_row_crud/gt_1_2_row_read/table_refresh_collector.js';
-import { custom_views } from '../admin_tools/custom_views.js';
+import { custom_views } from './custom_views.js';
 import { applyViewStyling } from '../table_views/draw_view_selector_buttons.js';
 
 export async function handle_table_selected_event(event) {
@@ -67,8 +67,12 @@ export function create_navigation_buttons(custom_views) {
             const content = this.nextElementSibling;
             if (content.style.maxHeight) {
                 content.style.maxHeight = null;
+                content.style.paddingBottom = '0px';
             } else {
-                content.style.maxHeight = content.scrollHeight + 'px';
+                // Asetetaan padding-bottom, jotta suljettaessa ei jää tyhjää tilaa
+                let paddingBottom = 5;
+                content.style.maxHeight = content.scrollHeight + paddingBottom + 'px';
+                content.style.paddingBottom = paddingBottom + 'px';
             }
         });
     }

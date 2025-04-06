@@ -277,6 +277,8 @@ export function create_filter_bar(table_name, columns, data_types, current_view)
         global_search_input.type = "text";
         global_search_input.placeholder = "Hae jotain...";
         global_search_input.id = `${table_name}_global_search_input`;
+        //classlist add
+        global_search_input.classList.add("global-search-input");
 
         // Luetaan unified-tilasta
         const currentState = getUnifiedTableState(table_name);

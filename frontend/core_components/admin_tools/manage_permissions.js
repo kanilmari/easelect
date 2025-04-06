@@ -7,7 +7,7 @@ export async function load_permissions() {
     return loadManagementView('permissions_container', generate_permissions_form);
 }
 
-async function generate_permissions_form(permissions_container) {
+export async function generate_permissions_form(permissions_container) {
     // Haetaan erikseen taululliset ja tauluttomat funktiot + käyttäjäryhmät
     const [
         table_functions,

@@ -15,6 +15,7 @@ export function createAddRowButton(table_name) {
     button.setAttribute('data-lang-key', 'add_row_' + table_name);
     button.setAttribute('data-lang-key-fallback', 'add_row');
     button.classList.add('add_row_button');
+    button.classList.add('button');
     button.style.backgroundColor = 'var(--button_bg_color)';
     button.style.color = 'var(--button_text_color)';
     button.addEventListener('mouseenter', () => {
@@ -36,6 +37,7 @@ export function createAddRowButton(table_name) {
 export function createDeleteSelectedButton(table_name, current_view) {
     const button = document.createElement('button');
     button.classList.add('delete_selected_button');
+    button.classList.add('button');
     button.style.backgroundColor = 'var(--button_bg_color)';
     button.style.color = 'var(--button_text_color)';
     button.addEventListener('mouseenter', () => {

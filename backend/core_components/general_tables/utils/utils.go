@@ -100,7 +100,7 @@ func getReferencedTableNameColumn(tableName string) (string, error) {
 	}
 
 	// Vanha tapa: Etsitään sarake, jonka nimi sisältää avainsanoja
-	nameIndicators := []string{"name", "title", "username", "description", "label", "table_name"}
+	nameIndicators := []string{"name", "title", "username", "header"}
 
 	for _, indicator := range nameIndicators {
 		for _, col := range possibleNameColumns {

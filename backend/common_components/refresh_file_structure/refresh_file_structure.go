@@ -375,7 +375,7 @@ func create_file_structure_table_if_not_exists() error {
 		return err
 	}
 
-	// Lisätään openai_embedding -sarake pgvectorgo-tyyppisenä (1536) mikäli sitä ei ole
+	// Lisätään openai_embedding -sarake pgvectorgo-tyyppisenä mikäli sitä ei ole
 	_, err = backend.Db.Exec(`
 		ALTER TABLE file_structure
 		ADD COLUMN IF NOT EXISTS openai_embedding vector(1536)

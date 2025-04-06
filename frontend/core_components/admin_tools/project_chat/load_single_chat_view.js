@@ -14,7 +14,7 @@ export function load_single_chat_view() {
   // ja kutsu generate_single_chat_content suoraan.
 }
 
-async function generate_single_chat_content(container) {
+export async function generate_single_chat_view(container) {
   // Tyhjennetään container
   container.innerHTML = '';
 

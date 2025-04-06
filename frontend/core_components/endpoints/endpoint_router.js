@@ -10,7 +10,7 @@ const endpoint_map = {
     addForeignKey: '/add_foreign_key',
     deleteForeignKey: '/delete_foreign_key',
     fetchDynamicChildren: '/api/fetch-dynamic-children',
-    fetchAdminMode: '/api/admin-mode',
+    fetchAuthModes: '/api/auth-modes',
 };
 
 export async function endpoint_router(route_name, { method = 'GET', body_data = null } = {}) {

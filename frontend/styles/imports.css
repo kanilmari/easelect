@@ -1,4 +1,5 @@
 @import url("./variables.css");
+@import url("./base.css");
 
 @import url("../core_components/table_views/card_view/cards_big.css");
 
@@ -37,7 +38,7 @@
 
 
 
-@import url("./base.css");
+
 
 @import url("../common_components/modal/modals.css");
 

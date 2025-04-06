@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	openai "easelect/backend/common_components/ai_features"
 	"easelect/backend/common_components/refresh_file_structure"
@@ -30,6 +31,8 @@ import (
 	lang "easelect/backend/core_components/lang"
 	"easelect/backend/core_components/middlewares"
 	e_sessions "easelect/backend/core_components/sessions"
+
+	"github.com/google/uuid"
 )
 
 // localFrontendDir on polku staattisiin tiedostoihin (esim. "./frontend")
@@ -51,6 +54,7 @@ var routeDefinitions []RouteDefinition
 var registeredFunctions = make(map[string]bool)
 
 func tablesHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("tablesHandler: käyttäjä pyysi URL: %s", r.URL.String())
 	http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
 }
 
@@ -78,7 +82,8 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/", rootHandler, "router.rootHandler")
 	functionRegisterHandler("/login", auth.LoginHandler, "auth.LoginHandler")
 	functionRegisterHandler("/logout", auth.LogoutHandler, "auth.LogoutHandler")
-	functionRegisterHandler("/api/admin-mode", auth.GetAdminModeHandler, "auth.GetAdminModeHandler")
+	functionRegisterHandler("/api/reset-session", e_sessions.ResetSessionHandler, "e_sessions.ResetSessionHandler")
+	functionRegisterHandler("/api/auth-modes", auth.GetAuthModesHandler, "auth.GetAuthModesHandler")
 	functionRegisterHandler("/register_ndYOyXV0INOK3F", auth.RegisterHandler, "auth.RegisterHandler")
 	functionRegisterHandler("/api/update-folder", table_folders.HandleUpdateFolder, "table_folders.HandleUpdateFolder")
 
@@ -103,6 +108,9 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/api/get-many-to-many", gt_1_row_create.GetManyToManyTablesHandlerWrapper, "gt_1_row_create.GetManyToManyTablesHandlerWrapper")
 	functionRegisterHandler("/referenced-data", gt_1_row_create.GetReferencedTableData, "gt_1_row_create.GetReferencedTableData")
 	functionRegisterHandler("/api/add-row-multipart", gt_1_row_create.AddRowMultipartHandlerWrapper, "gt_1_row_create.AddRowMultipartHandlerWrapper")
+	//get-add-row-metadata
+	functionRegisterHandler("/api/get-add-row-metadata", gt_1_row_create.GetAddRowMetadataHandlerWrapper, "gt_1_row_create.GetAddRowMetadataHandlerWrapper")
+
 	functionRegisterHandler("/api/geocode-address", gt_1_row_create.GeocodeAddressHandler, "gt_1_row_create.GeocodeAddressHandler")
 	// --------------------------------------------------------------
 
@@ -158,13 +166,13 @@ func ServeMedia(w http.ResponseWriter, r *http.Request) {
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	// Jos pyyntö on favicon, palvellaan se heti
+	// Jos pyyntö on favicon, palvellaan se suoraan
 	if r.URL.Path == "/favicon.ico" {
 		http.ServeFile(w, r, filepath.Join(localFrontendDir, "favicon.ico"))
 		return
 	}
 
-	// Salli suoraan JS, CSS, PNG, yms. ilman kirjautumista
+	// Salli suoraan JS, CSS, PNG, JPG, ... ilman kirjautumista
 	if strings.HasSuffix(r.URL.Path, ".js") ||
 		strings.HasSuffix(r.URL.Path, ".css") ||
 		strings.HasSuffix(r.URL.Path, ".png") ||
@@ -174,28 +182,92 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Muut pyynnöt tarkistetaan, onko kirjautunut
-	store := e_sessions.GetStore()
-	session, err := store.Get(r, "session")
+	// Tarkistetaan asetuksista
+	loginToBrowse, err := middlewares.CheckLoginToBrowse()
 	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		// oletuksena pakotetaan kirjautuminen
+		loginToBrowse = true
+	}
+
+	// Haetaan sessio
+	store := e_sessions.GetStore()
+	session, sessErr := store.Get(r, "session")
+	if sessErr != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", sessErr.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	_, ok := session.Values["user_id"]
-	if !ok {
-		// Jos ei kirjautunut -> login
+	_, onkoKayttaja := session.Values["user_id"]
+	if !onkoKayttaja {
+		// ei user_id:tä
+		if loginToBrowse {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		} else {
+			session.Values["user_id"] = 1
+		}
+	}
+
+	_, castOk := session.Values["user_id"].(int)
+	if !castOk {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	// Kirjautunut -> jos pyyntö on "/", palvellaan index.html
+	// Device_id ja fingerprint varmistetaan,
+	// jos login_to_browse on false (ja ollaan siis 'guest'-tilassa).
+	// Muussa tapauksessa nämä kannattaa hoitaa omassa middleware-funktiossa, jos haluat.
+	if !loginToBrowse {
+		// Varmista device_id
+		cDev, cDevErr := r.Cookie("device_id")
+		var deviceID string
+		if cDevErr != nil || cDev.Value == "" {
+			deviceID = uuid.NewString()
+		} else {
+			deviceID = cDev.Value
+		}
+		session.Values["device_id"] = deviceID
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "device_id",
+			Value:    deviceID,
+			Path:     "/",
+			HttpOnly: false,
+			Expires:  time.Now().Add(7 * 24 * time.Hour),
+		})
+
+		// Varmista fingerprint
+		cF, cFErr := r.Cookie("fingerprint")
+		var fingerprint string
+		if cFErr != nil || cF.Value == "" {
+			fingerprint = uuid.NewString()
+		} else {
+			fingerprint = cF.Value
+		}
+		session.Values["fingerprint_hash"] = fingerprint
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "fingerprint",
+			Value:    fingerprint,
+			Path:     "/",
+			HttpOnly: false,
+			Expires:  time.Now().Add(7 * 24 * time.Hour),
+		})
+
+		if errSave := session.Save(r, w); errSave != nil {
+			log.Printf("\033[31mvirhe: session tallennus epäonnistui: %s\033[0m\n", errSave.Error())
+		}
+	}
+
+	// Palvellaan index.html, jos polku on "/"
 	if r.URL.Path == "/" {
 		http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
 		return
 	}
 
-	// Muut polut -> staattiset tiedostot
+	// Muille poluille staattinen tiedostopalvelu
 	fs := http.FileServer(http.Dir(localFrontendDir))
 	fs.ServeHTTP(w, r)
 }
@@ -221,66 +293,17 @@ func functionRegisterHandler(urlPattern string, handlerFunc http.HandlerFunc, ha
 	})
 }
 
-// RegisterAllRoutesAndUpdateFunctions tekee varsinaiset http.HandleFunc-kytkennät
-// func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
-// 	// Reitit, jotka eivät vaadi kirjautumista EIKÄ oikeustarkistusta
-// 	noAccessControlNeeded := map[string]bool{
-// 		"router.faviconHandler": true,
-// 		"router.rootHandler":    true,
-// 		"auth.LoginHandler":     true,
-// 		"router.handleFrontend": true,
-// 		"auth.LogoutHandler":    true,
-// 	}
-
-// 	// Reitit, jotka vaativat kirjautumisen,
-// 	// mutta EI function/table-level -tarkistusta
-// 	loginOnlyNeeded := map[string]bool{
-// 		"auth.RegisterHandler": true,
-// 	}
-
-// 	for _, rd := range routeDefinitions {
-// 		var finalHandler http.HandlerFunc
-
-// 		switch {
-// 		case noAccessControlNeeded[rd.HandlerName]:
-// 			// Pelkkä lokitus
-// 			finalHandler = middlewares.WithUserLogging(rd.HandlerFunc)
-
-// 		case loginOnlyNeeded[rd.HandlerName]:
-// 			// Käyttäjän pitää olla kirjautuneena,
-// 			// haluamme myös sormenjälkitarkistuksen
-// 			finalHandler = middlewares.WithUserLogging(
-// 				middlewares.WithLoginCheck(
-// 					middlewares.WithFingerprintCheck(
-// 						middlewares.WithDeviceIDCheck(rd.HandlerFunc),
-// 					),
-// 				),
-// 			)
-
-// 		default:
-// 			// Täysi AccessControl + laitetarkistus + sormenjälkitarkistukset + lokitus
-// 			finalHandler = middlewares.WithUserLogging(
-// 				middlewares.WithAccessControl(
-// 					rd.HandlerName,
-// 					middlewares.WithFingerprintCheck(
-// 						middlewares.WithDeviceIDCheck(rd.HandlerFunc),
-// 					),
-// 				),
-// 			)
-// 		}
-
-// 		http.HandleFunc(rd.UrlPattern, finalHandler)
-// 		registeredFunctions[rd.HandlerName] = true
-// 	}
-
 func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 	// Reitit, jotka eivät vaadi kirjautumista EIKÄ oikeustarkistusta
 	noAccessControlNeeded := map[string]bool{
-		"router.faviconHandler": true,
-		"router.rootHandler":    true,
-		"auth.LoginHandler":     true,
-		"router.handleFrontend": true,
-		"auth.LogoutHandler":    true,
+		"router.faviconHandler":          true,
+		"router.rootHandler":             true,
+		"auth.LoginHandler":              true,
+		"router.handleFrontend":          true,
+		"auth.LogoutHandler":             true,
+		"e_sessions.ResetSessionHandler": true,
+		"lang.GetTranslationsHandler":    true,
+		"devtools.SessionHandler":        true,
 	}
 
 	// Reitit, jotka vaativat kirjautumisen,

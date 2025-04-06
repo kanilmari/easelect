@@ -94,11 +94,6 @@
     cursor: not-allowed;
 }
 
-#navbar h3 {
-    margin-top: 10px;
-    margin-bottom: 5px;
-}
-
 #navbar * {
     max-width: calc(var(--navbar_width) - 2*var(--navbar_padding) - 1px);
 }
@@ -125,7 +120,7 @@
 /* Style the collapsible content */
 .content {
     display: grid;
-    gap: 4px;
+    gap: 5px;
     padding: 0 10px;
     max-height: 0;
     overflow: hidden;
@@ -259,10 +254,17 @@
     cursor: pointer;
     height: 36px;
     width: 36px;
+    transition: height 0.3s, width 0.3s;
 }
 
 .inset {
-    box-shadow: inset 5px 5px 5px 0px rgba(0 0 0 / 30%);
+    box-shadow: inset 5px 5px 5px 0px rgb(0 0 0 / 30%);
+}
+
+#menuButton:not(.inset) {
+    box-shadow: 3px 3px 8px 0px rgb(0 0 0 / 30%);
+    height: 24px !important;
+    width: 24px !important;
 }
 
 #menuButton:hover {

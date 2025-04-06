@@ -31,7 +31,7 @@ export async function fetchTableData({
     const params = new URLSearchParams();
 
     // Asetetaan pakollinen "table"-parametri:
-    params.append('table', table_name);
+    params.append('list', table_name);
 
     // Käytetään offset vain jos se on suurempi kuin nolla
     params.append('offset', offset);

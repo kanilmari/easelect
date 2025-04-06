@@ -36,21 +36,36 @@ func GetAddRowColumnsHandler(w http.ResponseWriter, r *http.Request, tableName s
 		return
 	}
 
-	// Sarakkeet, jotka jätetään pois lomakkeelta
+	// Sarakkeet, jotka jätetään pois lomakkeelta (tarkka nimivastaavuus)
 	excludeColumns := map[string]bool{
 		"id":               true,
 		"created":          true,
 		"updated":          true,
 		"openai_embedding": true,
 		"creation_spec":    true,
+		"admin_reviewed":   true,
+		"admin_approved":   true,
 	}
+
+	// Sarakeprefiksit, joiden perusteella sarakkeet jätetään pois
+	prefixExcludes := []string{"cached_"}
 
 	var columnsForFrontend []models.AddRowColumnInfo
 
+ColLoop:
 	for _, col := range columns {
+		colNameLower := strings.ToLower(col.ColumnName)
+
 		// 1) Onko sarake exclude-listalla?
-		if excludeColumns[strings.ToLower(col.ColumnName)] {
+		if excludeColumns[colNameLower] {
 			continue
+		}
+
+		// 1b) Onko sarakeprefiksien listoilla?
+		for _, prefix := range prefixExcludes {
+			if strings.HasPrefix(colNameLower, prefix) {
+				continue ColLoop
+			}
 		}
 
 		// 2) Onko sarake identity tai onko sillä oletus?
@@ -225,4 +240,144 @@ func GetAddRowColumnsOrdered(tableName string) ([]models.ColumnInfo, error) {
 	}
 
 	return columns, nil
+}
+
+///
+/// New unified handler for AddRowMetadata
+///
+
+func GetAddRowMetadataHandlerWrapper(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("table")
+	if tableName == "" {
+		http.Error(w, "missing 'table' query parameter", http.StatusBadRequest)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "only GET requests are allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := GetAddRowMetadataHandler(w, tableName); err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error()) // punainen virhe
+		http.Error(w, "virhe rivinlisäysmetadatan haussa", http.StatusInternalServerError)
+	}
+}
+
+func GetAddRowMetadataHandler(w http.ResponseWriter, tableName string) error {
+	schemaName := "public"
+
+	// 1) Saraketiedot
+	columns, err := getAddRowColumnsWithTypes(tableName, schemaName)
+	if err != nil {
+		return err
+	}
+
+	// 2) 1->m-suhteet
+	oneToMany, err := getOneToManyRelations(tableName)
+	if err != nil {
+		return err
+	}
+
+	// 3) m->m-suhteet
+	manyToMany, err := getManyToMany(tableName)
+	if err != nil {
+		return err
+	}
+
+	// Kääritään kaikki yhteen rakenteeseen
+	payload := map[string]interface{}{
+		"columns":            columns,
+		"oneToManyRelations": oneToMany,
+		"manyToManyInfos":    manyToMany,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(payload)
+}
+
+// getOneToManyRelations lukee foreign_key_relations_1_m -taulusta, kuten
+// GetOneToManyRelationsHandler, mutta palauttaa arvot suoraan koodissa.
+func getOneToManyRelations(mainTableName string) ([]OneToManyRelation, error) {
+	query := `
+        SELECT
+            source_table_name,
+            source_column_name,
+            target_table_name,
+            target_column_name,
+            insert_new_target_with_source,
+            insert_new_source_with_target,
+            source_insert_specs,
+            target_insert_specs,
+            reference_direction
+        FROM foreign_key_relations_1_m
+        WHERE target_table_name = $1
+    `
+	rows, err := backend.Db.Query(query, mainTableName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []OneToManyRelation
+	for rows.Next() {
+		var rel OneToManyRelation
+		if err := rows.Scan(
+			&rel.SourceTableName,
+			&rel.SourceColumnName,
+			&rel.TargetTableName,
+			&rel.TargetColumnName,
+			&rel.InsertNewTargetWithSource,
+			&rel.InsertNewSourceWithTarget,
+			&rel.SourceInsertSpecs,
+			&rel.TargetInsertSpecs,
+			&rel.ReferenceDirection,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, rel)
+	}
+	return results, nil
+}
+
+// getManyToMany lukee foreign_key_relations_m_m -taulua, kuten
+// GetManyToManyTablesHandler, mutta palauttaa tiedot suoraan.
+func getManyToMany(mainTableName string) ([]ManyToManyInfo, error) {
+	query := `
+        SELECT
+            bridging_table_name,
+            CASE 
+                WHEN table_a_name = $1 THEN bridging_col_a 
+                ELSE bridging_col_b 
+            END AS main_table_fk_column,
+            CASE 
+                WHEN table_a_name = $1 THEN table_b_name 
+                ELSE table_a_name 
+            END AS third_table_name,
+            CASE 
+                WHEN table_a_name = $1 THEN table_b_column 
+                ELSE table_a_column 
+            END AS third_table_fk_column
+        FROM foreign_key_relations_m_m
+        WHERE (table_a_name = $1 OR table_b_name = $1);
+    `
+	rows, err := backend.Db.Query(query, mainTableName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []ManyToManyInfo
+	for rows.Next() {
+		var info ManyToManyInfo
+		if err := rows.Scan(
+			&info.LinkTableName,
+			&info.MainTableFkColumn,
+			&info.ThirdTableName,
+			&info.ThirdTableFkColumn,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, info)
+	}
+	return results, nil
 }

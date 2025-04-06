@@ -129,3 +129,16 @@
     z-index: 10; /* Varmistaa että chat on sumennetun sisällön päällä */
     position: relative;
 }
+
+.global-search-input {
+    border-radius: 7px;
+    width: 100%;
+    border: 1px solid var(--border_color);
+    padding: 12px;
+    height: unset;
+}
+
+/* .global-search-input selected for writing */
+.global-search-input:focus {
+    outline: 2px solid var(--border_color);
+}

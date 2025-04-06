@@ -52,6 +52,10 @@ button {
     cursor: pointer;
     font-size: 1rem;
     transition: background-color 0.3s, color 0.3s, transform 0.1s;
+    
+}
+
+.button {
     min-height: 36px;
 }
 

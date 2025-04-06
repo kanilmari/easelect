@@ -12,7 +12,7 @@
     --bg_color_2: #f0f0f0;
     --bg_color_text: var(--extreme_bg);
     --text_color: #000;
-    --border_color: #888;
+    --border_color: #bbb;
     --table_border_color: #ccc;
     --input_bg_color: #fff;
 
@@ -63,7 +63,7 @@
         --bg_color_2: #0a0a0a;
         --bg_color_text: var(--extreme_bg);
         --text_color: #fff;
-        --border_color: #888;
+        --border_color: #333;
         --table_border_color: #444;
         --input_bg_color: #111;
 
@@ -112,7 +112,7 @@ body.light-mode {
     --bg_color_2: #f0f0f0;
     --bg_color_text: var(--extreme_bg);
     --text_color: #000;
-    --border_color: #888;
+    --border_color: #bbb;
     --table_border_color: #ccc;
     --input_bg_color: #fff;
 
@@ -157,7 +157,7 @@ body.dark-mode {
     --bg_color_2: #0a0a0a;
     --bg_color_text: var(--extreme_bg);
     --text_color: #fff;
-    --border_color: #888;
+    --border_color: #333;
     --table_border_color: #444;
     --input_bg_color: #111;
 

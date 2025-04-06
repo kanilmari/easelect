@@ -24,7 +24,12 @@ export function createGenericViewSelector(
     container.classList.add("view-selector-buttons", ...extraClasses);
 
     buttonList.forEach(({ label, viewKey }) => {
-        const btn = createGenericViewButton(label, viewKey, tableName, currentView);
+        const btn = createGenericViewButton(
+            label,
+            viewKey,
+            tableName,
+            currentView
+        );
         container.appendChild(btn);
     });
 
@@ -41,6 +46,7 @@ function createGenericViewButton(label, viewKey, tableName, currentView) {
 
     // Anna kaikille sama perusluokka, halutessa voi myös lisätä muita
     btn.classList.add("unified-view-button");
+    btn.classList.add("button");
 
     // Korostus, jos tämä on valittu näkymä
     if (viewKey === currentView) {
@@ -91,23 +97,47 @@ export function applyViewStyling(table_name) {
     }
 
     const storedViewKey = localStorage.getItem(`${table_name}_view`);
-    if (storedViewKey === "card") {
+
+    // Asetetaan transitionit: voit laajentaa näitä jos haluat animointia myös muihin ominaisuuksiin
+    bodyContent.style.transition =
+        "max-width 0.3s ease-in-out";
+
+    if (!["table", "normal", "transposed"].includes(storedViewKey)) {
         bodyContent.style.maxWidth = "2560px";
-        bodyContent.style.margin = "auto";
-        bodyWrapper.style.justifyContent = "center";
-        const navTabs = document.querySelector(".navtabs");
-        if (navTabs) {
-            navTabs.style.right = "";
-        }
+
+        // const navTabs = document.querySelector(".navtabs");
+        // if (navTabs) {
+        //     navTabs.style.right = "";
+        // }
     } else {
-        bodyContent.style.maxWidth = "unset";
-        bodyWrapper.style.display = "unset";
-        bodyWrapper.style.justifyContent = "unset";
-        const navTabs = document.querySelector(".navtabs");
-        if (navTabs) {
-            navTabs.style.right = "-15px";
-        }
+        // Käytetään "100%" korvaamaan "unset", jotta animaatio toimii
+        bodyContent.style.maxWidth = "100%";
+        // bodyContent.style.maxWidth = "max-content";
+        // bodyWrapper.style.display = "";
+
+        // const navTabs = document.querySelector(".navtabs");
+        // if (navTabs) {
+        //     navTabs.style.right = "-15px";
+        // }
     }
+    // const storedViewKey = localStorage.getItem(`${table_name}_view`);
+    // if (storedViewKey === "card") {
+    //     bodyContent.style.maxWidth = "2560px";
+    //     bodyContent.style.margin = "auto";
+    //     bodyWrapper.style.justifyContent = "center";
+    //     const navTabs = document.querySelector(".navtabs");
+    //     if (navTabs) {
+    //         navTabs.style.right = "";
+    //     }
+    // } else {
+    //     bodyContent.style.maxWidth = "unset";
+    //     bodyWrapper.style.display = "unset";
+    //     bodyWrapper.style.justifyContent = "unset";
+    //     const navTabs = document.querySelector(".navtabs");
+    //     if (navTabs) {
+    //         navTabs.style.right = "-15px";
+    //     }
+    // }
 
     updateTabPathsForView(table_name);
 }

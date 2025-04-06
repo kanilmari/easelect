@@ -16,13 +16,13 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Muutetaan session.Values (map[interface{}]interface{}) -> map[string]interface{}
-	konvertoituData := convertMapInterfaceKeysToString(session.Values)
+	convertedData := convertMapInterfaceKeysToString(session.Values)
 
 	// tulostetaan palvelimen logiin
-	fmt.Printf("\033[32mSession data: %v\033[0m\n", konvertoituData)
+	// fmt.Printf("\033[32mSession data: %v\033[0m\n", convertedData)
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(konvertoituData); err != nil {
+	if err := json.NewEncoder(w).Encode(convertedData); err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
 	}
 }

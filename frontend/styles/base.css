@@ -15,14 +15,25 @@
   word-break: normal;
 }
 
+body {
+    background-color: color-mix(in srgb, var(--bg_color) 50%, var(--extreme_bg) 50%);
+    overflow: hidden;
+}
+
+.body_wrapper {
+    overflow: hidden;
+}
+
 /* Yleiset perustyylit */
 .body_content {
     height: 100vh;
-    /* display: grid; */
     background-color: var(--bg_color);
     color: var(--text_color);
-    /* grid-template-columns: auto 1fr; */
-    margin: 0;
+    margin: auto;
+    position: relative;
+    grid-column: 2;
+    /* box-shadow: -1px 0 0 0 var(--border_color); */
+    max-width: 2560px;
 }
 
 #tabs_container {
@@ -43,6 +54,10 @@
 input {
     /* width: 100%; */
     box-sizing: border-box;
+}
+
+input:focus {
+    outline: 2px solid var(--border_color) !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -215,7 +230,7 @@ textarea {
 
 /* Perus input- ja textarea-tyylit */
 .input-group input,
-.input-group textarea {
+.input-group textarea, .input-group select {
     width: 100%;
     padding: 10px;
     border: 1px solid var(--border_color);
@@ -310,33 +325,6 @@ summary {
     height: 100vh;
 }
 
-body {
-    /* center content horizontally: */
-
-    background-color: color-mix(in srgb, var(--bg_color) 50%, var(--extreme_bg) 50%);
-}
-
-.body_wrapper {
-    /* display: grid; */
-    /* grid-template-columns: 1fr minmax(0, 2560px) 1fr; */
-
-    overflow: hidden;
-}
-
-.body_content {
-    position: relative;
-    grid-column: 2;
-    /* box shadow ordering explained:
-       1st value: horizontal offset
-       2nd value: vertical offset
-       3rd value: blur radius
-       4th value: spread radius
-       5th value: color
-       6th value: inset (optional)
-    */
-    box-shadow: -1px 0 0 0 var(--border_color);
-    /* padding: 1rem; */
-}
 
 .input-group {
     display: grid;

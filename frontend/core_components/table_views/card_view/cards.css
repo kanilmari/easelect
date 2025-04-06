@@ -6,7 +6,7 @@
     gap: 4rem;
 
     /* grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); */
-
+    justify-content: center;
 }
 
 .card {
@@ -18,6 +18,7 @@
     position: relative;
     box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
     /* background: linear-gradient(135deg, var(--bg_color), var(--bg_color_2)); */
+    max-width: 1368px;
 }
 
 .card_checkbox {
@@ -75,7 +76,7 @@
 /* Korttikontti käyttää grid-asettelua */
 .card_container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(1000px, 1fr));
+    /* grid-template-columns: repeat(auto-fill, minmax(1000px, 1fr)); */
     gap: 40px;
     padding: 40px;
 }
@@ -143,36 +144,12 @@
     padding: 0.5rem;
     grid-template-rows: auto auto auto auto auto auto;
     grid-template-areas:
-        "image header user_name_ln"
+        "image header username"
         "image description description"
         "image keywords keywords"
         "image details details"
         "thumbnails details details"
         "footer footer footer";
-}
-
-.article_compact_content {
-    display: grid;
-    gap: 1.5rem;
-    padding: 0.5rem;
-    /* Kolme riviä: ensimmäinen otsikolle, toinen kuvalle, kolmas tekstille */
-    grid-template-rows: auto auto auto;
-    grid-template-areas:
-        "header"
-        "image"
-        "description";
-}
-
-.article_full_content {
-    display: grid;
-    gap: 1.5rem;
-    padding: 0.5rem;
-    /* Kolme riviä: ensimmäinen otsikolle, toinen kuvalle, kolmas tekstille */
-    grid-template-rows: auto auto auto;
-    grid-template-areas:
-        "header"
-        "image"
-        "description";
 }
 
 /* Iso layout (300px image-col) */
@@ -199,7 +176,7 @@
     margin: auto;
 }
 
-.card_content_small {
+/* .card_content_small {
     grid-template-areas:
         "image header creation_spec"
         "image description description"
@@ -207,7 +184,7 @@
         "details details details"
         "details details details"
         "footer footer footer" !important;
-}
+} */
 
 
 
@@ -351,4 +328,10 @@
 
 .scrollable_content {
     background-color: var(--bg_color_text);
+    display: flex;
+    justify-content: center;
+}
+
+.scrollable_content > *, .scrollable_content .table {
+    margin: auto;
 }

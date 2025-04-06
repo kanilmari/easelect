@@ -72,7 +72,7 @@ export async function create_seeded_avatar(seed_string, letter_for_avatar, useLa
     avatar_div.style.fontFamily = chosen_font;
     avatar_div.style.fontWeight = 'bold';
     avatar_div.style.fontSize = useLargeSize ? '7rem' : '4rem';
-    avatar_div.style.color = 'var(--text_color, #fff)';
+    avatar_div.style.color = '#fff';
     avatar_div.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.5)';
     avatar_div.style.borderRadius = chosen_border_radius;
 

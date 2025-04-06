@@ -16,9 +16,9 @@ Skripti:
  - Yhteenveto lopuksi.
 */
 
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob');
+const fs = require("fs");
+const path = require("path");
+const glob = require("glob");
 
 const kasitellyt_tiedostot = new Set();
 
@@ -65,7 +65,7 @@ function onko_indeksi_kommentissa(index, kommenttialueet) {
 }
 
 function onko_local_import_ilman_pisteita(polku) {
-    return (!polku.startsWith('.') && polku.includes('/'));
+    return !polku.startsWith(".") && polku.includes("/");
 }
 
 /**
@@ -79,12 +79,12 @@ function onko_local_import_ilman_pisteita(polku) {
  * Tallennetaan symbolikartta: symboli -> Set[tiedostot]
  */
 function rakenna_symbolikartta(ignoreList) {
-    const kaikki_js = glob.sync('**/*.js', { nodir: true, ignore: ignoreList });
+    const kaikki_js = glob.sync("**/*.js", { nodir: true, ignore: ignoreList });
 
     for (const tiedosto of kaikki_js) {
-        let sisalto = '';
+        let sisalto = "";
         try {
-            sisalto = fs.readFileSync(tiedosto, 'utf8');
+            sisalto = fs.readFileSync(tiedosto, "utf8");
         } catch (err) {
             console.log(`\x1b[31mvirhe: %s\x1b[0m`, err.message);
             continue;
@@ -109,8 +109,8 @@ function rakenna_symbolikartta(ignoreList) {
         while ((m = export_braces_regex.exec(sisalto)) !== null) {
             // esim. "foo, bar as b2, baz"
             // Jaetaan pilkulla, ja puretaan "as" pois jos on
-            const sisus = m[1].split(',').map(s => s.trim());
-            sisus.forEach(s => {
+            const sisus = m[1].split(",").map((s) => s.trim());
+            sisus.forEach((s) => {
                 // esim "bar as b2" -> [bar, b2]
                 const osat = s.split(/\s+as\s+/);
                 const nimi = osat[0].trim();
@@ -144,13 +144,13 @@ function poimi_nimetyt_symbolit(import_lause) {
 
     // Poistetaan moniriviset kommentit /* ... */ ja yksiriviset kommentit // ...
     let sisus = mm[1];
-    sisus = sisus.replace(/\/\*[\s\S]*?\*\//g, '');   // poistaa /*...*/  
-    sisus = sisus.replace(/\/\/[^\n]*/g, '');        // poistaa //...
+    sisus = sisus.replace(/\/\*[\s\S]*?\*\//g, ""); // poistaa /*...*/
+    sisus = sisus.replace(/\/\/[^\n]*/g, ""); // poistaa //...
 
     return sisus
-        .split(',')
-        .map(s => s.trim())
-        .map(s => {
+        .split(",")
+        .map((s) => s.trim())
+        .map((s) => {
             // esim. "myFunc as mf" -> ["myFunc", "mf"]
             const asMatch = s.split(/\s+as\s+/);
             return asMatch[0].trim(); // palautetaan alkuperäinen symbolinimi
@@ -183,7 +183,7 @@ function etsi_tiedosto_symbolien_perusteella(symbolit) {
             yhteinen = new Set(mahdolliset);
         } else {
             // intersection
-            yhteinen = new Set([...yhteinen].filter(x => mahdolliset.has(x)));
+            yhteinen = new Set([...yhteinen].filter((x) => mahdolliset.has(x)));
         }
         if (yhteinen.size === 0) {
             return null;
@@ -206,7 +206,7 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
 
     let sisalto;
     try {
-        sisalto = fs.readFileSync(tiedosto_polku, 'utf8');
+        sisalto = fs.readFileSync(tiedosto_polku, "utf8");
     } catch (err) {
         console.error(`\x1b[31mvirhe: %s\x1b[0m`, err.message);
         return;
@@ -233,7 +233,7 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
             match_index: match.index,
             lause: koko_import_lause,
             polku: alkuperainen_polku,
-            tyypit: 'nimetty'
+            tyypit: "nimetty",
         });
     }
 
@@ -248,7 +248,7 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
             match_index: match.index,
             lause: koko_import_lause,
             polku: alkuperainen_polku,
-            tyypit: 'sivuvaikutus'
+            tyypit: "sivuvaikutus",
         });
     }
 
@@ -264,8 +264,14 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
         const alkuperainen_polku = imp.polku;
 
         // 1) Relatiiviset importit
-        if (alkuperainen_polku.startsWith('./') || alkuperainen_polku.startsWith('../')) {
-            const absoluuttinen = path.resolve(path.dirname(tiedosto_polku), alkuperainen_polku);
+        if (
+            alkuperainen_polku.startsWith("./") ||
+            alkuperainen_polku.startsWith("../")
+        ) {
+            const absoluuttinen = path.resolve(
+                path.dirname(tiedosto_polku),
+                alkuperainen_polku
+            );
 
             if (fs.existsSync(absoluuttinen)) {
                 ok_count++;
@@ -275,75 +281,103 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
                 if (korjaa_importit) {
                     const tiedoston_nimi = path.basename(alkuperainen_polku);
                     // Lisätään ignore: globalIgnorePatterns
-                    const matches = glob.sync(`**/${tiedoston_nimi}`, { nodir: true, ignore: globalIgnorePatterns });
+                    const matches = glob.sync(`**/${tiedoston_nimi}`, {
+                        nodir: true,
+                        ignore: globalIgnorePatterns,
+                    });
                     if (matches.length === 1) {
                         const loytynyt = path.resolve(matches[0]);
                         let uusi_rel = path
                             .relative(path.dirname(tiedosto_polku), loytynyt)
-                            .replace(/\\/g, '/');
+                            .replace(/\\/g, "/");
 
-                        if (!uusi_rel.startsWith('.')) {
-                            uusi_rel = './' + uusi_rel;
+                        if (!uusi_rel.startsWith(".")) {
+                            uusi_rel = "./" + uusi_rel;
                         }
-                        console.log(`\x1b[33mkorjataan:\x1b[0m '${alkuperainen_polku}' -> '${uusi_rel}' (${tiedosto_polku})`);
+                        console.log(
+                            `\x1b[33mkorjataan:\x1b[0m '${alkuperainen_polku}' -> '${uusi_rel}' (${tiedosto_polku})`
+                        );
 
                         const vanha_lause = imp.lause;
-                        const korjattu_lause = vanha_lause.replace(alkuperainen_polku, uusi_rel);
+                        const korjattu_lause = vanha_lause.replace(
+                            alkuperainen_polku,
+                            uusi_rel
+                        );
 
-                        sisalto_uusi = sisalto_uusi.replace(vanha_lause, korjattu_lause);
+                        sisalto_uusi = sisalto_uusi.replace(
+                            vanha_lause,
+                            korjattu_lause
+                        );
                         muutoksia = true;
                         ok_count++;
 
                         kasittele_tiedosto(loytynyt, korjaa_importit);
                     } else if (matches.length === 0) {
-                        if (imp.tyypit === 'nimetty') {
+                        if (imp.tyypit === "nimetty") {
                             const symbolit = poimi_nimetyt_symbolit(imp.lause);
-                            const loytynyt_tiedosto = etsi_tiedosto_symbolien_perusteella(symbolit);
+                            const loytynyt_tiedosto =
+                                etsi_tiedosto_symbolien_perusteella(symbolit);
                             if (loytynyt_tiedosto) {
                                 let uusi_rel = path
-                                    .relative(path.dirname(tiedosto_polku), loytynyt_tiedosto)
-                                    .replace(/\\/g, '/');
-                                if (!uusi_rel.startsWith('.')) {
-                                    uusi_rel = './' + uusi_rel;
+                                    .relative(
+                                        path.dirname(tiedosto_polku),
+                                        loytynyt_tiedosto
+                                    )
+                                    .replace(/\\/g, "/");
+                                if (!uusi_rel.startsWith(".")) {
+                                    uusi_rel = "./" + uusi_rel;
                                 }
 
-                                console.log(`\x1b[33mkorjataan:\x1b[0m '${alkuperainen_polku}' -> '${uusi_rel}' symbolien perusteella (${tiedosto_polku})`);
+                                console.log(
+                                    `\x1b[33mkorjataan:\x1b[0m '${alkuperainen_polku}' -> '${uusi_rel}' symbolien perusteella (${tiedosto_polku})`
+                                );
 
                                 const vanha_lause = imp.lause;
-                                const korjattu_lause = vanha_lause.replace(alkuperainen_polku, uusi_rel);
+                                const korjattu_lause = vanha_lause.replace(
+                                    alkuperainen_polku,
+                                    uusi_rel
+                                );
 
-                                sisalto_uusi = sisalto_uusi.replace(vanha_lause, korjattu_lause);
+                                sisalto_uusi = sisalto_uusi.replace(
+                                    vanha_lause,
+                                    korjattu_lause
+                                );
                                 muutoksia = true;
                                 ok_count++;
 
-                                kasittele_tiedosto(loytynyt_tiedosto, korjaa_importit);
+                                kasittele_tiedosto(
+                                    loytynyt_tiedosto,
+                                    korjaa_importit
+                                );
                             } else {
                                 virheita++;
                                 console.error(
                                     `\x1b[31mvirhe: ei löytynyt tiedostoa '${absoluuttinen}', ` +
-                                    `eikä vastaavaa nimeä projektista, eikä symbolihakua (import { ${symbolit.join(', ')} }). (viite: '${tiedosto_polku}')`
+                                        `eikä vastaavaa nimeä projektista, eikä symbolihakua (import { ${symbolit.join(
+                                            ", "
+                                        )} }). (viite: '${tiedosto_polku}')`
                                 );
                             }
                         } else {
                             virheita++;
                             console.error(
                                 `\x1b[31mvirhe: ei löytynyt tiedostoa '${absoluuttinen}', ` +
-                                `eikä vastaavaa nimeä projektista. (alkuperäinen import: '${alkuperainen_polku}', ` +
-                                `viite: '${tiedosto_polku}')`
+                                    `eikä vastaavaa nimeä projektista. (alkuperäinen import: '${alkuperainen_polku}', ` +
+                                    `viite: '${tiedosto_polku}')`
                             );
                         }
                     } else {
                         virheita++;
                         console.error(
                             `\x1b[31mvirhe: ei löytynyt tiedostoa '${absoluuttinen}'. Useita samannimisiä: ${matches} ` +
-                            `(alkuperäinen: '${alkuperainen_polku}', viite: '${tiedosto_polku}')`
+                                `(alkuperäinen: '${alkuperainen_polku}', viite: '${tiedosto_polku}')`
                         );
                     }
                 } else {
                     virheita++;
                     console.error(
                         `\x1b[31mvirhe: tiedostoa '${absoluuttinen}' ei löydy ` +
-                        `(alkuperäinen import: '${alkuperainen_polku}', viite: '${tiedosto_polku}')`
+                            `(alkuperäinen import: '${alkuperainen_polku}', viite: '${tiedosto_polku}')`
                     );
                 }
             }
@@ -351,8 +385,11 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
 
         // 2) Paikallinen polku ilman pisteitä (oletuksella ./)
         else if (onko_local_import_ilman_pisteita(alkuperainen_polku)) {
-            const polku_oletuksella = './' + alkuperainen_polku;
-            const absoluuttinen = path.resolve(path.dirname(tiedosto_polku), polku_oletuksella);
+            const polku_oletuksella = "./" + alkuperainen_polku;
+            const absoluuttinen = path.resolve(
+                path.dirname(tiedosto_polku),
+                polku_oletuksella
+            );
 
             if (fs.existsSync(absoluuttinen)) {
                 if (korjaa_importit) {
@@ -361,9 +398,15 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
                     );
 
                     const vanha_lause = imp.lause;
-                    const korjattu_lause = vanha_lause.replace(alkuperainen_polku, polku_oletuksella);
+                    const korjattu_lause = vanha_lause.replace(
+                        alkuperainen_polku,
+                        polku_oletuksella
+                    );
 
-                    sisalto_uusi = sisalto_uusi.replace(vanha_lause, korjattu_lause);
+                    sisalto_uusi = sisalto_uusi.replace(
+                        vanha_lause,
+                        korjattu_lause
+                    );
                     muutoksia = true;
                     ok_count++;
 
@@ -372,14 +415,14 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
                     virheita++;
                     console.error(
                         `\x1b[31mvirhe: import '${alkuperainen_polku}' näyttää paikalliselta tiedostolta, ` +
-                        `mutta se ei ala './' tai '../'. (viite: '${tiedosto_polku}')`
+                            `mutta se ei ala './' tai '../'. (viite: '${tiedosto_polku}')`
                     );
                 }
             } else {
                 virheita++;
                 console.error(
                     `\x1b[31mvirhe: import '${alkuperainen_polku}' ei ala './' tai '../', ` +
-                    `mutta tiedostoa '${absoluuttinen}' ei löytynyt. (viite: '${tiedosto_polku}')`
+                        `mutta tiedostoa '${absoluuttinen}' ei löytynyt. (viite: '${tiedosto_polku}')`
                 );
             }
         }
@@ -391,7 +434,7 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
     }
 
     if (muutoksia) {
-        fs.writeFileSync(tiedosto_polku, sisalto_uusi, 'utf8');
+        fs.writeFileSync(tiedosto_polku, sisalto_uusi, "utf8");
         console.log(`\x1b[32mTiedosto "${tiedosto_polku}" päivitetty.\x1b[0m`);
     }
 }
@@ -399,19 +442,19 @@ function kasittele_tiedosto(tiedosto_polku, korjaa_importit) {
 function paafunktio() {
     // Luetaan komentoriviparametrit
     const args = process.argv.slice(2);
-    let entryPoint = 'main.js';
+    let entryPoint = "main.js";
     let korjaa_importit = false;
     let excludePatterns = [];
 
     for (const arg of args) {
-        if (arg.startsWith('--exclude=')) {
+        if (arg.startsWith("--exclude=")) {
             // Pilkotaan pilkkuerotelluiksi pattern-määrittelyiksi
-            const exclStr = arg.replace('--exclude=', '');
+            const exclStr = arg.replace("--exclude=", "");
             excludePatterns = exclStr
-                .split(',')
-                .map(s => s.trim())
+                .split(",")
+                .map((s) => s.trim())
                 .filter(Boolean);
-        } else if (arg === '--fix-imports') {
+        } else if (arg === "--fix-imports") {
             korjaa_importit = true;
         } else {
             // Oletetaan, että tämä on entry point
@@ -421,12 +464,14 @@ function paafunktio() {
 
     // Jos entryPoint puuttuu
     if (!fs.existsSync(entryPoint)) {
-        console.error(`\x1b[31mvirhe: tiedostoa '${entryPoint}' ei ole olemassa.\x1b[0m`);
+        console.error(
+            `\x1b[31mvirhe: tiedostoa '${entryPoint}' ei ole olemassa.\x1b[0m`
+        );
         process.exit(1);
     }
 
     // node_modules/** on oletusignorena
-    const defaultIgnore = ['node_modules/**'];
+    const defaultIgnore = ["node_modules/**"];
     const ignoreForAll = defaultIgnore.concat(excludePatterns);
     globalIgnorePatterns = ignoreForAll;
 
@@ -438,50 +483,57 @@ function paafunktio() {
     kasittele_tiedosto(path.resolve(entryPoint), korjaa_importit);
 
     // 2) Haetaan kaikki JS-tiedostot, paitsi ignore-listatut
-    const kaikki_js_tiedostot = glob.sync('**/*.js', {
+    const kaikki_js_tiedostot = glob.sync("**/*.js", {
         nodir: true,
-        ignore: ignoreForAll
+        ignore: ignoreForAll,
     });
 
     // 3) Listataan excluded files
     //    Haetaan ensin kaikki .js (paitsi node_modules), otetaan erotus
-    const excluded_glob = glob.sync('**/*.js', { nodir: true, ignore: defaultIgnore });
-    const included_abs = new Set(kaikki_js_tiedostot.map(f => path.resolve(f)));
+    const excluded_glob = glob.sync("**/*.js", {
+        nodir: true,
+        ignore: defaultIgnore,
+    });
+    const included_abs = new Set(
+        kaikki_js_tiedostot.map((f) => path.resolve(f))
+    );
     const excluded_abs = excluded_glob
-        .map(f => path.resolve(f))
-        .filter(f => !included_abs.has(f) && f !== path.resolve(entryPoint));
+        .map((f) => path.resolve(f))
+        .filter((f) => !included_abs.has(f) && f !== path.resolve(entryPoint));
 
     // 4) Selvitetään orvot
     const orvot = kaikki_js_tiedostot
-        .map(t => path.resolve(t))
-        .filter(t => !kasitellyt_tiedostot.has(t));
-
-    // Tulostukset
-    console.log('');
-    if (yhteensa_importteja === 0) {
-        console.log('\x1b[33mEi löytynyt lainkaan import-lauseita.\x1b[0m');
-        console.log(`Tarkistettiin silti ${kasitellyt_tiedostot.size} tiedostoa.`);
-    } else {
-        console.log(
-            `Tarkistettiin ${kasitellyt_tiedostot.size} tiedostoa. ` +
-            `${virheita} virhettä, ${ok_count} OK, yhteensä ${yhteensa_importteja} importtia.`
-        );
-    }
+        .map((t) => path.resolve(t))
+        .filter((t) => !kasitellyt_tiedostot.has(t));
 
     // Orvot
     if (orvot.length > 0) {
-        console.log('\x1b[33mOrvot tiedostot:\x1b[0m');
-        orvot.forEach(o => console.log('  ' + o));
+        console.log("\x1b[33mOrvot tiedostot:\x1b[0m");
+        orvot.forEach((o) => console.log("  " + o));
     } else {
-        console.log('Ei orpoja tiedostoja!');
+        console.log("Ei orpoja tiedostoja!");
     }
 
     // Ekskludatut
     if (excluded_abs.length > 0) {
-        console.log('\n\x1b[33mExcluded tiedostot (ei käsitelty):\x1b[0m');
-        excluded_abs.forEach(e => console.log('  ' + e));
+        console.log("\n\x1b[33mExcluded tiedostot (ei käsitelty):\x1b[0m");
+        excluded_abs.forEach((e) => console.log("  " + e));
+    }
+
+    // Tulokset
+    console.log("");
+    if (yhteensa_importteja === 0) {
+        console.log("\x1b[33mEi löytynyt lainkaan import-lauseita.\x1b[0m");
+        console.log(
+            `Tarkistettiin silti ${kasitellyt_tiedostot.size} tiedostoa.`
+        );
+    } else {
+        console.log(
+            `Tarkistettiin ${kasitellyt_tiedostot.size} tiedostoa. ` +
+                `${virheita} virhettä, ${ok_count} OK, yhteensä ${yhteensa_importteja} importtia.`
+        );
     }
 }
 
 paafunktio();
-console.log('********************************');
+console.log("********************************");

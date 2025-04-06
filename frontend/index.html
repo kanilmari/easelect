@@ -25,6 +25,10 @@
 </head>
 
 <body>
+<!--[if IE]>
+<div>Internet Explorer not supported. Download Brave browser.</div>
+<a href="https://brave.com/download/">
+<![endif]-->
     <div class="body_wrapper">
         <div id="overlay"></div>
         <!-- Sisältö -->
@@ -33,12 +37,12 @@
             <!-- <div class="vertical-nav"> -->
             <div id="navbar">
                 <div class="top-button-bar">
-                    <div class="menu-button-placeholder transparent">placeholder</div>
-                    <button id="themeToggleBtn" class="smallButtons"></button>
-                    <div class="language-selection menu-language-selection"></div>
+                    <div class="menu-button-placeholder transparent"></div>
+                    <button id="themeToggleBtn" class="smallButtons button"></button>
+                    <div class="language-selection menu-language-selection button"></div>
                     <!-- <button id="logout_button" onclick="window.location.href='/logout'">
                 </button> -->
-                    <div class="logout-container"></div>
+                    <div class="auth-container"></div>
                 </div>
                 <div id="navContainer"></div>
                 <div id="nav_tree"></div>
@@ -58,6 +62,7 @@
             </div>
         </div>
     </div>
+    <script src="/frontend/core_components/navigation/initial_browser_check.js"></script>
     <script type="module" src="/frontend/main.js"></script>
 </body>
 

@@ -7,13 +7,6 @@ import { endpoint_router } from '../endpoints/endpoint_router.js';
 import { createVanillaDropdown } from '../../common_components/vanilla_dropdown/vanilla_dropdown.js';
 
 /**
- * Ladataan foreign keys -näkymä laiskasti, kun välilehti avataan.
- */
-export function load_foreign_keys_view() {
-    return loadManagementView('foreign_keys_container', generate_foreign_keys_view);
-}
-
-/**
  * Pääfunktio, joka generoi "Foreign Keys" -näkymän:
  * 1) Add-nappi ja sen modaalin luominen
  * 2) Taulukko olemassaolevista vierasavaimista

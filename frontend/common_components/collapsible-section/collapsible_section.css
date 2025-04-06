@@ -4,6 +4,7 @@
     border-radius: var(--border_radius);
     margin: 0.5rem;
     border: 1px solid var(--border_color);
+    padding: 10px;
   }
   
   .collapsible-header {

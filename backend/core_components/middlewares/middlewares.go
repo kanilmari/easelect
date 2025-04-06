@@ -184,8 +184,8 @@ func userHasFunctionPermission(userID int, functionName, tableName string) bool 
 		return false
 	}
 
-	log.Printf("\033[32m[userHasFunctionPermission] OK - Löytyi oikeus funktiolle='%s', taululle='%s' (userID=%d)\033[0m",
-		functionName, tableName, userID)
+	// log.Printf("\033[32m[userHasFunctionPermission] OK - Löytyi oikeus funktiolle='%s', taululle='%s' (userID=%d)\033[0m",
+	// 	functionName, tableName, userID)
 	return true
 }
 
@@ -204,8 +204,8 @@ func WithAccessControl(handlerName string, originalHandler http.HandlerFunc) htt
 		userIDVal, ok := session.Values["user_id"]
 		if !ok {
 			log.Printf("\033[31m[WithAccessControl][%s] Anonyymi käyttäjä -> uudelleenohjaus login-sivulle\033[0m", handlerName)
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
+			// http.Redirect(w, r, "/login", http.StatusSeeOther)
+			// return
 		}
 
 		userID, ok2 := userIDVal.(int)

@@ -6,7 +6,7 @@ import { fetch_columns_for_table } from '../endpoints/endpoint_column_fetcher.js
 import { endpoint_router } from '../endpoints/endpoint_router.js';
 
 export async function load_trigger_management() {
-  return loadManagementView('trigger_management_container', generate_trigger_creation_form);
+  return loadManagementView('trigger_management_container', generate_notification_trigger_view);
 }
 
 /**
@@ -17,7 +17,7 @@ export async function load_trigger_management() {
  * 3) Lisätään n kappaletta (sarake+arvo)-paitoja
  * 4) Luodaan “Luo heräte” -painike
  */
-async function generate_trigger_creation_form(container) {
+export async function generate_notification_trigger_view(container) {
   // Haetaan kaikki taulut
   const content_tables = await fetchContentTables();
 

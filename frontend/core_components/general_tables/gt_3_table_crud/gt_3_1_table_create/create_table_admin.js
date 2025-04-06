@@ -12,10 +12,10 @@ import { fetch_columns_for_table } from '../../../endpoints/endpoint_column_fetc
 
 export function load_table_creation() {
     // Annetaan id sekä generointifunktio:
-    return loadManagementView('table_creation_container', generate_table_creation_form);
+    return loadManagementView('table_creation_container', generate_table_creation_view);
 }
 
-async function generate_table_creation_form(container) {
+export async function generate_table_creation_view(container) {
     container.replaceChildren(); // Tyhjennä mahdollinen aiempi sisältö
 
     const form = document.createElement('form');
