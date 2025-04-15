@@ -1,7 +1,8 @@
 // navbar.js
 
-let navVisible = true;
-let isInitialLoad = true;
+const NAVBAR_WIDTH_THRESHOLD = 1700; // Kynnysarvo pikseleinä
+let navVisible = true; // Oletusarvo: navigaatiopalkki näkyvissä
+let isInitialLoad = true; // Tarkistaa, onko kyseessä sivun ensimmäinen lataus
 
 export function initNavbar() {
   const navbar = document.getElementById('navbar');
@@ -9,21 +10,22 @@ export function initNavbar() {
   const overlay = document.getElementById('overlay');
   const tabsContainer = document.getElementById('tabs_container');
 
+  // Tarkistetaan, että DOM-elementit löytyvät
   if (!navbar || !menuButton || !overlay || !tabsContainer) {
-    console.warn('Navbar elements not found in DOM');
+    console.warn('Navbar-elementtejä ei löydy DOM:sta');
     return;
   }
 
-  // Haetaan localStoragesta navVisible-arvo
+  // Haetaan navVisible-tila localStoragesta
   const storedNavVisible = localStorage.getItem('navVisible');
   if (storedNavVisible !== null) {
-    navVisible = (storedNavVisible === 'true');
+    navVisible = storedNavVisible === 'true';
   }
 
-  // Tarkistetaan ruudun leveys
+  // Tarkistetaan ruudun leveys alussa
   checkWindowWidth();
 
-  // Asetetaan navin alkutila
+  // Asetetaan navigaatiopalkin alkutila
   if (navVisible) {
     navbar.classList.remove('collapsed');
     menuButton.classList.add('inset');
@@ -34,7 +36,7 @@ export function initNavbar() {
     tabsContainer.classList.add('navbar_hidden');
   }
 
-  // Menu-napin klikkaus
+  // Menu-painikkeen klikkaus
   menuButton.addEventListener('click', () => {
     navVisible = !navVisible;
     localStorage.setItem('navVisible', navVisible);
@@ -51,7 +53,7 @@ export function initNavbar() {
     updateOverlayVisibility();
   });
 
-  // Overlay-klikkaus
+  // Overlay-klikkaus (sulkee navigaatiopalkin)
   overlay.addEventListener('click', () => {
     if (navVisible) {
       navVisible = false;
@@ -66,33 +68,36 @@ export function initNavbar() {
   // Kuunnellaan ikkunan koon muuttumista
   window.addEventListener('resize', checkWindowWidth);
 
-  // Kutsutaan lopuksi overlayn päivitys
+  // Päivitetään overlayn näkyvyys
   updateOverlayVisibility();
 }
 
-// Sisäinen funktio ruudun leveyden tarkistukseen
+// Funktio, joka tarkistaa ruudun leveyden ja päivittää navigaatiopalkin
 function checkWindowWidth() {
   const windowWidth = window.innerWidth;
+  const navbar = document.getElementById('navbar');
+  const menuButton = document.getElementById('menuButton');
+  const tabsContainer = document.getElementById('tabs_container');
 
-  // Piilotetaan navbar, jos leveys on alle 1368 px
-  if (windowWidth < 1368 && navVisible) {
+  // Jos leveys >= 1366px ja navigaatiopalkki ei ole näkyvissä, näytetään se
+  if (windowWidth >= NAVBAR_WIDTH_THRESHOLD && !navVisible) {
+    navVisible = true;
+    localStorage.setItem('navVisible', navVisible);
+    if (navbar && menuButton && tabsContainer) {
+      navbar.classList.remove('collapsed');
+      menuButton.classList.add('inset');
+      tabsContainer.classList.remove('navbar_hidden');
+    }
+  }
+  // Jos leveys < 1366px ja navigaatiopalkki on näkyvissä, piilotetaan se
+  else if (windowWidth < NAVBAR_WIDTH_THRESHOLD && navVisible) {
     navVisible = false;
     localStorage.setItem('navVisible', navVisible);
-    const navbar = document.getElementById('navbar');
-    const menuButton = document.getElementById('menuButton');
-    const tabsContainer = document.getElementById('tabs_container');
     if (navbar && menuButton && tabsContainer) {
       navbar.classList.add('collapsed');
       menuButton.classList.remove('inset');
       tabsContainer.classList.add('navbar_hidden');
     }
-  }
-
-  // Halutessasi voit pakottaa piiloon myös ensimmäisellä latauksella, 
-  // jos leveys on toisen ehdon mukainen
-  if (windowWidth < 1080 && isInitialLoad) {
-    // navbar.classList.add('collapsed');
-    // navVisible = false;
   }
 
   updateOverlayVisibility();
@@ -106,13 +111,12 @@ function checkWindowWidth() {
 function updateOverlayVisibility() {
   const overlay = document.getElementById('overlay');
   if (!overlay) return;
-  if (window.innerWidth < 1080 && navVisible) {
+  if (window.innerWidth < NAVBAR_WIDTH_THRESHOLD && navVisible) {
     overlay.classList.add('active');
   } else {
     overlay.classList.remove('active');
   }
 }
-
 
 // // navbar.js
 

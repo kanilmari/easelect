@@ -2,7 +2,7 @@
 
 import { create_table_element } from './table_view/create_table_structure_and_data.js';
 import { create_card_view } from './card_view/card_view.js';
-import { applySavedColumnVisibility } from '../general_tables/gt_toolbar/column_visibility_dropdown.js';
+// import { applySavedColumnVisibility } from '../general_tables/gt_toolbar/column_visibility_dropdown.js';
 import { initializeInfiniteScroll, updateOffset } from '../infinite_scroll/infinite_scroll.js';
 import { create_filter_bar } from '../filterbar/create_filter_bar.js';
 import { create_chat_ui } from '../../common_components/ai_features/table_chat/chat.js';
@@ -15,7 +15,7 @@ const views = {
     table: {
         create: (table_name, columns, data, data_types) => {
             const tableElement = create_table_element(columns, data, table_name, data_types);
-            applySavedColumnVisibility(tableElement);
+            // applySavedColumnVisibility(tableElement);
             return tableElement;
         },
         getContainerId: (table_name) => `${table_name}_table_view_container`

@@ -81,7 +81,7 @@ export async function create_seeded_avatar(seed_string, letter_for_avatar, useLa
 }
 
 /**
- * Luo fancy-kuvaelementin. PNG-kuville ei lisätä varjoa, sumennusta eikä pyöristettyjä kulmia.
+ * Luo kuvaelementin. PNG-kuville ei lisätä varjoa, sumennusta eikä pyöristettyjä kulmia.
  */
 export function createImageElement(image_src, useLargeSize) {
     const wrapper = document.createElement('div');
@@ -98,29 +98,11 @@ export function createImageElement(image_src, useLargeSize) {
         wrapper.style.background = 'var(--bg_color)';
         
         wrapper.style.borderRadius = '7px';
-        // wrapper.style.border = '1px solid var(--border_color)';
         foregroundImg.style.borderRadius = '6px';
-        // foregroundImg.style.border = '1px solid var(--border_color)';
         wrapper.style.boxShadow = '2px 2px 4px rgba(0, 0, 0, 0.2)';
         
         wrapper.style.backdropFilter = 'blur(10px)';
         wrapper.style.webkitBackdropFilter = 'blur(10px)';
-        // Alla oleva blur-elementti on optio, voit avata sen kommentoimalla sisällön näkyviin:
-        /*
-        const blurredBg = document.createElement('div');
-        blurredBg.style.position = 'absolute';
-        blurredBg.style.top = '0';
-        blurredBg.style.left = '0';
-        blurredBg.style.right = '0';
-        blurredBg.style.bottom = '0';
-        blurredBg.style.backgroundImage = `url(${image_src})`;
-        blurredBg.style.backgroundSize = 'cover';
-        blurredBg.style.backgroundPosition = 'center';
-        blurredBg.style.filter = 'blur(40px)';
-        blurredBg.style.opacity = '0.8';
-        blurredBg.style.filter += ' saturate(80%)';
-        wrapper.appendChild(blurredBg);
-        */
     }
 
     // Näytettävä kuva
@@ -138,25 +120,7 @@ export function createImageElement(image_src, useLargeSize) {
     
     // Hey copilot, add class named "random"
     wrapper.classList.add('wrapper');
-    
-    /*
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: '-webkit solid var(--border_color)';
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border: '1px solid var(--border_color)';
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    position: absolute;
-    z-index: 10001;
-    */
 
-
-    // wrapper.style.border = '1px solid rgba(255, 255, 255, 0.18)';
-    // wrapper.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.37)';
-    // wrapper.style.position = 'absolute';
-    // wrapper.style.zIndex = '10001';
-    // wrapper
     return wrapper;
 }
 

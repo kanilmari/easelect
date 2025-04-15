@@ -224,15 +224,8 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Tyhjennetään istunnosta tärkeät tiedot
-	session.Values["authenticated"] = false
-	session.Values["user_id"] = 1
-	session.Values["user_role"] = "guest"
-	session.Values["username"] = "guest"
-
-	// // poistetaan myös username
-	// delete(session.Values, "username")
-
+	// 1) Mitätöidään session
+	session.Options.MaxAge = -1 // Vanhentaa evästeen ja tuhoaa session
 	err = saveSession(w, r, session)
 	if err != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
@@ -240,24 +233,83 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 2) Poistetaan device_id -eväste
+	http.SetCookie(w, &http.Cookie{
+		Name:   "device_id",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1, // poistaminen
+	})
+
+	// 3) Poistetaan fingerprint-eväste
+	http.SetCookie(w, &http.Cookie{
+		Name:   "fingerprint",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1, // poistaminen
+	})
+
+	// 4) Tarkistetaan loginToBrowse
 	loginToBrowse, confErr := middlewares.CheckLoginToBrowse()
 	if confErr != nil {
 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", confErr.Error())
 		loginToBrowse = true
 	}
 
+	// 5) Ohjataan sivulle
 	if loginToBrowse {
-		http.SetCookie(w, &http.Cookie{
-			Name:   "device_id",
-			Value:  "",
-			Path:   "/",
-			MaxAge: -1,
-		})
+		// Jos login to browse on pakollinen, ohjataan aina /login
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	} else {
+		// Muuten voi siirtyä takaisin etusivulle (root)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
+
+// func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+// 	log.Println("logoutHandler called")
+
+// 	session, err := store.Get(r, "session")
+// 	if err != nil {
+// 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+// 		http.Error(w, "session haku epäonnistui", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Tyhjennetään istunnosta tärkeät tiedot
+// 	session.Values["authenticated"] = false
+// 	session.Values["user_id"] = 1
+// 	session.Values["user_role"] = "guest"
+// 	session.Values["username"] = "guest"
+
+// 	// // poistetaan myös username
+// 	// delete(session.Values, "username")
+
+// 	err = saveSession(w, r, session)
+// 	if err != nil {
+// 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+// 		http.Error(w, "session tallennus epäonnistui", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	loginToBrowse, confErr := middlewares.CheckLoginToBrowse()
+// 	if confErr != nil {
+// 		fmt.Printf("\033[31mvirhe: %s\033[0m\n", confErr.Error())
+// 		loginToBrowse = true
+// 	}
+
+// 	if loginToBrowse {
+// 		http.SetCookie(w, &http.Cookie{
+// 			Name:   "device_id",
+// 			Value:  "",
+// 			Path:   "/",
+// 			MaxAge: -1,
+// 		})
+// 		http.Redirect(w, r, "/login", http.StatusSeeOther)
+// 	} else {
+// 		http.Redirect(w, r, "/", http.StatusSeeOther)
+// 	}
+// }
 
 // func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 // 	log.Println("logoutHandler called")

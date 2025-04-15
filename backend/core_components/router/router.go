@@ -352,7 +352,6 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 		packageName := getPackageNameFromHandler(handlerName)
 
 		generalTableRelated := false
-		// if packageName == "general_tables" || strings.HasPrefix(packageName, "gt") {
 		if strings.HasPrefix(packageName, "gt") {
 			generalTableRelated = true
 		}

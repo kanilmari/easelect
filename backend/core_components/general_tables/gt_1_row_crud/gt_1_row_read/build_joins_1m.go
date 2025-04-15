@@ -71,30 +71,19 @@ func buildJoinsWith1MRelations(
 			// Katsotaan, onko meillä foreign_key_relations_1_m -tietuetta tälle sarakkeelle
 			rel, foundRel := fkRelations[colName]
 			if foundRel && rel.CachedNameColInSrc != "" {
-				//----------------------------------------------------------------
-				// Jos on annettu cached-sarake, käytetään sitä
-				//----------------------------------------------------------------
-				cachedCol := rel.CachedNameColInSrc
-				generatedNameCol := colName + "_name" // Esim. user_id_name
-
-				selectColumns += fmt.Sprintf("%s.%s AS %s, %s.%s AS %s, ",
+				// Jos cached-sarake on määritelty, valitaan vain vierasavaimen arvo
+				selectColumns += fmt.Sprintf("%s.%s AS %s, ",
 					pq.QuoteIdentifier(tableName),
 					pq.QuoteIdentifier(colName),
 					pq.QuoteIdentifier(colName),
-					pq.QuoteIdentifier(tableName),
-					pq.QuoteIdentifier(cachedCol),
-					pq.QuoteIdentifier(generatedNameCol),
 				)
-				columnExpressions[generatedNameCol] = fmt.Sprintf(
+				columnExpressions[colName] = fmt.Sprintf(
 					"%s.%s",
 					pq.QuoteIdentifier(tableName),
-					pq.QuoteIdentifier(cachedCol),
+					pq.QuoteIdentifier(colName),
 				)
-
 			} else {
-				//----------------------------------------------------------------
 				// Jos ei ole cached-saraketta, tehdään normaali LEFT JOIN
-				//----------------------------------------------------------------
 				aliasCount[colName]++
 				alias := fmt.Sprintf("%s_alias%d", colName, aliasCount[colName])
 
@@ -132,9 +121,7 @@ func buildJoinsWith1MRelations(
 			}
 
 		} else {
-			//----------------------------------------------------------------
 			// Ei vierasavain tai nimisaraketta => valitaan sellaisenaan
-			//----------------------------------------------------------------
 			selectColumns += fmt.Sprintf("%s.%s AS %s, ",
 				pq.QuoteIdentifier(tableName),
 				pq.QuoteIdentifier(colName),

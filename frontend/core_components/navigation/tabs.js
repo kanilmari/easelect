@@ -103,19 +103,28 @@ const tabsData = [
     },
 ];
 
+// nimiehdotus: navmenu.js
+
 const container = document.getElementById("navmenu");
 
-tabsData.forEach((tabData) => {
-    const tabButton = document.createElement("button");
-    tabButton.classList.add("navtablinks");
-    tabButton.setAttribute("data-id", tabData.id);
-    if (tabData.langKey) {
-        tabButton.setAttribute("data-lang-key", tabData.langKey);
-    }
-    tabButton.onclick = () => openNavTab(tabData.id);
-    createSVGTabButton(tabButton, tabData.text, tabData.svgPath);
-    container.appendChild(tabButton);
-});
+// Tarkistetaan löytyikö container
+if (!container) {
+    console.error("container not found 🤔");
+    console.log("Ei voitu luoda navmenua 🙃");
+} else {
+    tabsData.forEach((tabData) => {
+        const tabButton = document.createElement("button");
+        tabButton.classList.add("navtablinks");
+        tabButton.setAttribute("data-id", tabData.id);
+        if (tabData.langKey) {
+            tabButton.setAttribute("data-lang-key", tabData.langKey);
+        }
+        tabButton.onclick = () => openNavTab(tabData.id);
+        createSVGTabButton(tabButton, tabData.text, tabData.svgPath);
+        container.appendChild(tabButton);
+    });
+}
+
 
 function createSVGTabButton(tabElement, buttonText, iconPathD) {
     const svgNS = "http://www.w3.org/2000/svg";

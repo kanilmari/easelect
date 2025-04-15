@@ -10,11 +10,25 @@
 body {
     margin: 0;
     height: 100vh;
-    display: grid;
-    place-items: center;
+    display: flex;
+    flex-direction: column; /* Näyttää elementit pystysuunnassa */
+    /* justify-content: center; */
+    align-items: center; /* Keskittää vaaka */
     background-color: var(--bg_color);
     color: var(--text_color);
     font-family: Arial, Helvetica, sans-serif;
+}
+
+h1,
+form {
+    margin: 0; /* Poistaa oletusmarginaalit */
+    padding: 0;
+}
+
+h1.site_name {
+    margin-bottom: 70px;
+    margin-top: 100px;
+    font-size: 4rem;
 }
 
 form {
@@ -65,3 +79,4 @@ input[type="submit"]:active {
 .hp {
     display: none;
 }
+

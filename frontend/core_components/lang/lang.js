@@ -18,6 +18,7 @@ let currentChosenLang = "";
  * Lukee käännökset /api/translations?lang=xxx -endpointista.
  */
 export async function translatePage(chosen_language) {
+    console.log('translatePage called with language:', chosen_language);
     // Asetetaan html-tagille lang-attribuutti
     document.documentElement.setAttribute('lang', chosen_language);
     currentChosenLang = chosen_language;
@@ -251,12 +252,16 @@ function getTranslation(translationKey, translation_data, chosen_language, missi
         if (debug) console.log("Using fallback English translation for key:", base_key, one_translation);
     }
 
-    // Jos käännöstä ei vieläkään löydy, palautetaan avain
+    // Jos käännöstä ei vieläkään löydy, muotoile avain ja palauta se
     if (!one_translation) {
         if (missing_keys) {
             missing_keys.push(base_key);
         }
-        return translationKey; 
+        // Muotoile avain: korvaa alaviivat välilyönneillä ja tee ensimmäinen kirjain isoksi
+        let formattedKey = base_key
+            .replace(/_/g, ' ')                     // Korvaa alaviivat välilyönneillä
+            .replace(/^\w/, char => char.toUpperCase()); // Tee ensimmäinen kirjain isoksi
+        return variable_part ? `${formattedKey} ${variable_part}` : formattedKey;
     }
 
     // Korvataan mahdolliset muuttujat, esim. $table_name

@@ -1,6 +1,7 @@
 <!-- login.html -->
 <!DOCTYPE html>
 <html lang="fi">
+
 <head>
     <meta charset="UTF-8">
     <base href="/">
@@ -9,24 +10,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Kirjaudu sisään</title>
-    <link rel="stylesheet" href="/core_components/auth/auth.css">
-    <script type="module" src="/core_components/auth/login.js"></script>
+    <title data-lang-key="login">Kirjaudu sisään</title>
+    <link rel="stylesheet" href="/frontend/core_components/auth/auth.css">
 </head>
+
 <body>
+    <h1 class="site_name">Serlog.com</h1>
     <form method="POST" action="/login">
-        <h2>Kirjaudu sisään</h2>
-        
-        <label for="username">Käyttäjätunnus:</label>
+        <h2 data-lang-key="login"></h2>
+
+        <label for="username" data-lang-key="username_or_email"></label>
         <input type="text" id="username" name="username" required>
-        
-        <label for="password">Salasana:</label>
+
+        <label for="password" data-lang-key="password"></label>
         <input type="password" id="password" name="password" required>
-        
+
         <input type="hidden" id="fingerprint" name="fingerprint">
 
         <input type="hidden" id="csrf_token" name="csrf_token" value="{{.CSRFToken}}">
-        
+
         <!-- 2 Honeypot fields -->
         <div class="hp">
             <label for="otp">OTP</label>
@@ -39,39 +41,10 @@
         </div>
 
         <div id="submit">
-            <input type="submit" value="Kirjaudu">
+            <input type="submit" data-lang-key="login" value="Login">
         </div>
     </form>
+    <script type="module" src="/frontend/core_components/auth/login.js"></script>
 </body>
+
 </html>
-<!-- <!DOCTYPE html>
-<html lang="fi">
-<head>
-    <meta charset="UTF-8">
-    <base href="/">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Kirjaudu sisään</title>
-    <link rel="stylesheet" href="/core_components/auth/auth.css">
-    <script type="module" src="/core_components/auth/login.js"></script>
-</head>
-<body>
-    <form method="POST" action="/login">
-        <h2>Kirjaudu sisään</h2>
-        <label for="username">Käyttäjätunnus:</label>
-        <input type="text" id="username" name="username" required>
-        
-        <label for="password">Salasana:</label>
-        <input type="password" id="password" name="password" required>
-        
-        <input type="hidden" id="fingerprint" name="fingerprint">
-        
-        <div id="submit">
-            <input type="submit" value="Kirjaudu">
-        </div>
-    </form>
-</body>
-</html> -->

@@ -2,7 +2,7 @@
 
 import { open_add_row_modal } from '../gt_1_row_crud/gt_1_1_row_create/add_row.js';
 import { delete_selected_items } from '../gt_1_row_crud/gt_1_4_row_delete/delete_rows.js';
-import { createColumnVisibilityDropdown } from './column_visibility_dropdown.js';
+// import { createColumnVisibilityDropdown } from './column_visibility_dropdown.js';
 import { open_column_management_modal } from './column_management.js';
 import { applyViewStyling } from '../../table_views/draw_view_selector_buttons.js';
 
@@ -76,13 +76,13 @@ export function createDeleteSelectedButton(table_name, current_view) {
     return button;
 }
 
-/**
- * Luo column visibility -dropdownin (näkyvät sarakkeet).
- */
-export function createColumnVisibilityDropdownButton(tableContainer) {
-    const dropdown = createColumnVisibilityDropdown(tableContainer);
-    return dropdown || null;
-}
+// /**
+//  * Luo column visibility -dropdownin (näkyvät sarakkeet).
+//  */
+// export function createColumnVisibilityDropdownButton(tableContainer) {
+//     const dropdown = createColumnVisibilityDropdown(tableContainer);
+//     return dropdown || null;
+// }
 
 /**
  * Luo napin taulun column-managementtiä varten.

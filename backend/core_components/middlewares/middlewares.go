@@ -359,3 +359,43 @@ func WithFingerprintCheck(originalHandler http.HandlerFunc) http.HandlerFunc {
 		originalHandler(w, r)
 	}
 }
+
+// WithForcedLoginCheck ohjaa käyttäjän kirjautumaan sisään, jos login_to_browse on true
+// ja sessionissa ei ole kelvollista user_id:tä (eli käyttäjää ei ole kirjautunut tai kyseessä on guest).
+func WithForcedLoginCheck(originalHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		loginToBrowse, err := CheckLoginToBrowse()
+		if err != nil {
+			// Jos asetuksen lukemisessa tulee virhe, oletetaan kirjautumisen vaatimus.
+			log.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+			loginToBrowse = true
+		}
+
+		if loginToBrowse {
+			// Hakee session
+			store := e_sessions.GetStore()
+			session, errSession := store.Get(r, "session")
+			if errSession != nil {
+				log.Printf("\033[31m[WithForcedLoginCheck] session-haku epäonnistui: %s\033[0m\n", errSession.Error())
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return
+			}
+
+			userIDVal, ok := session.Values["user_id"]
+			// Mikäli user_id puuttuu tai kyseessä on guest (esim. user_id==1), ohjataan kirjautumaan.
+			if !ok {
+				log.Println("[WithForcedLoginCheck] user_id puuttuu, ohjataan kirjautumaan")
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return
+			}
+			userID, castOk := userIDVal.(int)
+			if !castOk || userID == 1 {
+				log.Println("[WithForcedLoginCheck] kelvoton user_id, ohjataan kirjautumaan")
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return
+			}
+		}
+
+		originalHandler(w, r)
+	}
+}

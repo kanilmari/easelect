@@ -1,4 +1,25 @@
 // login.js
+import { translatePage } from "../lang/lang.js";
+
+const chosen_language =
+    localStorage.getItem("chosen_language") ||
+    (navigator.language || "en").substring(0, 2);
+console.log("Translating page, chosen_language:", chosen_language);
+translatePage(chosen_language);
+
+const cookiesToRemove = [
+    "device_id",
+    "fingerprint",
+    "nonce_name",
+    "session",
+    "nonce_value",
+];
+cookiesToRemove.forEach((cookieName) => {
+    // HttpOnly-cookieta (kuten session) ei voi poistaa JS:llä,
+    // mutta yritetään joka tapauksessa, jos se ei sattuisi olemaan HttpOnly.
+    document.cookie =
+        cookieName + "=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+});
 
 // Kerätään selaimen fingerprint-dataa
 function gather_browser_fingerprint_data() {
@@ -9,7 +30,7 @@ function gather_browser_fingerprint_data() {
         cookie_enabled: navigator.cookieEnabled,
         screen_width: screen.width,
         screen_height: screen.height,
-        color_depth: screen.colorDepth
+        color_depth: screen.colorDepth,
     };
 }
 
@@ -23,22 +44,24 @@ export async function gather_browser_fingerprint_hash() {
     const encoded_data = encoder.encode(json_str);
     const hash_buffer = await crypto.subtle.digest("SHA-256", encoded_data);
     const hash_array = Array.from(new Uint8Array(hash_buffer));
-    const hash_hex = hash_array.map(b => b.toString(16).padStart(2, '0')).join('');
+    const hash_hex = hash_array
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
     return hash_hex;
 }
 
 // Lisätään submit-event listener, joka varmistaa, että fingerprint lasketaan ennen lomakkeen lähettämistä
-document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.querySelector('form');
+document.addEventListener("DOMContentLoaded", () => {
+    const loginForm = document.querySelector("form");
     if (loginForm) {
-        loginForm.addEventListener('submit', async function(event) {
+        loginForm.addEventListener("submit", async function (event) {
             event.preventDefault();
             try {
                 const hash_value = await gather_browser_fingerprint_hash();
-                document.getElementById('fingerprint').value = hash_value;
-                console.log('fingerprint:' + hash_value);
+                document.getElementById("fingerprint").value = hash_value;
+                console.log("fingerprint:" + hash_value);
             } catch (err) {
-                console.error('Virhe sormenjäljen laskennassa:', err);
+                console.error("Virhe sormenjäljen laskennassa:", err);
             }
             // Kun fingerprint on asetettu, lähetetään lomake
             loginForm.submit();

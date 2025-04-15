@@ -1,3 +1,14 @@
+
+
+
+---
+
+Toimitteko paikallisesti, etänä, vai jotakin siltä väliltä?
+
+Esim. Verkkokaupan lisäksi myymälämme sijaitsevat Tampereella ja Helsingissä.
+
+---
+
 Hyväksyn, että PNG-kuvat näytetään sellaisenaan ja että muut kuvat saavat pieniä reunatehosteita.
 
 Ehdot:
@@ -20,3 +31,40 @@ Käyttäjän valinta
 	Kaipaatko näyttävyyttä ja tyylikkäitä yksityiskohtia? Valitse jokin muu tiedostomuoto.
 
 Näiden ehtojen sisältö voi muuttua, jos sovelluksen toiminnallisuutta kehitetään edelleen.
+
+
+
+
+
+
+
+
+
+
+[] Etäpalvelut
+	- Etäpalvelut voidaan toimittaa käden käänteessä maapallon ympäri, koska niihin ei sisälly fyysisiä tuotteita, kuljetuksia, tms.
+	- Esimerkkejä palveluista, joita voidaan tarjota etänä: online-valmennukset, ohjelmoijat, kuvanmuokkaus, ...
+	
+[] Sijaintikeskeiset palvelut
+	- Jos palvelusi sisältää paikallista toimintaa, kuljetuksia, tai tuotteita, valitse tämä vaihtoehto
+	- Kuljetusliikkeet, verkkokaupat, lastenhoitopalvelut, liikkuvat palvelut, alueelliset palvelut, uimahallit ...
+	
+Palvelun yleiskuvaus:
+
+Kerro palvelustasi yleisellä tasolla.
+
+Tuotteet ja tuotetiedot
+Kahvila voi tarjota espressoa, rakennusliike talon rakennusta. Mitä sinä tarjoat?
+
+Kuvaile ensimmäinen tuotteesi (Tuotteiden maksimimiäärä on tällä hetkellä 30 kpl per palvelu. Tavoitteemme on jatkossa mahdollistaa huomattavasti suuremmat tuotemäärät.)
+
+Linkki tuotekatalogiin, jos tuotteita on yli 30 kpl
+
+Yleistietoa tuotteisiin tai tuotekatalogiin liittyen
+[Tekstiä...          ]
+
+
+
+
+
+

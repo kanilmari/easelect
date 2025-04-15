@@ -1,4 +1,6 @@
 /* base.css */
+
+/* base.css */
 * {
     font-family: Arial, sans-serif;
     letter-spacing: 0.5px;
@@ -6,13 +8,8 @@
     margin: 0;
     color: var(--text_color);
     white-space: normal;
-
-  /* salli normaalit rivinvaihdot */
-  white-space: normal;
-  /* salli ylipitkien sanojen katkaisu tarvittaessa */
-  overflow-wrap: anywhere;
-  /* älä katkaise normaaleja sanoja turhaan */
-  word-break: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 body {
@@ -32,7 +29,6 @@ body {
     margin: auto;
     position: relative;
     grid-column: 2;
-    /* box-shadow: -1px 0 0 0 var(--border_color); */
     max-width: 2560px;
 }
 
@@ -52,7 +48,6 @@ body {
 }
 
 input {
-    /* width: 100%; */
     box-sizing: border-box;
 }
 
@@ -75,7 +70,268 @@ input:focus {
 }
 
 .custom-dropdown-button {
-    /* padding: 10px; */
+    border: 1px solid var(--border_color);
+    cursor: pointer;
+    background-color: var(--bg_color);
+    min-width: 150px;
+    box-sizing: border-box;
+}
+
+.custom-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--bg_color);
+    min-width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border_color);
+    z-index: 1;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.custom-dropdown-content.show {
+    display: block;
+}
+
+.custom-search-box {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+.custom-checkbox-container {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.custom-dropdown-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+/* .table_parts_container {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: auto 450px;
+} */
+.table_parts_container {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: auto 450px;
+    /* Oletus: taulukko + filterBar */
+    transition: grid-template-columns 0.3s ease;
+    /* Animaatio gridin muutokselle */
+}
+
+.table_parts_container>div {
+    overflow: auto;
+}
+
+.transparent {
+    opacity: 0;
+}
+
+textarea {
+    background-color: var(--input_bg_color);
+    color: var(--text_color);
+    font-size: 1rem;
+    width: 100%;
+}
+
+.auto_resize_textarea {
+    background-color: var(--input_bg_color);
+    color: var(--text_color);
+    resize: vertical;
+    box-sizing: border-box;
+    line-height: 1.4em;
+    min-height: 1.4em;
+    width: 100%;
+}
+
+.input-group {
+    position: relative;
+    display: grid;
+}
+
+.input-group label {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    transition: all 0.2s;
+    background-color: var(--bg_color);
+    padding: 0 5px;
+    color: gray;
+}
+
+.input-group input,
+.input-group textarea,
+.input-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border_color);
+    border-radius: 5px;
+    outline: none;
+    font-size: 16px;
+    background-color: var(--bg_color_text);
+}
+
+.input-group input:focus+label,
+.input-group input:not(:placeholder-shown)+label,
+.input-group textarea:focus+label,
+.input-group textarea:not(:placeholder-shown)+label {
+    top: 0;
+    font-size: 12px;
+    color: var(--text_color);
+}
+
+.no-float+label {
+    position: static;
+    transform: none;
+    font-size: inherit;
+    color: inherit;
+    transition: none;
+}
+
+.no-float:focus+label,
+.no-float:not(:placeholder-shown)+label {
+    position: static !important;
+    transform: none !important;
+    font-size: inherit !important;
+    color: inherit !important;
+}
+
+.filter-elements-container {
+    display: grid;
+    gap: 10px;
+    background-color: var(--bg_color);
+}
+
+.chat-bubble details {
+    padding: 10px;
+    border: 1px solid var(--border_color);
+    max-height: 200px;
+    overflow: auto;
+    border-radius: 4px;
+}
+
+.chat-bubble summary {
+    border-bottom: 1px solid var(--border_color);
+}
+
+summary {
+    cursor: pointer;
+}
+
+.sort_button {
+    margin: 5px;
+}
+
+.column_management_forms input[type="text"] {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.content_div {
+    height: 100vh;
+}
+
+.input-group {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+}
+
+.row-container {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: 50px auto;
+}
+
+.combined-filter-sort-container {
+    display: grid;
+    gap: 0.5rem;
+}
+
+/* 
+
+* {
+    font-family: Arial, sans-serif;
+    letter-spacing: 0.5px;
+    box-sizing: border-box;
+    margin: 0;
+    color: var(--text_color);
+    white-space: normal;
+
+  white-space: normal;
+
+  overflow-wrap: anywhere;
+
+  word-break: normal;
+}
+
+body {
+    background-color: color-mix(in srgb, var(--bg_color) 50%, var(--extreme_bg) 50%);
+    overflow: hidden;
+}
+
+.body_wrapper {
+    overflow: hidden;
+}
+
+.body_content {
+    height: 100vh;
+    background-color: var(--bg_color);
+    color: var(--text_color);
+    margin: auto;
+    position: relative;
+    grid-column: 2;
+
+    max-width: 2560px;
+}
+
+#tabs_container {
+    transform: translateX(var(--navbar_width));
+    width: calc(100% - var(--navbar_width));
+    transition: transform 0.3s, width 0.3s;
+}
+
+#tabs_container.navbar_hidden {
+    width: 100%;
+    transform: unset;
+}
+
+.hidden {
+    display: none !important;
+}
+
+input {
+
+    box-sizing: border-box;
+}
+
+input:focus {
+    outline: 2px solid var(--border_color) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    input {
+        background-color: var(--input_bg_color);
+        color: var(--text_color);
+        height: 36px;
+    }
+}
+
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-dropdown-button {
+
     border: 1px solid var(--border_color);
     cursor: pointer;
     background-color: var(--bg_color);
@@ -125,58 +381,37 @@ input:focus {
 }
 
 .table_parts_container>div {
-    /* height: 100vh; */
+
     overflow: auto;
-    /* padding: 0 15px; */
+
 }
 
 .transparent {
     opacity: 0;
 }
 
-/* Resize columns */
-
-/* table {
-      table-layout: fixed;
-      width: max-content;
-  }
-  th,
-  td {
-      position: relative;
-      overflow: visible;
-  } */
-
-/* Taulun perustyyli */
-table {
+table.table_from_db {
     table-layout: fixed;
     width: max-content;
 }
 
-/* Perustyyli taulukolle ja soluille */
 th,
 td {
     position: relative;
     overflow: hidden;
-    /* break word */
-    /* word-wrap: break-word; */
-    /* overflow: hidden; */
+
 }
 
-/* Ensimmäisen header-rivin solut jäävät tahmeiksi ruudun yläosaan */
 thead tr:first-child th {
     position: sticky;
     top: -1px;
     background: var(--bg_color);
     z-index: 3;
-    /* varmistaa, että header on muiden elementtien päällä */
+
 }
 
-/* Toisen header-rivin (esim. suodattimet) solut jäävät header-rivin alapuolelle */
 thead tr:nth-child(2) th {
-    /* position: sticky;
-    top: 40px; 
-    background: var(--bg_color);
-    z-index: 2; */
+
     display: none;
 }
 
@@ -200,12 +435,10 @@ textarea {
 .auto_resize_textarea {
     background-color: var(--input_bg_color);
     color: var(--text_color);
-    /* estetään selainpohjainen koon muokkaus, halutessasi voit sallia pystysuunnan: resize: vertical; */
+
     resize: vertical;
     box-sizing: border-box;
-    /* piilotetaan vierityspalkki */
-    /* overflow: hidden; */
-    /* pieni oletuskorkeus, kasvaa dynaamisesti kun tekstiä tulee */
+
     line-height: 1.4em;
     min-height: 1.4em;
     width: 100%;
@@ -216,7 +449,6 @@ textarea {
     display: grid;
 }
 
-/* Yleinen label-tyyli kelluville kentille */
 .input-group label {
     position: absolute;
     top: 50%;
@@ -228,7 +460,6 @@ textarea {
     color: gray;
 }
 
-/* Perus input- ja textarea-tyylit */
 .input-group input,
 .input-group textarea, .input-group select {
     width: 100%;
@@ -240,7 +471,6 @@ textarea {
     background-color: var(--bg_color_text);
 }
 
-/* Kelluvan labelin aktivoituminen */
 .input-group input:focus+label,
 .input-group input:not(:placeholder-shown)+label,
 .input-group textarea:focus+label,
@@ -250,17 +480,15 @@ textarea {
     color: var(--text_color);
 }
 
-/* Tavallinen kenttä, jossa label EI kellu (ei mitään kokomuutoksia klikatessa) */
 .no-float+label {
     position: static;
     transform: none;
     font-size: inherit;
     color: inherit;
     transition: none;
-    /* Voit myös poistaa transition:in */
+
 }
 
-/* Ylikirjoitetaan focus- ja placeholder-shown -säännöt */
 .no-float:focus+label,
 .no-float:not(:placeholder-shown)+label {
     position: static !important;
@@ -291,49 +519,25 @@ summary {
     cursor: pointer;
 }
 
-/* .filterBar-section > div {
-      display: grid;
-      grid-template-columns: auto auto;
-      gap: 10px;
-  } */
-
 .sort_button {
     margin: 5px;
 }
 
-/* .single_detail_item {
-      word-wrap: break-word;
-      overflow: auto;
-      max-height: 200px;
-  } */
-
-/* .single_description_item {
-      word-wrap: break-word;
-      overflow: auto;
-      max-height: 250px;
-  } */
-
 .column_management_forms input[type="text"] {
     font-size: 16px;
     font-weight: bold;
-    /* text-transform: uppercase; */
+
 }
-
-
 
 .content_div {
     height: 100vh;
 }
 
-
 .input-group {
     display: grid;
     gap: 0.5rem;
     grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
-    /* display: flex;
-       flex-direction: row;
-       align-items: center;
-       gap: 0.5rem; */
+
 }
 
 .row-container {
@@ -346,3 +550,5 @@ summary {
     display: grid;
     gap: 0.5rem;
 }
+
+*/
