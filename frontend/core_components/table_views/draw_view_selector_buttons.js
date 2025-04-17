@@ -98,9 +98,9 @@ export function applyViewStyling(table_name) {
 
     const storedViewKey = localStorage.getItem(`${table_name}_view`);
 
-    // Asetetaan transitionit: voit laajentaa näitä jos haluat animointia myös muihin ominaisuuksiin
-    bodyContent.style.transition =
-        "max-width 0.3s ease-in-out";
+    // // Asetetaan transitionit: voit laajentaa näitä jos haluat animointia myös muihin ominaisuuksiin
+    // bodyContent.style.transition =
+    //     "max-width 0.3s ease-in-out";
 
     if (!["table", "normal", "transposed"].includes(storedViewKey)) {
         bodyContent.style.maxWidth = "2560px";

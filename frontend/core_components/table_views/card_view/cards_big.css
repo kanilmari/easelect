@@ -42,7 +42,7 @@
 .two_line_label {
     margin-left: -5px;
     margin-bottom: 5px;
-    background: color-mix(in srgb, var(--extreme_bg) 90%, #888 10%);
+    background: color-mix(in srgb, var(--bg_color_extreme) 90%, #888 10%);
     padding: 5px 7px;
     width: fit-content;
     border-radius: 7px;

@@ -62,3 +62,5 @@
 @import url("../common_components/collapsible-section/collapsible_section.css");
 
 @import url("./dev.css");
+
+@import url("./mobile_friendliness.css");

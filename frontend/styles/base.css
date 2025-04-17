@@ -13,7 +13,7 @@
 }
 
 body {
-    background-color: color-mix(in srgb, var(--bg_color) 50%, var(--extreme_bg) 50%);
+    background-color: color-mix(in srgb, var(--bg_color) 50%, var(--bg_color_extreme) 50%);
     overflow: hidden;
 }
 
@@ -35,7 +35,7 @@ body {
 #tabs_container {
     transform: translateX(var(--navbar_width));
     width: calc(100% - var(--navbar_width));
-    transition: transform 0.3s, width 0.3s;
+    /* transition: transform 0.3s, width 0.3s; */
 }
 
 #tabs_container.navbar_hidden {
@@ -122,7 +122,7 @@ input:focus {
     display: grid;
     grid-template-columns: auto 450px;
     /* Oletus: taulukko + filterBar */
-    transition: grid-template-columns 0.3s ease;
+    /* transition: grid-template-columns 0.3s ease; */
     /* Animaatio gridin muutokselle */
 }
 
@@ -256,6 +256,10 @@ summary {
     gap: 0.5rem;
 }
 
+
+
+
+
 /* 
 
 * {
@@ -274,7 +278,7 @@ summary {
 }
 
 body {
-    background-color: color-mix(in srgb, var(--bg_color) 50%, var(--extreme_bg) 50%);
+    background-color: color-mix(in srgb, var(--bg_color) 50%, var(--bg_color_extreme) 50%);
     overflow: hidden;
 }
 

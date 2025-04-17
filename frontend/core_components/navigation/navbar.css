@@ -9,13 +9,13 @@
     background-color: var(--bg_color);
     /* border-right: 2px solid var(--border_color); */
     /* box-shadow: inset -2px 0 0 0 var(--border_color); */
-    box-shadow: inset -2px 0 0 0 var(--border_color), 0 0 10px 10px var(--bg_color_2);
+    box-shadow: inset -2px 0 0 0 var(--border_color), 15px 0 15px 0 rgb(0 0 0 / 0.7);
     grid-auto-rows: min-content;
     padding: var(--navbar_padding);
-    /* height: 100vh; */
     overflow-y: auto;
     overflow-x: hidden;
     direction: rtl;
+    z-index: 99999;
 }
 
 #navbar * {
@@ -204,7 +204,7 @@
 
 #navbar {
     opacity: 1;
-    transition: transform 0.3s ease, opacity 0.15s ease;
+    /* transition: transform 0.3s ease, opacity 0.15s ease; */
 }
 
 #overlay {
@@ -250,7 +250,7 @@
     background-color: var(--button_bg_color);
     color: var(--button_text_color);
     border: 1px solid var(--border_color);
-    z-index: 10000;
+    z-index: 100000;
     cursor: pointer;
     height: 36px;
     width: 36px;

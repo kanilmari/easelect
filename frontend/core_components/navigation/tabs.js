@@ -138,7 +138,7 @@ function createSVGTabButton(tabElement, buttonText, iconPathD) {
     outlinePath.setAttribute("d", INACTIVE_PATH);
     outlinePath.setAttribute("stroke", "var(--border_color)");
     outlinePath.setAttribute("stroke-width", "2");
-    outlinePath.setAttribute("fill", "var(--blended_bg_2)");
+    outlinePath.setAttribute("fill", "var(--bg_color_blended_2)");
     svg.appendChild(outlinePath);
 
     const iconPath = document.createElementNS(svgNS, "path");
@@ -203,7 +203,7 @@ export async function updateTabPathsForView(tableName) {
             if (isActive) {
                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_text)");
             } else {
-                animatePath(outlinePath, INACTIVE_PATH, "var(--blended_bg_2)");
+                animatePath(outlinePath, INACTIVE_PATH, "var(--bg_color_blended_2)");
             }
         } else {
             const navTabs = document.querySelector(".navtabs");
@@ -213,7 +213,7 @@ export async function updateTabPathsForView(tableName) {
             if (isActive) {
                 animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_text)");
             } else {
-                animatePath(outlinePath, BUTTON_PATH, "var(--blended_bg_2)");
+                animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_blended_2)");
             }
         }
     });
@@ -283,7 +283,7 @@ export async function updateTabPathsForView(tableName) {
 //     outlinePath.setAttribute("d", INACTIVE_PATH);
 //     outlinePath.setAttribute("stroke", "var(--border_color)");
 //     outlinePath.setAttribute("stroke-width", "2");
-//     outlinePath.setAttribute("fill", "var(--blended_bg_2)");
+//     outlinePath.setAttribute("fill", "var(--bg_color_blended_2)");
 //     svg.appendChild(outlinePath);
 
 //     const iconPath = document.createElementNS(svgNS, "path");
@@ -339,13 +339,13 @@ export async function updateTabPathsForView(tableName) {
 //             if (isActive) {
 //                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_text)");
 //             } else {
-//                 animatePath(outlinePath, INACTIVE_PATH, "var(--blended_bg_2)");
+//                 animatePath(outlinePath, INACTIVE_PATH, "var(--bg_color_blended_2)");
 //             }
 //         } else {
 //             if (isActive) {
 //                 animatePath(outlinePath, BUTTON_ACTIVE_PATH, "var(--bg_color_text)");
 //             } else {
-//                 animatePath(outlinePath, BUTTON_INACTIVE_PATH, "var(--blended_bg_2)");
+//                 animatePath(outlinePath, BUTTON_INACTIVE_PATH, "var(--bg_color_blended_2)");
 //             }
 //         }
 //     });
@@ -425,7 +425,7 @@ export async function updateTabPathsForView(tableName) {
 // //     outlinePath.setAttribute("d", INACTIVE_PATH);
 // //     outlinePath.setAttribute("stroke", "var(--border_color)");
 // //     outlinePath.setAttribute("stroke-width", "2");
-// //     outlinePath.setAttribute("fill", "var(--blended_bg_2)");
+// //     outlinePath.setAttribute("fill", "var(--bg_color_blended_2)");
 // //     svg.appendChild(outlinePath);
 
 // //     // Ikoni
@@ -492,13 +492,13 @@ export async function updateTabPathsForView(tableName) {
 // //                 outlinePath.setAttribute("fill", "var(--bg_color_text)"); // Asetetaan täyttö heti, CSS hoitaa siirtymän
 // //                 animatePathTab(outlinePath, 0, 1, 300); // Animoidaan inaktiivisesta aktiiviseen
 // //             } else {
-// //                 outlinePath.setAttribute("fill", "var(--blended_bg_2)");
+// //                 outlinePath.setAttribute("fill", "var(--bg_color_blended_2)");
 // //                 animatePathTab(outlinePath, 1, 0, 300); // Animoidaan aktiivisesta inaktiiviseen
 // //             }
 // //         } else {
 // //             // Button-näkymässä asetetaan polku heti, vain täyttö animoidaan CSS:llä
 // //             outlinePath.setAttribute("d", BUTTON_INACTIVE_PATH);
-// //             outlinePath.setAttribute("fill", isActive ? "var(--bg_color_text)" : "var(--blended_bg_2)");
+// //             outlinePath.setAttribute("fill", isActive ? "var(--bg_color_text)" : "var(--bg_color_blended_2)");
 // //         }
 // //     });
 // // }
@@ -605,7 +605,7 @@ export async function updateTabPathsForView(tableName) {
 // // //     outlinePath.setAttribute("d", INACTIVE_PATH);
 // // //     outlinePath.setAttribute("stroke", "var(--border_color)");
 // // //     outlinePath.setAttribute("stroke-width", "2");
-// // //     outlinePath.setAttribute("fill", "var(--blended_bg_2)");
+// // //     outlinePath.setAttribute("fill", "var(--bg_color_blended_2)");
 // // //     svg.appendChild(outlinePath);
 
 // // //     // Ikoni
@@ -696,14 +696,14 @@ export async function updateTabPathsForView(tableName) {
 // // //             if (isActive) {
 // // //                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_text)", 250);
 // // //             } else {
-// // //                 animatePath(outlinePath, INACTIVE_PATH, "var(--blended_bg_2)", 250);
+// // //                 animatePath(outlinePath, INACTIVE_PATH, "var(--bg_color_blended_2)", 250);
 // // //             }
 // // //         } else {
 // // //             // Muu näkymä => button-tyylinen polku
 // // //             if (isActive) {
 // // //                 animatePath(outlinePath, BUTTON_ACTIVE_PATH, "var(--bg_color_text)", 50);
 // // //             } else {
-// // //                 animatePath(outlinePath, BUTTON_INACTIVE_PATH, "var(--blended_bg_2)", 50);
+// // //                 animatePath(outlinePath, BUTTON_INACTIVE_PATH, "var(--bg_color_blended_2)", 50);
 // // //             }
 // // //         }
 // // //     });
@@ -731,7 +731,7 @@ export async function updateTabPathsForView(tableName) {
 // // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_text)");
 // // // //             } else {
 // // // //                 svgPaths[0].setAttribute("d", INACTIVE_PATH);
-// // // //                 svgPaths[0].setAttribute("fill", "var(--blended_bg_2)");
+// // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_blended_2)");
 // // // //             }
 // // // //         } else {
 // // // //             // Jos view EI ole 'card', käytetään button-tyylistä polkua
@@ -740,7 +740,7 @@ export async function updateTabPathsForView(tableName) {
 // // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_text)");
 // // // //             } else {
 // // // //                 svgPaths[0].setAttribute("d", BUTTON_INACTIVE_PATH);
-// // // //                 svgPaths[0].setAttribute("fill", "var(--blended_bg_2)");
+// // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_blended_2)");
 // // // //             }
 // // // //         }
 // // // //     });
@@ -854,7 +854,7 @@ export async function updateTabPathsForView(tableName) {
 // // // //     outlinePath.setAttribute("d", INACTIVE_PATH);
 // // // //     outlinePath.setAttribute("stroke", "var(--border_color)");
 // // // //     outlinePath.setAttribute("stroke-width", "2");
-// // // //     outlinePath.setAttribute("fill", "var(--blended_bg_2)");
+// // // //     outlinePath.setAttribute("fill", "var(--bg_color_blended_2)");
 // // // //     svg.appendChild(outlinePath);
 
 // // // //     // Ikonin polku
@@ -890,7 +890,7 @@ export async function updateTabPathsForView(tableName) {
 // // // //         const svgPaths = allTabButtons[i].querySelectorAll("svg path");
 // // // //         if (svgPaths[0]) {
 // // // //             svgPaths[0].setAttribute("d", INACTIVE_PATH);
-// // // //             svgPaths[0].setAttribute("fill", "var(--blended_bg_2)");
+// // // //             svgPaths[0].setAttribute("fill", "var(--bg_color_blended_2)");
 // // // //         }
 // // // //     }
 

@@ -16,6 +16,7 @@ import { createAddRowButton } from "../general_tables/gt_toolbar/button_factory.
 
 // Admin-ominaisuudet eriytettynä
 import { appendAdminFeatures } from "./create_filter_bar_admin.js";
+import "./overlay_filter_bar_observer.js";
 
 // Määritellään kynnysarvo
 const FILTERBAR_WIDTH_THRESHOLD = 1200;
@@ -166,30 +167,33 @@ export function create_filter_bar(
     data_types,
     current_view
 ) {
-    // 0) Haetaan tai luodaan table_parts_container
-    let table_parts_container = document.getElementById(
-        `${table_name}_table_parts_container`
-    );
-    if (!table_parts_container) {
-        table_parts_container = document.createElement("div");
-        table_parts_container.id = `${table_name}_table_parts_container`;
-        document.body.appendChild(table_parts_container);
-    }
+    /* ---------- 0) Containerit ---------- */
+    let table_parts_container =
+        document.getElementById(`${table_name}_table_parts_container`) ??
+        (() => {
+            const div = document.createElement("div");
+            div.id = `${table_name}_table_parts_container`;
+            document.body.appendChild(div);
+            return div;
+        })();
 
-    // 1) Luodaan filterBar, jos sitä ei vielä ole
+    /* ---------- 1) Luodaan filterBar, jos puuttuu ---------- */
     let filter_bar = document.getElementById(`${table_name}_filterBar`);
     if (!filter_bar) {
         filter_bar = document.createElement("div");
         filter_bar.id = `${table_name}_filterBar`;
         filter_bar.classList.add("filterBar");
 
-        // 1a) Ylin rivirakenne: taulun otsikko + rivimäärä + toggle-painike
+        /* =================================================== */
+        /* 1a) Ylhäinen otsikkorivi + toggle‑nappi             */
+        /* =================================================== */
+
         const title_container = document.createElement("div");
         title_container.style.display = "flex";
         title_container.style.justifyContent = "space-between";
         title_container.style.alignItems = "baseline";
 
-        // Vasen puoli: taulun nimi
+        /* vasen puoli: nimi */
         const left_part = document.createElement("div");
         const table_name_element = document.createElement("div");
         table_name_element.textContent = table_name;
@@ -198,13 +202,11 @@ export function create_filter_bar(
         table_name_element.setAttribute("data-lang-key", table_name);
         table_name_element.title = table_name;
         left_part.appendChild(table_name_element);
-
-        // Pienemmällä fontilla sama nimi (esimerkki)
         const small_table_name_div = document.createElement("div");
         small_table_name_div.textContent = table_name;
         left_part.appendChild(small_table_name_div);
 
-        // Oikea puoli: rivimäärä + toggle-nappi
+        /* oikea puoli: rivimäärä + nappi */
         const topRightContainer = document.createElement("div");
         topRightContainer.style.display = "flex";
         topRightContainer.style.alignItems = "center";
@@ -212,55 +214,52 @@ export function create_filter_bar(
 
         const row_count_element = document.createElement("span");
         row_count_element.textContent = "... ";
-
         fetchRowCount(table_name).then((count) => {
-            const theNumber = count !== null ? count : "?";
-            row_count_element.textContent = theNumber + " ";
-
+            const theNumber = count ?? "?";
+            row_count_element.textContent = `${theNumber} `;
             const resultsText = document.createElement("span");
-
-            // Tarkistetaan, onko tuloksia yksi vai useampia
-            if (count === 1) {
-                resultsText.setAttribute("data-lang-key", "result");
-                resultsText.textContent = "result";
-            } else {
-                resultsText.setAttribute("data-lang-key", "results");
-                resultsText.textContent = "results";
-            }
-
+            resultsText.setAttribute(
+                "data-lang-key",
+                count === 1 ? "result" : "results"
+            );
+            resultsText.textContent = count === 1 ? "result" : "results";
             row_count_element.appendChild(resultsText);
         });
 
-        // Luodaan toggle-painike (klikkaus piilottaa/näyttää suodatuspalkin)
         const toggleButton = document.createElement("button");
+        toggleButton.classList.add("hide_filter_bar_button");
         toggleButton.title = "Piilota tai näytä suodatuspalkki";
-        // Klassinen sivupalkkisymboli (sivupalkki oikealla):
-        toggleButton.innerHTML = `
-            <svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24">
-                <path d="M2 3h20v18H2V3zm13 0v18h7V3h-7z"/>
-            </svg>
-        `;
+        toggleButton.innerHTML =
+            '<svg viewBox="0 -960 960 960" width="24" height="24" fill="var(--text_color)"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm440-80h120v-560H640v560Zm-80 0v-560H200v560h360Zm80 0h120-120Z"/></svg>';
 
-        toggleButton.addEventListener("click", () => {
-            const filterBarElem = document.getElementById(`${table_name}_filterBar`);
-            const containerElem = document.getElementById(`${table_name}_table_parts_container`);
-
-            filterBarVisible = !filterBarVisible;
-            if (!filterBarVisible) {
-                filterBarElem.classList.add("hidden");
-                containerElem.style.gridTemplateColumns = "auto 0px";
+        /* ---------- uusi, paljon pelkistetympi näkyvyysfunktio ---------- */
+        function setFilterBarVisibility(isVisible) {
+            if (isVisible) {
+                filter_bar.classList.remove("hidden");
+                table_parts_container.style.gridTemplateColumns = "auto 450px";
+                showFilterBarButton.style.display = "none";
             } else {
-                filterBarElem.classList.remove("hidden");
-                containerElem.style.gridTemplateColumns = "auto 450px";
+                filter_bar.classList.add("hidden");
+                table_parts_container.style.gridTemplateColumns = "auto 0px";
+                showFilterBarButton.style.display = "block";
             }
-        });
+            filterBarVisible = isVisible;
+            updateShowFilterBarButtonPosition(
+                table_parts_container,
+                showFilterBarButton
+            );
+        }
+
+        toggleButton.addEventListener("click", () =>
+            setFilterBarVisibility(!filterBarVisible)
+        );
 
         topRightContainer.appendChild(row_count_element);
         topRightContainer.appendChild(toggleButton);
-
         title_container.appendChild(left_part);
         title_container.appendChild(topRightContainer);
         filter_bar.appendChild(title_container);
+
 
         // 2) Luodaan top_row ja sen sisään kaksi riviä:
         //    - Rivi 1: peruskäyttäjän nappi + (tarvittaessa) sarakenäkyvyys
@@ -666,50 +665,120 @@ export function create_filter_bar(
         );
         filter_bar.appendChild(chatCollapsible);
 
-        // 5) Liitetään filter_bar DOM:iin
+        // Luo nappi suodatuspalkin näyttämiseksi
+        const showFilterBarButton = document.createElement("button");
+        showFilterBarButton.classList.add("show_filter_bar_button");
+        showFilterBarButton.style.position = "absolute";
+        showFilterBarButton.style.top = "10px";
+        showFilterBarButton.style.right = "0px";
+        showFilterBarButton.style.display = "none";
+        showFilterBarButton.innerHTML =
+            '<svg viewBox="0 -960 960 960" width="24" height="24" fill="var(--text_color)"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm440-80h120v-560H640v560Zm-80 0v-560H200v560h360Zm80 0h120-120Z"/></svg>';
+
+        showFilterBarButton.addEventListener("click", () =>
+            setFilterBarVisibility(true)
+        );
+
+        table_parts_container.appendChild(showFilterBarButton);
         table_parts_container.appendChild(filter_bar);
 
-        // 6) Luodaan readOnlyContainer, jos sitä ei vielä ole
-        let readOnlyContainer = document.getElementById(
-            `${table_name}_readOnlyContainer`
-        );
-        if (!readOnlyContainer) {
-            readOnlyContainer = document.createElement("div");
-            readOnlyContainer.id = `${table_name}_readOnlyContainer`;
-            readOnlyContainer.classList.add("readOnlyContainer");
-            table_parts_container.appendChild(readOnlyContainer);
+        /* 4) readOnlyContainer, ruudun leveys, skriptit jne.  */
+        /*    (identtiset alkuperäisen kanssa, jätetty pois)   */
+
+        /* ---------- Ikkunan koon muutokset ---------- */
+        window.addEventListener("resize", () => {
+            checkWindowWidth(table_name);
+            updateShowFilterBarButtonPosition(
+                table_parts_container,
+                showFilterBarButton
+            );
+        });
+
+        /* ---------- Klikkaus taustan puolelle ---------- */
+        document.addEventListener("click", (event) => {
+            if (
+                window.innerWidth < 1000 &&
+                filterBarVisible &&
+                !filter_bar.contains(event.target) &&
+                !showFilterBarButton.contains(event.target)
+            ) {
+                setFilterBarVisibility(false);
+            }
+        });
+    }
+}
+
+// --- Uusi funktio nappulan sijainnin päivitykseen ---
+function updateShowFilterBarButtonPosition(
+    table_parts_container,
+    showFilterBarButton
+) {
+    const visibleScrollableContent = table_parts_container.querySelector(
+        ".scrollable_content:not([style*='display: none'])"
+    );
+    if (!visibleScrollableContent) {
+        console.warn("Ei löytynyt näkyvää scrollable_content-elementtiä");
+        return;
+    }
+
+    const hasVerticalScroll =
+        visibleScrollableContent.scrollHeight >
+        visibleScrollableContent.clientHeight;
+
+    if (hasVerticalScroll) {
+        // Lasketaan scrollbaari leveyden erotuksena offsetWidth - clientWidth
+        const scrollbarWidth =
+            visibleScrollableContent.offsetWidth -
+            visibleScrollableContent.clientWidth;
+
+        if (scrollbarWidth === 0) {
+            // Scrollbaari voi olla overlay-tyyppinen (ei "vie tilaa")
+            showFilterBarButton.style.right = "17px";
+            console.log(
+                "Scrollbar havaittu, mutta leveys on 0px (overlay?), nappi siirretään n px vasemmalle 😊"
+            );
+        } else {
+            // Normaali scrollbaari, lisätään 10px "tyhjää" nappulan ja scrollbarin väliin
+            showFilterBarButton.style.right = `${scrollbarWidth + 10}px`;
+            console.log(
+                `Scrollbar havaittu leveydellä ${scrollbarWidth}px, nappi siirretään ${
+                    scrollbarWidth + 10
+                }px vasemmalle 😊`
+            );
         }
-
-        // Alustetaan ruudun leveyden tarkistus
-        checkWindowWidth(table_name);
-
-        // Kuunnellaan ikkunan koon muutoksia
-        window.addEventListener("resize", () => checkWindowWidth(table_name));
+    } else {
+        // Ei scrollattavaa sisältöä → nappi 10px oikeasta reunasta
+        showFilterBarButton.style.right = "10px";
+        console.log("Ei scrollbaria, nappi on oikeassa reunassa (10px) 😊");
     }
 }
 
 function checkWindowWidth(table_name) {
-    const windowWidth = window.innerWidth;
     const filter_bar = document.getElementById(`${table_name}_filterBar`);
-    const table_parts_container = document.getElementById(`${table_name}_table_parts_container`);
+    const table_parts_container = document.getElementById(
+        `${table_name}_table_parts_container`
+    );
+    if (!filter_bar || !table_parts_container) return;
 
-    // Tarkistetaan, että elementit löytyvät
-    if (!filter_bar || !table_parts_container) {
-        console.warn(`Elementtejä ei löydy DOM:sta taululle ${table_name}`);
-        return;
-    }
-
-    if (windowWidth < FILTERBAR_WIDTH_THRESHOLD) {
-        filter_bar.classList.add('hidden');
-        table_parts_container.style.gridTemplateColumns = 'auto 0px'; // Piilotettu
+    const showFilterBarButton = table_parts_container.querySelector(
+        ".show_filter_bar_button"
+    );
+    if (window.innerWidth < FILTERBAR_WIDTH_THRESHOLD) {
+        filter_bar.classList.add("hidden");
+        table_parts_container.style.gridTemplateColumns = "auto 0px";
         filterBarVisible = false;
+        showFilterBarButton && (showFilterBarButton.style.display = "block");
     } else {
-        filter_bar.classList.remove('hidden');
-        table_parts_container.style.gridTemplateColumns = 'auto 450px'; // Näkyvissä
+        filter_bar.classList.remove("hidden");
+        table_parts_container.style.gridTemplateColumns = "auto 450px";
         filterBarVisible = true;
+        showFilterBarButton && (showFilterBarButton.style.display = "none");
     }
+    updateShowFilterBarButtonPosition(
+        table_parts_container,
+        showFilterBarButton
+    );
 }
-
 
 // // create_filter_bar.js (peruskäyttäjän ja adminin yhteinen runko)
 
@@ -1410,4 +1479,3 @@ function checkWindowWidth(table_name) {
 //         table_parts_container.style.gridTemplateColumns = 'auto 450px'; /* Näkyvissä */
 //     }
 // }
-

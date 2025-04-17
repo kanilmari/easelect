@@ -117,7 +117,7 @@
 /* Korostus: käytetään mukautettuja värejä */
 .cell.selected {
     color: white;
-    background-color: var(--extreme_bg);
+    background-color: var(--bg_color_extreme);
     /* text-shadow: var(--text_shadow); */
     transition: all 0.15s ease;
     outline: 3px solid var(--outline_color);
