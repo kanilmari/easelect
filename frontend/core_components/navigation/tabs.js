@@ -52,12 +52,14 @@ const tabsData = [
         text: "Browse",
         langKey: "browse",
         svgPath: SERVICE_CATALOG_PATH,
+        adminTab: false,
     },
     {
         id: "create",
         text: "Create",
         langKey: "create",
         svgPath: CREATE_PATH,
+        adminTab: true,
     },
     {
         userContent: true,
@@ -65,6 +67,7 @@ const tabsData = [
         text: "Account",
         langKey: "account",
         svgPath: USER_PATH,
+        adminTab: true,
     },
     {
         userContent: true,
@@ -72,6 +75,7 @@ const tabsData = [
         text: "Users",
         langKey: "users",
         svgPath: USERS_PATH,
+        adminTab: false,
     },
     {
         nonUserContent: true,
@@ -79,6 +83,7 @@ const tabsData = [
         text: "Register",
         langKey: "register",
         svgPath: REGISTER_PATH,
+        adminTab: true,
     },
     {
         nonUserContent: true,
@@ -86,6 +91,7 @@ const tabsData = [
         text: "Login",
         langKey: "login",
         svgPath: LOGIN_PATH,
+        adminTab: true,
     },
     {
         userContent: true,
@@ -94,25 +100,26 @@ const tabsData = [
         langKey: "logout",
         svgPath: LOGOUT_PATH,
         alwaysNarrowButton: true,
+        adminTab: true,
     },
     {
         id: "about",
         text: "About",
         langKey: "about",
         svgPath: ABOUT_PATH,
+        adminTab: false,
     },
 ];
 
-// nimiehdotus: navmenu.js
-
 const container = document.getElementById("navmenu");
-
+const isAdmin = localStorage.getItem("admin_mode") === "true";
 // Tarkistetaan löytyikö container
 if (!container) {
     console.error("container not found 🤔");
     console.log("Ei voitu luoda navmenua 🙃");
 } else {
     tabsData.forEach((tabData) => {
+        if (tabData.adminTab && !isAdmin) return;
         const tabButton = document.createElement("button");
         tabButton.classList.add("navtablinks");
         tabButton.setAttribute("data-id", tabData.id);
@@ -124,7 +131,6 @@ if (!container) {
         container.appendChild(tabButton);
     });
 }
-
 
 function createSVGTabButton(tabElement, buttonText, iconPathD) {
     const svgNS = "http://www.w3.org/2000/svg";
@@ -201,7 +207,7 @@ export async function updateTabPathsForView(tableName) {
                 navTabs.style.right = "";
             }
             if (isActive) {
-                animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_text)");
+                animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_2)");
             } else {
                 animatePath(outlinePath, INACTIVE_PATH, "var(--bg_color_blended_2)");
             }
@@ -211,13 +217,71 @@ export async function updateTabPathsForView(tableName) {
                 navTabs.style.right = "-15px";
             }
             if (isActive) {
-                animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_text)");
+                animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_2)");
             } else {
                 animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_blended_2)");
             }
         }
     });
 }
+
+// function createSVGTabButton(tabElement, buttonText, iconPathD) {
+//     const svgNS = "http://www.w3.org/2000/svg";
+//     const svg = document.createElementNS(svgNS, "svg");
+//     svg.setAttribute("width", "250");
+//     svg.setAttribute("height", "63");
+//     svg.setAttribute("viewBox", "-2 0 250 63");
+//     svg.classList.add("svg-container");
+
+//     // Gradientin määrittely aktiivisille tabeille
+//     const defs = document.createElementNS(svgNS, "defs");
+//     const gradient = document.createElementNS(svgNS, "linearGradient");
+//     gradient.setAttribute("id", "activeTabGradient");
+//     gradient.setAttribute("x1", "0%");
+//     gradient.setAttribute("y1", "0%");
+//     gradient.setAttribute("x2", "100%");
+//     gradient.setAttribute("y2", "0%");
+
+//     // Gradientin pysäytyspisteet: 70 % vaaleaa, 30 % tummaa
+//     const stop1 = document.createElementNS(svgNS, "stop");
+//     stop1.setAttribute("offset", "0%");
+//     stop1.setAttribute("stop-color", "var(--bg_color_extreme)"); // Vaalea
+
+//     const stop2 = document.createElementNS(svgNS, "stop");
+//     stop2.setAttribute("offset", "70%");
+//     stop2.setAttribute("stop-color", "var(--bg_color_extreme)"); // Vaalea
+
+//     const stop3 = document.createElementNS(svgNS, "stop");
+//     stop3.setAttribute("offset", "100%");
+//     stop3.setAttribute("stop-color", "var(--bg_color_2)"); // Tumma
+
+//     gradient.appendChild(stop1);
+//     gradient.appendChild(stop2);
+//     gradient.appendChild(stop3);
+//     defs.appendChild(gradient);
+//     svg.appendChild(defs);
+
+//     // OutlinePath alustetaan ei-aktiivisella täytöllä
+//     const outlinePath = document.createElementNS(svgNS, "path");
+//     outlinePath.setAttribute("d", INACTIVE_PATH);
+//     outlinePath.setAttribute("stroke", "var(--border_color)");
+//     outlinePath.setAttribute("stroke-width", "2");
+//     outlinePath.setAttribute("fill", "var(--bg_color_extreme)"); // Tasainen vaalea ei-aktiivisille
+//     svg.appendChild(outlinePath);
+
+//     const iconPath = document.createElementNS(svgNS, "path");
+//     iconPath.setAttribute("d", iconPathD);
+//     iconPath.setAttribute("fill", "var(--text_color)");
+//     iconPath.setAttribute("transform", "scale(0.03, 0.03) translate(350, 1500)");
+//     svg.appendChild(iconPath);
+
+//     tabElement.appendChild(svg);
+
+//     const textSpan = document.createElement("span");
+//     textSpan.classList.add("tab_button_text");
+//     textSpan.innerText = buttonText;
+//     tabElement.appendChild(textSpan);
+// }
 
 // import { handle_all_navigation } from '../navigation/navigation.js';
 
@@ -337,13 +401,13 @@ export async function updateTabPathsForView(tableName) {
 
 //         if (isCardView) {
 //             if (isActive) {
-//                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_text)");
+//                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_2)");
 //             } else {
 //                 animatePath(outlinePath, INACTIVE_PATH, "var(--bg_color_blended_2)");
 //             }
 //         } else {
 //             if (isActive) {
-//                 animatePath(outlinePath, BUTTON_ACTIVE_PATH, "var(--bg_color_text)");
+//                 animatePath(outlinePath, BUTTON_ACTIVE_PATH, "var(--bg_color_2)");
 //             } else {
 //                 animatePath(outlinePath, BUTTON_INACTIVE_PATH, "var(--bg_color_blended_2)");
 //             }
@@ -489,7 +553,7 @@ export async function updateTabPathsForView(tableName) {
 // //         if (isCardView) {
 // //             // Korttinäkymässä animoidaan polku
 // //             if (isActive) {
-// //                 outlinePath.setAttribute("fill", "var(--bg_color_text)"); // Asetetaan täyttö heti, CSS hoitaa siirtymän
+// //                 outlinePath.setAttribute("fill", "var(--bg_color_2)"); // Asetetaan täyttö heti, CSS hoitaa siirtymän
 // //                 animatePathTab(outlinePath, 0, 1, 300); // Animoidaan inaktiivisesta aktiiviseen
 // //             } else {
 // //                 outlinePath.setAttribute("fill", "var(--bg_color_blended_2)");
@@ -498,7 +562,7 @@ export async function updateTabPathsForView(tableName) {
 // //         } else {
 // //             // Button-näkymässä asetetaan polku heti, vain täyttö animoidaan CSS:llä
 // //             outlinePath.setAttribute("d", BUTTON_INACTIVE_PATH);
-// //             outlinePath.setAttribute("fill", isActive ? "var(--bg_color_text)" : "var(--bg_color_blended_2)");
+// //             outlinePath.setAttribute("fill", isActive ? "var(--bg_color_2)" : "var(--bg_color_blended_2)");
 // //         }
 // //     });
 // // }
@@ -694,14 +758,14 @@ export async function updateTabPathsForView(tableName) {
 // // //         if (isCardView) {
 // // //             // Korttinäkymässä tab-tyylinen polku
 // // //             if (isActive) {
-// // //                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_text)", 250);
+// // //                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_2)", 250);
 // // //             } else {
 // // //                 animatePath(outlinePath, INACTIVE_PATH, "var(--bg_color_blended_2)", 250);
 // // //             }
 // // //         } else {
 // // //             // Muu näkymä => button-tyylinen polku
 // // //             if (isActive) {
-// // //                 animatePath(outlinePath, BUTTON_ACTIVE_PATH, "var(--bg_color_text)", 50);
+// // //                 animatePath(outlinePath, BUTTON_ACTIVE_PATH, "var(--bg_color_2)", 50);
 // // //             } else {
 // // //                 animatePath(outlinePath, BUTTON_INACTIVE_PATH, "var(--bg_color_blended_2)", 50);
 // // //             }
@@ -728,7 +792,7 @@ export async function updateTabPathsForView(tableName) {
 // // // //             // Korttinäkymässä käytä tab-tyylistä polkua
 // // // //             if (isActive) {
 // // // //                 svgPaths[0].setAttribute("d", ACTIVE_PATH);
-// // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_text)");
+// // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_2)");
 // // // //             } else {
 // // // //                 svgPaths[0].setAttribute("d", INACTIVE_PATH);
 // // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_blended_2)");
@@ -737,7 +801,7 @@ export async function updateTabPathsForView(tableName) {
 // // // //             // Jos view EI ole 'card', käytetään button-tyylistä polkua
 // // // //             if (isActive) {
 // // // //                 svgPaths[0].setAttribute("d", BUTTON_ACTIVE_PATH);
-// // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_text)");
+// // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_2)");
 // // // //             } else {
 // // // //                 svgPaths[0].setAttribute("d", BUTTON_INACTIVE_PATH);
 // // // //                 svgPaths[0].setAttribute("fill", "var(--bg_color_blended_2)");
@@ -903,7 +967,7 @@ export async function updateTabPathsForView(tableName) {
 // // // //         const svgPaths = clickedButton.querySelectorAll("svg path");
 // // // //         if (svgPaths[0]) {
 // // // //             svgPaths[0].setAttribute("d", ACTIVE_PATH);
-// // // //             svgPaths[0].setAttribute("fill", "var(--bg_color_text)");
+// // // //             svgPaths[0].setAttribute("fill", "var(--bg_color_2)");
 // // // //         }
 // // // //     }
 // // // // }

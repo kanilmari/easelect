@@ -30,7 +30,7 @@
   /* osoitin muuttuu, kun vie hiiren päälle */
   width: 100%;
   box-sizing: border-box;
-  border-radius: 4px;
+  border-radius: var(--border_radius_small);
 }
 
 /* X-nappi (tyhjennys) */

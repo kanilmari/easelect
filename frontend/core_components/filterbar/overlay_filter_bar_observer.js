@@ -1,17 +1,21 @@
 // overlay_filter_bar_observer.js
 
 /**
- * Kuuntelee .filterBar‑elementtien classList‑muutoksia ja
- * synkronoi mobileFilterOverlay‑elementin näkyvyyden niiden kanssa.
+ * Kuuntelee .filterBar‑elementtien ilmestymistä JA classList‑muutoksia
+ * ja synkronoi mobileFilterOverlay‑elementin näkyvyyden niiden kanssa.
+ *
+ * Korjaus: lisätty childList‑seuranta, jotta overlay aktivoituu heti
+ * sivun latauksen jälkeen, kun filterBar luodaan DOM‑puuhun 📱✨
  */
 (function attachFilterBarObserver() {
-    /** Hakee (tai luo) overlay‑elementin.  */
+    /* ----------------------------------------------------- */
+    /* 1. Overlay – luodaan tai haetaan, jos jo olemassa     */
+    /* ----------------------------------------------------- */
     function getOrCreateMobileFilterOverlay() {
         let overlay = document.getElementById("mobileFilterOverlay");
         if (!overlay) {
             overlay = document.createElement("div");
             overlay.id = "mobileFilterOverlay";
-            // samat inline‑tyylit kuin alkuperäisessä toteutuksessa
             overlay.style.position = "fixed";
             overlay.style.top = "0";
             overlay.style.left = "0";
@@ -26,42 +30,55 @@
     }
 
     const mobileFilterOverlay = getOrCreateMobileFilterOverlay();
+    const FILTERBAR_MOBILE_THRESHOLD = 1000;
 
-    /** Käsittelee yhden filterBar‑elementin tämänhetkisen hidden‑tilan. */
-    function syncOverlayWithFilterBar(filterBarEl) {
-        const filterBarIsHidden = filterBarEl.classList.contains("hidden");
-        if (filterBarIsHidden) {
-            mobileFilterOverlay.style.display = "none";
-        } else if (window.innerWidth < 1000) {
+    /* ----------------------------------------------------- */
+    /* 2. Yhtenäinen overlay‑synkkausfunktio                 */
+    /* ----------------------------------------------------- */
+    function syncOverlayVisibility() {
+        const anyVisibleFilterBar = [...document.querySelectorAll(".filterBar")].some(
+            (bar) => !bar.classList.contains("hidden")
+        );
+        if (window.innerWidth < FILTERBAR_MOBILE_THRESHOLD && anyVisibleFilterBar) {
             mobileFilterOverlay.style.display = "block";
+        } else {
+            mobileFilterOverlay.style.display = "none";
         }
     }
 
-    /** Itse MutationObserver – kuuntelee attribuuttimuutoksia. */
-    const observer = new MutationObserver((mutationList) => {
-        for (const mutation of mutationList) {
-            if (
-                mutation.type === "attributes" &&
-                mutation.attributeName === "class"
-            ) {
-                const filterBarEl = mutation.target;
-                if (filterBarEl.classList.contains("filterBar")) {
-                    syncOverlayWithFilterBar(filterBarEl);
+    /* ----------------------------------------------------- */
+    /* 3. MutationObserver                                   */
+    /* ----------------------------------------------------- */
+    const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.type === "attributes" && m.attributeName === "class") {
+                if (m.target.classList.contains("filterBar")) {
+                    syncOverlayVisibility();
                 }
+            } else if (m.type === "childList") {
+                m.addedNodes.forEach((node) => {
+                    if (
+                        node.nodeType === 1 &&
+                        node.classList &&
+                        node.classList.contains("filterBar")
+                    ) {
+                        syncOverlayVisibility();
+                    }
+                });
             }
         }
     });
 
-    // Käynnistetään observer koko dokumenttiin,
-    // mutta rajataan se vain class‑attribuutteihin.
     observer.observe(document.body, {
         attributes: true,
+        childList: true,      // <- uusi
         subtree: true,
         attributeFilter: ["class"],
     });
 
-    // Varmuuden vuoksi synkronoidaan jo olemassa olevat filterBarit heti.
-    document
-        .querySelectorAll(".filterBar")
-        .forEach((bar) => syncOverlayWithFilterBar(bar));
+    /* ----------------------------------------------------- */
+    /* 4. Ensisynkronointi + resize‑kuuntelija               */
+    /* ----------------------------------------------------- */
+    syncOverlayVisibility();
+    window.addEventListener("resize", syncOverlayVisibility);
 })();

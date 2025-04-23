@@ -9,9 +9,9 @@
 }
 
 .card {
-    border: 1px solid var(--border_color);
-    border-radius: 7px;
-    padding: 1rem;
+    border: 1px solid var(--card_border_color);
+    border-radius: var(--border_radius);
+    /* padding: 5px; */
     box-sizing: border-box;
     position: relative;
     box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.2);
@@ -19,7 +19,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: var(--bg_color_card_frame);
 }
 
 .card_checkbox {
@@ -34,13 +34,29 @@
 }
 
 
-/* Kortin sisällön yläkontti: siirrytään grid-alueista flex-rakenteeseen */
 .card_content {
     display: flex;
-    gap: 1rem;
-    padding: 0.5rem;
-    /* align-items: flex-start; */
+    flex-direction: column;   /* UUSI */
+    gap: 0.75rem;
+    padding: 15px;
+    border-radius: var(--border_radius_small);
+    background-color: var(--bg_color_text);
+}
 
+.card_body {
+    display: flex;
+    gap: 10px;
+}
+
+/* Leveysmoodit (päivitetty reititys) */
+.card_content_large .card_body .card_image_content {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.card_content_small .card_body .card_image_content {
+    width: 120px;
+    flex-shrink: 0;
 }
 
 /* Jos taululla on image-rooli (isompi kuva) */
@@ -60,21 +76,28 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    /* justify-content: center; */
 }
+
+/* .card_image {
+    background-color: var(--bg_color_image);
+} */
 
 .card_image img {
     max-width: 100%;
     height: auto;
+    border: 1px solid var(--card_border_color);
+    /* background: color-mix(in srgb, var(--bg_color_extreme) 70%, #777 30%); */
 }
 
 .card_text_content {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    justify-content: space-evenly;
-    border: 1px solid var(--border_color);
-    border-radius: 4px;
+    /* justify-content: space-evenly; */
+    margin-top: -5px;
+    /* border: 1px solid var(--border_color); */
+
 }
 
 /* Taulukon tyylit */
@@ -100,19 +123,26 @@
 
 /* Header, käyttäjänimi, kuvaukset yms. */
 .card_header {
-    font-size: 1.4rem;
+    display: flex;
+    justify-content: space-between;   /* vasen–oikea */
+    align-items: center;
     font-weight: bold;
-    padding-top: 5px;
-    padding-left: 7px;
     cursor: pointer;
-    /* modal-klikkausta varten */
+    margin: 5px 0 15px 0;
 }
 
+/* first child */
+.card_header>*:first-child {
+    font-size: 1.6rem;
+}
+
+/* Käyttäjänimi headerissa – ei ylimääräistä marginaalia */
 .card_username {
-    margin: -1px;
+    margin-right: 20px;
     display: flex;
     align-items: center;
     gap: 0.3rem;
+
 }
 
 /* Kuvausalueet */
@@ -164,8 +194,8 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     margin-top: 0.5rem;
-    border-top: 1px solid var(--border_color);
-    border-bottom: 1px solid var(--border_color);
+    border-top: 1px solid var(--card_border_color);
+    border-bottom: 1px solid var(--card_border_color);
     align-items: start;
 }
 
@@ -176,8 +206,7 @@
 /* Footer-napit */
 .card_footer {
     display: flex;
-    /* Tässä jaetaan tilaa: username vasemmalle, nappi oikealle */
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 1rem;
     padding: 0.5rem;
@@ -188,7 +217,6 @@
     display: grid;
     grid-template-columns: 150px 1fr;
     gap: 0.5rem;
-    padding: 4px;
 }
 
 .card_pair>*:only-child {
@@ -211,7 +239,7 @@
     align-items: center;
 }
 
-.key_value_wrapper>div {
+.keyword_value {
     padding: 4px;
 }
 
@@ -221,7 +249,7 @@
 
 /* Scrollattava sisältö */
 .scrollable_content {
-    background-color: var(--bg_color_text);
+    background-color: var(--bg_color_2);
     display: flex;
     justify-content: center;
 }

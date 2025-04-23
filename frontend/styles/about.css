@@ -1,0 +1,9 @@
+#about_container .card_body {
+    flex-direction: column !important;
+}
+
+#about_container .card_image_content, #about_container .card_image > div {
+    width: unset !important;
+    height: unset !important;
+    max-width: 1000px;
+}

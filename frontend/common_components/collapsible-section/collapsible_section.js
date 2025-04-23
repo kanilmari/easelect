@@ -14,6 +14,7 @@ export function create_collapsible_section(title_text, content_element, start_op
 
     const toggle_button = document.createElement('button');
     toggle_button.textContent = start_open ? 'Sulje' : 'Avaa';
+    toggle_button.classList.add('button');
     header.appendChild(toggle_button);
 
     // Sisältö

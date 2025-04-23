@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function positionPanelBelowButton() {
     let buttonRect = languageButton.getBoundingClientRect();
     floatingPanel.style.position = 'absolute';
-    floatingPanel.style.zIndex = '9999';
+    floatingPanel.style.zIndex = '1000001';
     floatingPanel.style.background = 'var(--bg_color_2)';
     floatingPanel.style.border = '1px solid var(--border_color)';
     floatingPanel.style.borderRadius = '4px';

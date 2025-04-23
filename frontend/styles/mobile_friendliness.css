@@ -8,9 +8,36 @@
         padding: 0;
     }
 
+    /* pinoa kaikki pystysuunnassa */
     .card_content {
         flex-direction: column;
-        align-items: center; /* tarvittaessa */
+        align-items: center;
+        padding: 15px 0;
+    }
+
+    /* UUSI: otsikko (card_pair) ja käyttäjä (card_username) 100 % leveiksi
+       ja pinoon card_header‑lohkossa                                 */
+    .card_header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+        padding: 0 15px 0 15px !important;
+        margin: 5px 0 0 0 !important;
+    }
+
+    .card_header>.card_pair,
+    .card_header>.card_username {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    /* UUSI: kuva 100 % leveäksi ja pinoon ennen tekstiä                */
+    .card_body {
+        display: flex;
+        flex-direction: column;
+        /* kuva ensin, tekstit perässä */
+        width: 100%;
     }
 
     .card_image_content,
@@ -20,14 +47,22 @@
         padding: unset;
     }
 
-    .card_content_large .card_image_content {
+    .card_content_large .card_body .card_image_content {
         width: 100%;
     }
 
-    .card_image > .wrapper {
+    .card_image>.wrapper {
         width: 100% !important;
         height: auto !important;
+        box-shadow: unset !important;
+        background: unset !important;
+        border-radius: unset !important;
     }
+
+    .card_image>.wrapper>img {
+        border-radius: unset !important;
+    }
+
 
     .card_details_container {
         grid-template-columns: 1fr !important;

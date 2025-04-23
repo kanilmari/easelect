@@ -95,7 +95,8 @@ export function createImageElement(image_src, useLargeSize) {
 
     if (!isPng) {
         // Muille kuin PNG-kuville lisätään pyöristys, varjo ja (halutessa) blur-tausta
-        wrapper.style.background = 'var(--bg_color)';
+        wrapper.style.background = 'var(--bg_color_2)';
+        // wrapper.style.border = '1px solid var(--border_color)';
         
         wrapper.style.borderRadius = '7px';
         foregroundImg.style.borderRadius = '6px';

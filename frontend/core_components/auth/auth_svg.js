@@ -17,6 +17,7 @@ var logout_icon_svg = `
 /**
  * Alustaa logout- tai login-napin (riippuen siitä, onko button_state "login" vai "logout").
  */
+// auth_svg.js
 export function initAuthSvg() {
     const container = document.querySelector(".auth-container");
     if (!container) {
@@ -29,16 +30,12 @@ export function initAuthSvg() {
         // Haetaan buttonState suoraan auth_modes.js:stä
         buttonState = getButtonState(); // Palauttaa "login" tai "logout"
     } catch (err) {
-        console.warn(
-            "initAuthSvg: button_state puuttuu tai virhe haussa:",
-            err
-        );
+        console.warn("initAuthSvg: button_state puuttuu tai virhe haussa:", err);
         return;
     }
 
     // Valitaan oikea SVG
-    const iconString =
-        buttonState === "login" ? login_icon_svg : logout_icon_svg;
+    const iconString = buttonState === "login" ? login_icon_svg : logout_icon_svg;
 
     // Muodostetaan DOMParserilla
     const parser = new DOMParser();
@@ -56,16 +53,45 @@ export function initAuthSvg() {
     // Korvataan .auth-containerin sisältö
     container.replaceChildren(theButton);
 
-    // Klikkaus -> ohjataan /login tai /logout -reitille
-    theButton.addEventListener("click", () => {
+    // Klikkaus → ohjataan /login- tai /logout‑reitille
+    theButton.addEventListener("click", async () => {
         if (buttonState === "login") {
-            window.location.href = "/login";
-        } else {
-            window.location.href = "/logout";
+            window.location.assign("/login");
+            return;
         }
+
+        /* -------------- logout: tehdään mahdollisimman kattava puhdistus -------------- */
+        try {
+            // 1. Tyhjennetään localStorage ja sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // 2. Poistetaan mahdolliset Service Worker ‑välimuistit
+            if ("caches" in window) {
+                const cacheKeys = await caches.keys();
+                await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+            }
+
+            // 3. Yritetään tyhjentää omat evästeet (domain- ja path‑rajoitukset huomioiden)
+            document.cookie
+                .split(";")
+                .forEach((cookie) => {
+                    const eqPos = cookie.indexOf("=");
+                    const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+                    // yksinkertainen poisto; lisäpolut kannattaa käsitellä back‑endissä
+                    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                });
+
+            console.log("logout: localStorage, sessionStorage, caches ja evästeet tyhjennetty ✨");
+        } catch (err) {
+            console.warn("logout: siivous epäonnistui:", err);
+        }
+
+        /* --------------------------------------------------------------------------- */
+
+        window.location.assign("/logout");
     });
 }
-
 // // auth_svg.js
 // var login_icon_svg = `
 // <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 -960 960 960" fill="var(--text_color)">

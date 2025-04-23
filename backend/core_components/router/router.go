@@ -120,6 +120,8 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/api/fetch-dynamic-children", gt_1_row_read.GetDynamicChildItemsHandler, "gt_1_row_read.GetDynamicChildItemsHandler")
 	functionRegisterHandler("/api/get-metadata", gt_3_table_read.GetTableViewHandlerWrapper, "gt_3_table_read.GetTableViewHandlerWrapper")
 	functionRegisterHandler("/api/get-results", gt_1_row_read.GetResultsHandlerWrapper, "gt_1_row_read.GetResultsHandlerWrapper")
+	functionRegisterHandler("/api/get-intelligent-results", gt_1_row_read.GetIntelligentResultsHandlerWrapper, "gt_1_row_read.GetIntelligentResultsHandlerWrapper")
+
 	functionRegisterHandler("/api/get-results-vector", gt_1_row_read.GetResultsVector, "gt_1_row_read.GetResultsVector")
 	functionRegisterHandler("/api/get-row-count", gt_1_row_read.GetRowCountHandlerWrapper, "gt_1_row_read.GetRowCountHandlerWrapper")
 	functionRegisterHandler("/api/system_triggers/create", gt_triggers.CreateTriggerHandler, "gt_triggers.CreateTriggerHandler")

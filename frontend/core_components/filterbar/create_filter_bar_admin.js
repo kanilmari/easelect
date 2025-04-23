@@ -9,6 +9,8 @@ import {
 import {
     createGenericViewSelector
 } from "../table_views/draw_view_selector_buttons.js";
+import { create_chat_ui } from "../../common_components/ai_features/table_chat/chat.js";
+import { create_collapsible_section } from "../../common_components/collapsible-section/collapsible_section.js";
 
 /**
  * SSE-yhteyden avaava funktio, joka asuu nyt admin-tiedostossa,
@@ -122,4 +124,20 @@ export function appendAdminFeatures(table_name, managementButtonsContainer, view
     // 4) Näkymänvalintanapit erilliseen konttiin
     const viewSelector = createAdminViewButtons(table_name, current_view);
     viewSelectorContainer.appendChild(viewSelector);
+}
+
+
+export function appendChatUIIfAdmin(table_name, filter_bar) {
+    const admin_mode = localStorage.getItem("admin_mode") === "true";
+    if (!admin_mode) return;
+
+    const chatContainerDiv = document.createElement("div");
+    create_chat_ui(table_name, chatContainerDiv);
+    const chatCollapsible = create_collapsible_section(
+        "Chat – " + table_name,
+        chatContainerDiv,
+        false
+    );
+    filter_bar.appendChild(chatCollapsible);
+    
 }

@@ -1,6 +1,6 @@
 // navbar.js
 
-const NAVBAR_WIDTH_THRESHOLD = 1700; // Kynnysarvo pikseleinä
+const NAVBAR_WIDTH_THRESHOLD = 1850; // Kynnysarvo pikseleinä
 let navVisible = true; // Oletusarvo: navigaatiopalkki näkyvissä
 let isInitialLoad = true; // Tarkistaa, onko kyseessä sivun ensimmäinen lataus
 

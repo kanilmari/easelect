@@ -9,7 +9,8 @@
     background-color: var(--bg_color);
     /* border-right: 2px solid var(--border_color); */
     /* box-shadow: inset -2px 0 0 0 var(--border_color); */
-    box-shadow: inset -2px 0 0 0 var(--border_color), 15px 0 15px 0 rgb(0 0 0 / 0.7);
+    box-shadow: inset -2px 0 0 0 var(--border_color);
+    /* box-shadow: inset -2px 0 0 0 var(--border_color), 15px 0 15px 0 var(--navbar_shadow_color); */
     grid-auto-rows: min-content;
     padding: var(--navbar_padding);
     overflow-y: auto;

@@ -6,8 +6,10 @@
     --navbar_width: 300px;
     --border_radius: 7px;
     --border_radius_small: 4px;
+    --border_radius_tiny: 3px;
     --button_pressed_scale: 0.98;
-    /* --filterbar_width: 450px; */
+    --transition-time: 0.5s;
+    /* --filterbar_width: 450px; */    
 
     --bg_color: #ccc;
     --bg_color_2: #f0f0f0;
@@ -15,6 +17,12 @@
     --bg_color_text: var(--bg_color_extreme);
     --bg_color_blended: rgb(0 0 0 / 15%);
     --bg_color_blended_2: color-mix(in srgb, var(--bg_color) 80%, var(--bg_color_extreme) 20%);
+    --bg_color_card_frame: hsl(0deg 0% 80% / 1);
+    --bg_color_image: #555;
+
+    --navbar_shadow_color: var(--bg_color_2);
+
+    --card_border_color: #bbb;
 
     --text_color: #000;
     --border_color: #bbb;
@@ -55,6 +63,12 @@
 /* Firefox */
 * {
     scrollbar-color: #aaa #f1f1f1;
+    transition: 
+    color var(--transition-time), 
+    background-color var(--transition-time), 
+    border-color var(--transition-time),
+    fill var(--transition-time),
+    stroke var(--transition-time);
 }
 
 
@@ -66,6 +80,12 @@ body.light-mode {
     --bg_color_text: var(--bg_color_extreme);
     --bg_color_blended: rgb(0 0 0 / 15%);
     --bg_color_blended_2: color-mix(in srgb, var(--bg_color) 80%, var(--bg_color_extreme) 20%);
+    --bg_color_card_frame: hsl(0deg 0% 80% / 1);
+    --bg_color_image: #555;
+
+    --navbar_shadow_color: var(--bg_color_2);
+
+    --card_border_color: #bbb;
 
     --text_color: #000;
     --border_color: #bbb;
@@ -101,14 +121,20 @@ body.light-mode * {
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg_color: #1a1a1a;
-        --bg_color_2: #0a0a0a;
+        --bg_color: #222;
+        --bg_color_2: #111;
         --bg_color_extreme: rgb(0 0 0);
         --bg_color_text: var(--bg_color_extreme);
         --bg_color_blended: rgb(255 255 255 / 20%);
         --bg_color_blended_2: color-mix(in srgb, var(--bg_color) 70%, var(--bg_color_extreme) 30%);
+        --bg_color_card_frame: hsl(0deg 0% 18% / 1);
+        --bg_color_image: #222;
 
-        --text_color: #fff;
+        --navbar_shadow_color: var(--bg_color_2);
+
+        --card_border_color: #222;
+
+        --text_color: rgb(255 254 253);
         --border_color: #333;
         --table_border_color: #444;
         --input_bg_color: #111;
@@ -145,14 +171,20 @@ body.light-mode * {
 
 /* Tumma teema */
 body.dark-mode {
-    --bg_color: #1a1a1a;
-    --bg_color_2: #0a0a0a;
+    --bg_color: #222;
+    --bg_color_2: #111;
     --bg_color_extreme: rgb(0 0 0);
     --bg_color_text: var(--bg_color_extreme);
     --bg_color_blended: rgb(255 255 255 / 20%);
     --bg_color_blended_2: color-mix(in srgb, var(--bg_color) 70%, var(--bg_color_extreme) 30%);
+    --bg_color_card_frame: hsl(0deg 0% 18% / 1);
+    --bg_color_image: #222;
 
-    --text_color: #fff;
+    --navbar_shadow_color: var(--bg_color_2);
+
+    --card_border_color: #222;
+
+    --text_color: rgb(255 254 253);
     --border_color: #333;
     --table_border_color: #444;
     --input_bg_color: #111;

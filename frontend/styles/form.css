@@ -24,25 +24,6 @@ form {
     font-weight: bold;
 }
 
-/* label input,
-label select,
-label textarea {
-    margin-top: 5px;
-    padding: 8px;
-    border: 1px solid var(--border_color);
-    border-radius: var(--border_radius_small);
-    background-color: var(--bg_color);
-    color: var(--text_color);
-    font-size: 1rem;
-    box-sizing: border-box;
-} */
-
-/* textarea { */
-    /* height: 80px;
-    resize: vertical; */
-    /* Sallii textarea:n korkeuden muuttamisen */
-/* } */
-
 button {
     /* padding: 5px; */
     background-color: var(--button_bg_color);
@@ -59,18 +40,6 @@ button {
     min-height: 36px;
 }
 
-/* Specify what kind of buttons get this style (not all) */
-/* button:hover {
-    background-color: var(--button_hover_bg_color);
-    color: var(--button_hover_text_color);
-} 
-
-button:active {
-    background-color: var(--button_active_bg_color);
-    color: var(--button_active_text_color);
-    border-color: var(--button_active_border_color);
-}
-    */
 
 button[type="submit"] {
     align-self: start;
@@ -90,7 +59,6 @@ button[type="submit"] {
 
 .action-value-row label {
     font-weight: normal;
-    /* Normaali fontti toiminnon arvoille */
 }
 
 .action-value-row button {
@@ -125,7 +93,7 @@ button[type="submit"] {
 select {
     background-color: var(--bg_color_2);
     color: var(--text_color);
-    box-shadow: 0 2px 5px rgb(0 0 0 / 100%);
+    /* box-shadow: 0 2px 5px rgb(0 0 0 / 100%); */
 }
 
 

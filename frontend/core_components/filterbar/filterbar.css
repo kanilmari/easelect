@@ -24,6 +24,21 @@
     overflow: hidden; /* Varmistetaan, että sisältö ei vuoda */
 }
 
+.filterBar.compressed {
+    height: auto;
+    padding: 0;
+    overflow: hidden;
+    margin: auto;
+}
+
+.filterBar.compressed > .filterBar-search-row {
+    padding: 10px;
+}
+
+.filterBar.compressed > :not(.filterBar-search-row) {
+    display: none !important;
+}
+
 /* Kolme ensimmäistä eivät veny, vaan asettuvat yläreunaan */
 .filterBar>div:nth-child(1),
 .filterBar>div:nth-child(2),
@@ -148,7 +163,7 @@
 }
 
 .global-search-input {
-    border-radius: 7px;
+    border-radius: var(--border_radius);
     width: 100%;
     border: 1px solid var(--border_color);
     padding: 12px;

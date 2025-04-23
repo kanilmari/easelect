@@ -59,9 +59,9 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 	// 2. Luetaan results_per_load ja offset currentDb:ltä
 	var results_per_load_str string
 	err = currentDb.QueryRow(`
-		SELECT int_value 
-		FROM system_config 
-		WHERE key = 'results_load_amount'
+	SELECT int_value 
+	FROM system_config 
+	WHERE key = 'results_load_amount'
 	`).Scan(&results_per_load_str)
 	if err != nil {
 		log.Printf("\033[31mvirhe haettaessa results_load_amount: %s\033[0m\n", err.Error())
@@ -114,8 +114,6 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 
 	//------------------------------------------------
 	// 5. Rakennetaan SELECT- ja JOIN-lauseet
-	// Käytetään uutta buildJoinsWith1MRelations-funktiota, jotta
-	// hyödynnetään mahdolliset cached-sarakkeet foreign_key_relations_1_m:stä
 	select_columns, join_clauses, column_expressions, err :=
 		buildJoinsWith1MRelations(currentDb, table_name, columns_map, column_uids)
 	if err != nil {
@@ -155,6 +153,35 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 	if vector_query != "" {
 		log.Printf("[DEBUG] semanttinen haku param: %s", vector_query)
 
+		// Tarkista, onko openai_embedding-sarake olemassa
+		var columnExists bool
+		err = currentDb.QueryRow(
+			`SELECT EXISTS (
+	SELECT 1
+	FROM information_schema.columns
+	WHERE table_name = $1
+	AND column_name = 'openai_embedding'
+	AND table_schema = 'public'
+	)`,
+			table_name,
+		).Scan(&columnExists)
+		if err != nil {
+			log.Printf("Virhe tarkistettaessa openai_embedding-saraketta: %v", err)
+			http.Error(response_writer, "virhe sarakkeen tarkistuksessa", http.StatusInternalServerError)
+			return
+		}
+		if !columnExists {
+			log.Printf("openai_embedding-sarake puuttuu taulusta %s", table_name)
+			response_data := map[string]interface{}{
+				"columns":        []string{},
+				"data":           []map[string]interface{}{},
+				"types":          map[string]interface{}{},
+				"resultsPerLoad": 0,
+			}
+			json.NewEncoder(response_writer).Encode(response_data)
+			return
+		}
+
 		vectorVal, embErr := generateVectorParam(vector_query)
 		if embErr != nil {
 			log.Printf("\033[31mvirhe generateVectorParam: %s\033[0m\n", embErr.Error())
@@ -171,7 +198,7 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 		)
 	}
 
-	//------------------------------------------------
+	// ------------------------------------------------
 	// 8. Kootaan lopullinen SQL-kysely
 	query := fmt.Sprintf(
 		"SELECT %s FROM %s %s%s%s LIMIT %d OFFSET %d",
@@ -183,6 +210,10 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 		results_per_load,
 		offset_value,
 	)
+
+	// Lisätään lokitus: tulostetaan SQL-kysely ja argumentit
+	log.Printf("Suoritetaan SQL-kysely: %s, argumentit: %v", query, query_args)
+
 	rows_result, err := currentDb.Query(query, query_args...)
 	if err != nil {
 		log.Printf("\033[31mvirhe suoritettaessa kyselyä: %s\033[0m\n", err.Error())
@@ -191,7 +222,7 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 	}
 	defer rows_result.Close()
 
-	//------------------------------------------------
+	// ------------------------------------------------
 	// 9. Luetaan tulokset ja muotoillaan JSON
 	result_columns, err := rows_result.Columns()
 	if err != nil {
@@ -233,6 +264,17 @@ func GetResultsVector(response_writer http.ResponseWriter, request *http.Request
 		log.Printf("\033[31mvirhe rivien käsittelyssä (rows_result err): %s\033[0m\n", err.Error())
 		http.Error(response_writer, "virhe rivien käsittelyssä", http.StatusInternalServerError)
 		return
+	}
+
+	// Lisätään laajennettu lokitus tulosten määrästä ja esimerkistä
+	if len(query_results) == 0 {
+		log.Printf("Vektorihaku ei palauttanut rivejä taululle %s, kysely: %s, argumentit: %v", table_name, query, query_args)
+	} else {
+		log.Printf("Vektorihaku palautti %d riviä taululle %s", len(query_results), table_name)
+		// Valinnainen: tulosta ensimmäinen tulos tarkistusta varten
+		// if len(query_results) > 0 {
+		// 	log.Printf("Ensimmäinen tulos: %v", query_results[0])
+		// }
 	}
 
 	// 10. Palautetaan tulokset JSON-muodossa

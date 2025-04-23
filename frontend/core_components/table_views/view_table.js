@@ -67,27 +67,16 @@ const views = {
 
 export async function generate_table(table_name, columns, data, data_types) {
     try {
-        // 1. Lue table_specs LocalStoragesta
         const tableSpecs = JSON.parse(localStorage.getItem('table_specs')) || {};
-
-        // 2. Onko käyttäjän aiemmin valitsema näkymä tallennettu?
         let current_view = localStorage.getItem(`${table_name}_view`);
-
-        // 3. Jos ei löytynyt, tarkistetaan default_view_name
         if (!current_view) {
             const default_view_name = tableSpecs[table_name]?.default_view_name;
-            if (default_view_name) {
-                current_view = default_view_name;
-            } else {
-                current_view = 'card';
-            }
+            current_view = default_view_name || 'card';
             localStorage.setItem(`${table_name}_view`, current_view);
         }
 
-        // ⬇ Kutsutaan applyViewStyling, joka käyttää localStorage.getItem('selected_table') -arvoa
         applyViewStyling(table_name);
 
-        // 4. Haetaan tai luodaan kontainerit jne.
         const main_table_container_id = `${table_name}_container`;
         let main_table_container = document.getElementById(main_table_container_id);
         if (!main_table_container) {
@@ -106,12 +95,9 @@ export async function generate_table(table_name, columns, data, data_types) {
         }
 
         table_parts_container.setAttribute('data-view', current_view);
-
-        // 5. Tallennetaan sarakkeet localStorageen
         localStorage.setItem(`${table_name}_columns`, JSON.stringify(columns));
         localStorage.setItem(`${table_name}_dataTypes`, JSON.stringify(data_types));
 
-        // 7. Luodaan tai haetaan näkymäcontainerit dynaamisesti
         const viewContainers = {};
         for (const viewType in views) {
             const containerId = views[viewType].getContainerId(table_name);
@@ -120,20 +106,16 @@ export async function generate_table(table_name, columns, data, data_types) {
                 container = document.createElement('div');
                 container.id = containerId;
                 container.classList.add('scrollable_content');
-                if (viewType === 'tree') {
-                    container.style.padding = '6px';
-                }
+                if (viewType === 'tree') container.style.padding = '6px';
                 table_parts_container.appendChild(container);
             }
             viewContainers[viewType] = container;
         }
 
-        // 8. Tyhjennetään kaikki näkymäcontainerit
         for (const container of Object.values(viewContainers)) {
             container.replaceChildren();
         }
 
-        // 9. Luodaan ja näytetään haluttu näkymä
         if (views[current_view]) {
             const viewElement = await views[current_view].create(table_name, columns, data, data_types);
             viewContainers[current_view].appendChild(viewElement);
@@ -142,25 +124,22 @@ export async function generate_table(table_name, columns, data, data_types) {
             console.warn(`Tuntematon näkymä: ${current_view}`);
         }
 
-        // 10. Piilotetaan muut näkymät
         for (const viewType in viewContainers) {
             if (viewType !== current_view) {
                 viewContainers[viewType].style.display = 'none';
             }
         }
 
-        // 12. Luodaan suodatuspalkki
         create_filter_bar(table_name, columns, data_types);
-
-        // 13. Luodaan chat UI
         create_chat_ui(table_name, table_parts_container);
-
-        // 14. Alustetaan infinite scroll
         if (current_view === 'transposed') {
             initializeInfiniteScroll(table_name, 'horizontal');
         } else {
             initializeInfiniteScroll(table_name, 'vertical');
         }
+
+        // Palauta aktiivinen näkymäkontaineri
+        return viewContainers[current_view];
 
     } catch (error) {
         console.error(`virhe luotaessa taulua ${table_name}:`, error);

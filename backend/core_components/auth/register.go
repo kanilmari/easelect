@@ -47,7 +47,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
                 full_name,
                 created,
                 updated,
-                disabled,
+                enabled,
                 privileged
             )
             VALUES ($1, $2, NOW(), NOW(), false, false)

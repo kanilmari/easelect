@@ -13,10 +13,10 @@ import { handle_table_selected_event } from "./core_components/navigation/naviga
 import { initializeTreeCallAdmin } from "./common_components/vanilla_tree/tree_call_admin.js";
 
 import "./core_components/table_views/table_view/table_column_resizer.js";
-import "./core_components/navigation/tabs.js";
 import "./core_components/theme.js";
 import "./core_components/show_errors.js";
 import "./core_components/dev_tools/print_session_details.js";
+import "./core_components/navigation/tabs.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     // Haetaan login- ja admin-tilat
@@ -65,6 +65,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Reagoidaan “tableSelected”-eventtiin
 document.addEventListener("tableSelected", handle_table_selected_event);
+
+
 
 // // main.js
 // import { translatePage } from "./core_components/lang/lang.js";

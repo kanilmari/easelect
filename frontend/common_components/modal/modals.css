@@ -40,7 +40,7 @@
 .modal select {
     padding: 8px;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: var(--border_radius_small);
 }
 
 .modal .form-actions {
@@ -53,7 +53,7 @@
     padding: 8px 16px;
     margin-left: 10px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--border_radius_small);
     cursor: pointer;
 }
 
