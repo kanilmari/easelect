@@ -51,7 +51,9 @@ document.addEventListener('DOMContentLoaded', function() {
   {
     let labelElement = document.createElement('label');
     let boldElement = document.createElement('b');
-    boldElement.textContent = 'Valitse kieli';
+    // boldElement.textContent = 'Valitse kieli';
+    // add attribute data-lang-key
+    labelElement.setAttribute('data-lang-key', 'select_menu_language');
     labelElement.appendChild(boldElement);
     panelContent.appendChild(labelElement);
   }
@@ -139,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     floatingPanel.style.border = '1px solid var(--border_color)';
     floatingPanel.style.borderRadius = '4px';
     floatingPanel.style.boxShadow = 'var(--box-shadow)';
-    floatingPanel.style.padding = '20px';
+    floatingPanel.style.padding = '10px';
     floatingPanel.style.top = (window.scrollY + buttonRect.bottom) + 'px';
     floatingPanel.style.left = (window.scrollX + buttonRect.left) + 'px';
   }

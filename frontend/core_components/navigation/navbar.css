@@ -288,3 +288,11 @@
 .language-button > svg {
     margin-right: -2px;
 }
+
+.panel-content > * {
+    margin: 10px 5px;
+}
+
+.language-option label {
+    margin-left: 5px;
+}
