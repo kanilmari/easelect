@@ -1,3 +1,32 @@
+@media screen and (max-width: 1840px){ 
+    #navbar {
+        position: fixed !important;
+        left: 0 !important;
+        /* max-width: calc(100% - 50px); */
+        /* shadow on the left side of the container: */
+        box-shadow: 15px 0 15px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    #tabs_container {
+        transform: unset !important;
+        width: unset !important;
+    }
+}
+
+@media screen and (max-width: 1590px){ 
+    .filterBar {
+        position: fixed;
+        right: 0;
+        /* max-width: calc(100% - 50px); */
+        /* shadow on the left side of the container: */
+        box-shadow: -15px 0 15px rgba(0, 0, 0, 0.7);
+    }
+
+    .table_parts_container {
+        grid-template-columns: auto 0px !important;
+    }
+}
+
 @media screen and (max-width: 1000px) {
     .card {
         width: 100%;

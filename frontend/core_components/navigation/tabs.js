@@ -209,17 +209,27 @@ export async function updateTabPathsForView(tableName) {
             if (isActive) {
                 animatePath(outlinePath, ACTIVE_PATH, "var(--bg_color_2)");
             } else {
-                animatePath(outlinePath, INACTIVE_PATH, "var(--bg_color_blended_2)");
+                animatePath(
+                    outlinePath,
+                    INACTIVE_PATH,
+                    "var(--bg_color_blended_2)"
+                );
             }
         } else {
-            const navTabs = document.querySelector(".navtabs");
-            if (navTabs) {
-                navTabs.style.right = "-15px";
-            }
-            if (isActive) {
-                animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_2)");
-            } else {
-                animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_blended_2)");
+            if (isAdmin) {
+                const navTabs = document.querySelector(".navtabs");
+                if (navTabs) {
+                    navTabs.style.right = "-15px";
+                }
+                if (isActive) {
+                    animatePath(outlinePath, BUTTON_PATH, "var(--bg_color_2)");
+                } else {
+                    animatePath(
+                        outlinePath,
+                        BUTTON_PATH,
+                        "var(--bg_color_blended_2)"
+                    );
+                }
             }
         }
     });

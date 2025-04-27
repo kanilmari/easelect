@@ -252,9 +252,11 @@
     background-color: var(--bg_color_2);
     display: flex;
     justify-content: center;
+    /* overflow-y: scroll;
+    overflow-x: auto; */
 }
 
 .scrollable_content>*,
 .scrollable_content .table {
-    margin: auto;
+    margin: 0 auto;
 }
