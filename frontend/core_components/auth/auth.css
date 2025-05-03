@@ -5,6 +5,7 @@
     --button_text_color: white;
     --button_hover_bg_color: #555;
     --button_active_bg_color: #666;
+    --border_radius_small: 4px;
 }
 
 body {
@@ -76,7 +77,7 @@ input[type="submit"]:active {
     margin-top: 20px;
 }
 
-.hp {
+/* .mfa {
     display: none;
-}
+} */
 

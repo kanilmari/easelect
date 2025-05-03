@@ -10,7 +10,7 @@ import { update_oids_and_table_names } from "./core_components/admin_tools/main/
 import { load_tables } from "./core_components/admin_tools/main/load_tables.js";
 import { updateMenuLanguageDisplay } from "./core_components/lang/lang_panel.js";
 import { handle_table_selected_event } from "./core_components/navigation/navigation.js";
-import { initializeTreeCallAdmin } from "./common_components/vanilla_tree/tree_call_admin.js";
+import { initializeTreeCallAdmin } from "./common_components/vanilla_tree/van_tr_components/tree_call_admin.js";
 
 import "./core_components/table_views/table_view/table_column_resizer.js";
 import "./core_components/theme.js";

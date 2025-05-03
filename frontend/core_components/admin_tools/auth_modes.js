@@ -1,8 +1,10 @@
 // auth_modes.js
 
+import { count_this_function } from "../dev_tools/function_counter.js";
 import { endpoint_router } from "../endpoints/endpoint_router.js";
 
 export async function setAuthModes() {
+    count_this_function("setAuthModes");
     try {
         // Haetaan /api/auth-modes (tai jokin vastaava reitti, joka palauttaa { admin_mode: bool, needs_button: "login"|"logout" })
         const data = await endpoint_router("fetchAuthModes", { method: "GET" });

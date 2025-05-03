@@ -1,6 +1,6 @@
-# nimiehdotus: build_pg_dump_and_run.sh
 #!/usr/bin/env bash
-# Rakennetaan easelect ja ajetaan se.
+# build_dump_run.sh
+# Rakennetaan easelect, dumpataan kanta ja ajetaan sovellus.
 # – Luo aina ./db_backups-kansioon kaksi erillistä varmistusta:
 #     1) easelect-YYYY-MM-DD.sql        (pelkkä tietokanta)
 #     2) roles-YYYY-MM-DD.sql           (kaikki Postgres-roolit + oikeudet)
@@ -41,12 +41,12 @@ fi
 if ! $skip_pg_dump; then
   echo "📦  Luodaan tietokantadumppi   → $data_path"
   pg_dump  -Fc -f "$data_path" "$database_name" \
-           --no-owner --no-privileges
+           --no-owner
   echo "✔️  Tietokantadumppi valmis."
 
   echo "🔑  Luodaan roolidumppi        → $roles_path"
   # Roolidumppi vaatii superuser-oikeudet
-  pg_dumpall --roles-only --if-exists -f "$roles_path"
+  pg_dumpall --roles-only --clean --if-exists -f "$roles_path"
   echo "✔️  Roolidumppi valmis."
 fi
 
@@ -68,6 +68,8 @@ echo "⚙️  go build ..."
 go build
 
 echo "🚀  Käynnistetään ./easelect"
+# systemctl restart easelect.service
+# ./easelect
 ./easelect
 
 # #!/usr/bin/env bash

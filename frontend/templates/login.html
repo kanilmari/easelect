@@ -30,15 +30,20 @@
         <input type="hidden" id="csrf_token" name="csrf_token" value="{{.CSRFToken}}">
 
         <!-- 2 Honeypot fields -->
-        <div class="hp">
-            <label for="otp">OTP</label>
-            <input type="text" id="otp" name="otp" autocomplete="off">
-        </div>
+        <!-- <div class="mfa"> -->
+        <label for="otp">OTP</label>
+        <input type="text" id="otp" name="otp" autocomplete="off" data-lang-key="otp">
+        <!-- </div> -->
 
-        <div class="hp">
-            <label for="pinCode">PIN</label>
-            <input type="text" id="pinCode" name="pinCode" autocomplete="off">
-        </div>
+        <!-- <div class="mfa">
+        <label for="pinCode" data-lang-key="pin_code">PIN</label>
+        <input type="text" id="pinCode" name="pinCode" autocomplete="off">
+        </div> -->
+
+        <!-- <div class="mfa"> -->
+        <label for="authCode" data-lang-key="authenticator_code">Authenticator code</label>
+        <input type="text" id="authCode" name="authCode" autocomplete="off">
+        <!-- </div> -->
 
         <div id="submit">
             <input type="submit" data-lang-key="login" value="Login">

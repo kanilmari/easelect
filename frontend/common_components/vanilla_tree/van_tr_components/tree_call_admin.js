@@ -1,8 +1,8 @@
 // tree_call_admin.js
 
-import { render_tree } from "./vanilla_tree.js";
-import { custom_views } from "../../core_components/navigation/custom_views.js";
-import { handle_all_navigation } from "../../core_components/navigation/navigation.js";
+import { render_tree } from "../vanilla_tree.js";
+import { custom_views } from "../../../core_components/navigation/custom_views.js";
+import { handle_all_navigation } from "../../../core_components/navigation/navigation.js";
 
 /**
  * Kutsutaan vain, jos ollaan admin-tilassa. Luo ja piirtää puut, sekä hoitaa mm. drag-and-dropin.
