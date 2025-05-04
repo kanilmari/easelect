@@ -171,10 +171,10 @@
 /* Avainsana-alueet */
 .card_keywords_container {
     padding: 0 10px;
-    display: flex;
-    flex-wrap: nowrap;
+    /* display: flex; */
+    /* flex-wrap: nowrap; */
     overflow: hidden;
-    white-space: nowrap;
+    /* white-space: nowrap; */
 }
 
 .single_keyword_item {

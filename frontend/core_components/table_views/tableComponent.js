@@ -18,6 +18,7 @@ import {
     generateTransposedTable,
     generateTicketView
 } from './tableView.js';
+import { count_this_function } from '../dev_tools/function_counter.js';
 
 export class TableComponent {
     /**
@@ -28,73 +29,66 @@ export class TableComponent {
      * @param {Array<Object>} params.headers - Sarakkeiden määrittely taulukkona.
      * @param {string} [params.initialView='normal'] - Alustava näkymä (normal, transposed tai ticket).
      */
-    constructor({ data, headers, initialView = 'normal' }) {
-        this.data = data || [];
-        this.headers = headers || [];
+    constructor({
+        data,
+        headers,
+        table_name,                  // ★ uusi parametri
+        initialView = 'normal'
+    }) {
+        this.data        = data    || [];
+        this.headers     = headers || [];
+        this.table_name  = table_name || '';   // ★ tallennetaan
         this.currentView = initialView;
-
-        // Lajittelusuunnat
+    
+        /* --- lajittelu- & filtteri-tilat ----------------------------- */
         this.sortDirections = {};
-        this.headers.forEach(h => {
-            this.sortDirections[h.key] = 'asc';
-        });
-
-        // Filtterit
+        this.headers.forEach(h => { this.sortDirections[h.key] = 'asc'; });
+    
         this.filterCriteria = {};
-        this.headers.forEach(h => {
-            this.filterCriteria[h.key] = '';
-        });
-
-        // Valintaan liittyvä tila
+        this.headers.forEach(h => { this.filterCriteria[h.key] = ''; });
+    
+        /* --- valinta- ja DOM-rakenteet (alkuperäinen koodi) ---------- */
         this.isSelecting = false;
-        this.startRow = null;
-        this.startCol = null;
-
-        // Pääelementti
+        this.startRow    = null;
+        this.startCol    = null;
+    
         this.rootElement = document.createElement('div');
         this.rootElement.classList.add('table-component-root');
-
-        // Tallenna instanssi elementtiin
         this.rootElement.tableComponentInstance = this;
-
-        // Valikko valittujen solujen kopioimiseen
-        this.selectionMenu = document.createElement('div');
+    
+        /* --- valikon rakentaminen (kopio-napit jne.) ---------------- */
+        this.selectionMenu           = document.createElement('div');
         this.selectionMenu.className = 'selection-menu';
         this.selectionMenu.style.position = 'absolute';
-        this.selectionMenu.style.display = 'none';
-
-        // Luodaan napit ilman innerHTML:ää
-        const copyHeadersButton = document.createElement('button');
-        copyHeadersButton.dataset.action = 'copy-headers';
-        copyHeadersButton.textContent = 'Kopioi otsikot + solut';
-
-        const copyNoHeadersButton = document.createElement('button');
-        copyNoHeadersButton.dataset.action = 'copy-no-headers';
-        copyNoHeadersButton.textContent = 'Kopioi vain solut';
-
-        this.selectionMenu.appendChild(copyHeadersButton);
-        this.selectionMenu.appendChild(copyNoHeadersButton);
+        this.selectionMenu.style.display  = 'none';
+    
+        const copyHeadersBtn = document.createElement('button');
+        copyHeadersBtn.dataset.action = 'copy-headers';
+        copyHeadersBtn.textContent    = 'Kopioi otsikot + solut';
+    
+        const copyNoHeadersBtn = document.createElement('button');
+        copyNoHeadersBtn.dataset.action = 'copy-no-headers';
+        copyNoHeadersBtn.textContent    = 'Kopioi vain solut';
+    
+        this.selectionMenu.appendChild(copyHeadersBtn);
+        this.selectionMenu.appendChild(copyNoHeadersBtn);
         this.rootElement.appendChild(this.selectionMenu);
-
-        // Valikkonappien kuuntelijat
+    
+        /* --- valikkonappien kuuntelijat ------------------------------ */
         this.selectionMenu.addEventListener('click', (e) => {
             const action = e.target.dataset.action;
-            if (action === 'copy-headers') {
-                this.copySelected(true);
-            } else if (action === 'copy-no-headers') {
-                this.copySelected(false);
-            }
+            if (action === 'copy-headers')     this.copySelected(true);
+            else if (action === 'copy-no-headers') this.copySelected(false);
             this.hideSelectionMenu();
         });
-
-        // Ensimmäinen piirtäminen
+    
+        /* --- ensimmäinen renderointi + event-kuuntelut --------------- */
         this.render();
-
-        // Event-kuuntelut valintaa varten
+    
         this.rootElement.addEventListener('mousedown', (e) => this.onMouseDown(e));
         this.rootElement.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        this.rootElement.addEventListener('mouseup', (e) => this.onMouseUp(e));
-        this.rootElement.addEventListener('contextmenu', (e) => this.onContextMenu(e));
+        this.rootElement.addEventListener('mouseup',   (e) => this.onMouseUp(e));
+        this.rootElement.addEventListener('contextmenu',(e) => this.onContextMenu(e));
     }
 
     /**
@@ -149,32 +143,38 @@ export class TableComponent {
      */
 
     appendToNormalView(newData) {
-        // Haetaan se "table" = <div class="table">, ei <table>!
+        count_this_function?.('TableComponent_appendToNormalView');
+    
         const tableDiv = this.rootElement.querySelector('.table');
         if (!tableDiv) {
             console.error('Div-based table (".table") not found');
             return;
         }
     
-        // Selvitetään, kuinka monta data-riviä jo on
-        // (poissulkien otsikkorivin, jos se on .row.header tms.)
-        const existingRows = tableDiv.querySelectorAll('.row:not(.header)');
-        const currentRowCount = existingRows.length;
+        const existingRows   = tableDiv.querySelectorAll('.row:not(.header)');
+        const currentRowCnt  = existingRows.length;
     
-        // Lisätään uudet rivit
         newData.forEach((rowData, idx) => {
             const row = document.createElement('div');
             row.classList.add('row');
     
             this.headers.forEach((header, colIndex) => {
-                const cell = document.createElement('div');
-                cell.classList.add('cell');
-                // dataset-row = juokseva index + entisten perään ( +1 jos haluat header = 0)
-                cell.dataset.row = (currentRowCount + idx + 1).toString();
+                const colClass   = makeColumnClass(this.table_name, header.key);   // ★
+                const cell       = document.createElement('div');
+                cell.classList.add('cell', colClass);                             // ★
+                cell.dataset.row = (currentRowCnt + idx + 1).toString();
                 cell.dataset.col = colIndex.toString();
-                cell.textContent = rowData[header.key] ?? '';
+    
+                const cellContent = document.createElement('div');
+                cellContent.className = 'cell-content';
+                cellContent.classList.add(colClass);                               // ★
+                cellContent.textContent = rowData[header.key] ?? '';
+                cellContent.style.whiteSpace = 'pre-wrap';
+    
+                cell.appendChild(cellContent);
                 row.appendChild(cell);
             });
+    
             tableDiv.appendChild(row);
         });
     }
@@ -235,45 +235,45 @@ export class TableComponent {
      * Piirtää komponentin uudelleen nykyisten data-, filtteri- ja näkymäasetusten perusteella.
      */
     render() {
-        // Säilytetään viite selectionMenu-elementtiin ennen rootin tyhjennystä
+        count_this_function?.('TableComponent_render');
+    
         const menuRef = this.selectionMenu;
         this.rootElement.replaceChildren();
-
-        // Suodatettu data
+    
         const filteredData = this.getFilteredData();
-
+    
         let tableElement;
         if (this.currentView === 'normal') {
             tableElement = generateNormalTable(
                 filteredData,
                 this.headers,
-                (key) => this.sortData(key),
+                this.table_name,                           // ★ välitetään ensin
+                (key)           => this.sortData(key),
                 (fromCol, toCol) => this.reorderColumns(fromCol, toCol)
             );
         } else if (this.currentView === 'transposed') {
             tableElement = generateTransposedTable(
                 filteredData,
                 this.headers,
-                (key) => this.sortData(key),
+                this.table_name,                           // ★
+                (key)           => this.sortData(key),
                 (fromRow, toRow) => this.reorderColumnsTransposed(fromRow, toRow)
             );
-        } else {
+        } else { /* 'ticket' */
             tableElement = generateTicketView(
                 filteredData,
                 this.headers,
+                this.table_name,                           // ★
                 (key) => this.sortData(key)
             );
         }
-
-        // Lisätään taulukon runko + valintavalikko
+    
         this.rootElement.appendChild(tableElement);
         this.rootElement.appendChild(menuRef);
-
-        // Nollataan mahdollinen solujen valinta & piilotetaan valikko
+    
         this.clearSelection();
         this.hideSelectionMenu();
     }
-
     /**
      * Palauttaa tällä hetkellä asetetun filtterin perusteella suodatetun datan.
      * @private

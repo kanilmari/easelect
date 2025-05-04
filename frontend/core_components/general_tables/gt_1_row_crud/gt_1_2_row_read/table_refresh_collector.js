@@ -3,6 +3,7 @@
 import { fetchTableData } from '../../../endpoints/endpoint_data_fetcher.js';
 import { generate_table } from '../../../table_views/view_table.js';
 import { resetOffset, updateOffset } from '../../../infinite_scroll/infinite_scroll.js';
+import { applyColumnVisibility } from '../../../filterbar/column_visibility.js';
 
 /* Uusi unified-osuus */
 
@@ -138,23 +139,42 @@ export async function refreshTableUnified(tableName, options = {}) {
             console.warn(`fetchTableData palautti tyhjän vastauksen taululle: ${tableName}`);
             return;
         }
-
         const data = result.data || [];
         const columns = result.columns || [];
         const data_types = result.types || {};
 
         // 8) Rakennetaan varsinainen taulu/näkymä
-        // console.log('refreshTableUnified kutsuu funktiota generate_table');
         await generate_table(tableName, columns, data, data_types);
 
-        // 9) Päivitetään offset infinite scrollia varten
-        // console.log('table_refresh_collector.js: refreshTableUnified kutsuu funktiota updateOffset arvoilla:', tableName, data.length);
-        updateOffset(tableName, data.length);
+        // 9) Sarakenäkyvyys (uusi)
+        applyColumnVisibility(tableName);
 
+        // 10) Päivitetään offset infinite scrollia varten
+        updateOffset(tableName, data.length);
     } catch (err) {
-        console.error('virhe: %s', err?.message || err);
+        /* virhe-tulostus ohjeittesi mukaisena */
+        console.log(
+            '\u001b[31mvirhe: %s\u001b[0m',
+            err?.message || err
+        );
     }
 }
+//         const data = result.data || [];
+//         const columns = result.columns || [];
+//         const data_types = result.types || {};
+
+//         // 8) Rakennetaan varsinainen taulu/näkymä
+//         // console.log('refreshTableUnified kutsuu funktiota generate_table');
+//         await generate_table(tableName, columns, data, data_types);
+
+//         // 9) Päivitetään offset infinite scrollia varten
+//         // console.log('table_refresh_collector.js: refreshTableUnified kutsuu funktiota updateOffset arvoilla:', tableName, data.length);
+//         updateOffset(tableName, data.length);
+
+//     } catch (err) {
+//         console.error('virhe: %s', err?.message || err);
+//     }
+// }
 
 /**
  * Pieni apufunktio esimerkkinä, kun klikkaat “sarakkeen järjestä” -nappia:

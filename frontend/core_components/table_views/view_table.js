@@ -38,24 +38,43 @@ const views = {
     },
     normal: {
         create: (table_name, columns, data) => {
-            const headers = columns.map(c => ({ label: c, key: c }));
-            const tableComp = new TableComponent({ data, headers, initialView: 'normal' });
+            const headers   = columns.map(c => ({ label: c, key: c }));
+            const tableComp = new TableComponent({
+                data,
+                headers,
+                table_name  : table_name,      // ★ välitetään
+                initialView: 'normal'
+            });
             return tableComp.getElement();
         },
         getContainerId: (table_name) => `${table_name}_normal_view_container`
     },
+
+    /* ---------- TRANSPOSED-NÄKYMÄ ------------------------------- */
     transposed: {
         create: (table_name, columns, data) => {
-            const headers = columns.map(c => ({ label: c, key: c }));
-            const tableComp = new TableComponent({ data, headers, initialView: 'transposed' });
+            const headers   = columns.map(c => ({ label: c, key: c }));
+            const tableComp = new TableComponent({
+                data,
+                headers,
+                table_name  : table_name,      // ★
+                initialView: 'transposed'
+            });
             return tableComp.getElement();
         },
         getContainerId: (table_name) => `${table_name}_transposed_view_container`
     },
+
+    /* ---------- TICKET-NÄKYMÄ ----------------------------------- */
     ticket: {
         create: (table_name, columns, data) => {
-            const headers = columns.map(c => ({ label: c, key: c }));
-            const tableComp = new TableComponent({ data, headers, initialView: 'ticket' });
+            const headers   = columns.map(c => ({ label: c, key: c }));
+            const tableComp = new TableComponent({
+                data,
+                headers,
+                table_name  : table_name,      // ★
+                initialView: 'ticket'
+            });
             return tableComp.getElement();
         },
         getContainerId: (table_name) => `${table_name}_ticket_view_container`

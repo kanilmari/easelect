@@ -21,6 +21,12 @@ import {
 import "./overlay_filter_bar_observer.js";
 
 import { appendDataToView } from "../infinite_scroll/infinite_scroll.js";
+import {
+    setColumnVisibility,
+    getHiddenColumns,
+    applyColumnVisibility,
+} from "./column_visibility.js";
+import { count_this_function } from "../dev_tools/function_counter.js";
 
 /* ===========================================================
  *  Yleiset muuttujat ja apurit
@@ -366,14 +372,93 @@ function buildFilterSection(tableName, columns, dataTypes) {
 /* -----------------------------------------------------------
  *  Yksittäisen filter/sort‑rivielementin generointi
  * ---------------------------------------------------------*/
+// function createRowForColumn(container, tableName, column, colType) {
+//     const row = document.createElement("div");
+//     row.classList.add("row-container");
+
+//     // Sorttipainike (↕/▲/▼)
+//     const sortButton = document.createElement("button");
+//     sortButton.setAttribute("data-sort-state", "none");
+//     sortButton.textContent = "\u21C5"; // default ↕
+
+//     const currentState = getUnifiedTableState(tableName);
+//     if (currentState.sort?.column === column && currentState.sort?.direction) {
+//         const isAsc = currentState.sort.direction.toLowerCase() === "asc";
+//         sortButton.setAttribute("data-sort-state", isAsc ? "asc" : "desc");
+//         sortButton.textContent = isAsc ? "\u25B2" : "\u25BC"; // ▲ / ▼
+//     }
+
+//     sortButton.addEventListener("click", () => {
+//         container.querySelectorAll("button[data-sort-state]").forEach((btn) => {
+//             if (btn !== sortButton) {
+//                 btn.setAttribute("data-sort-state", "none");
+//                 btn.textContent = "\u21C5";
+//             }
+//         });
+
+//         const currentStateValue = sortButton.getAttribute("data-sort-state");
+//         let newState;
+//         if (currentStateValue === "none") newState = "asc";
+//         else if (currentStateValue === "asc") newState = "desc";
+//         else newState = "none";
+
+//         sortButton.setAttribute("data-sort-state", newState);
+//         sortButton.textContent =
+//             newState === "asc"
+//                 ? "\u25B2"
+//                 : newState === "desc"
+//                 ? "\u25BC"
+//                 : "\u21C5";
+
+//         const st = getUnifiedTableState(tableName);
+//         if (!st.sort) st.sort = { column: null, direction: null };
+
+//         if (newState === "none") {
+//             st.sort.column = null;
+//             st.sort.direction = null;
+//         } else {
+//             st.sort.column = column;
+//             st.sort.direction = newState === "asc" ? "ASC" : "DESC";
+//         }
+
+//         setUnifiedTableState(tableName, st);
+//         resetOffset();
+//         refreshTableUnified(tableName, { skipUrlParams: true });
+//     });
+
+//     // Varsinainen filtterikenttä
+//     const filterElement = createFilterElement(tableName, column, colType);
+
+//     row.appendChild(sortButton);
+//     row.appendChild(filterElement);
+//     container.appendChild(row);
+// }
+
 function createRowForColumn(container, tableName, column, colType) {
+    count_this_function("createRowForColumn");
+
     const row = document.createElement("div");
     row.classList.add("row-container");
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.gap = ".5rem";
 
-    // Sorttipainike (↕/▲/▼)
+    /* -------- 0) Näytä/piilota-checkbox -------- */
+    const vis = document.createElement("input");
+    vis.type = "checkbox";
+    vis.classList.add("column-visibility-toggle");
+    vis.title = "Näytä/piilota sarake";
+    vis.checked = !getHiddenColumns(tableName)[column]; // true ⇢ näytetään
+    vis.addEventListener("change", (e) => {
+        setColumnVisibility(tableName, column, e.target.checked);
+        applyColumnVisibility(tableName);
+    });
+    row.appendChild(vis);
+
+    /* -------- 1) Sorttipainike (↕/▲/▼) -------- */
     const sortButton = document.createElement("button");
     sortButton.setAttribute("data-sort-state", "none");
-    sortButton.textContent = "\u21C5"; // default ↕
+    sortButton.textContent = "\u21C5"; // ↕ (oletus)
 
     const currentState = getUnifiedTableState(tableName);
     if (currentState.sort?.column === column && currentState.sort?.direction) {
@@ -390,41 +475,33 @@ function createRowForColumn(container, tableName, column, colType) {
             }
         });
 
-        const currentStateValue = sortButton.getAttribute("data-sort-state");
-        let newState;
-        if (currentStateValue === "none") newState = "asc";
-        else if (currentStateValue === "asc") newState = "desc";
-        else newState = "none";
-
-        sortButton.setAttribute("data-sort-state", newState);
+        const cur = sortButton.getAttribute("data-sort-state");
+        const next = cur === "none" ? "asc" : cur === "asc" ? "desc" : "none";
+        sortButton.setAttribute("data-sort-state", next);
         sortButton.textContent =
-            newState === "asc"
-                ? "\u25B2"
-                : newState === "desc"
-                ? "\u25BC"
-                : "\u21C5";
+            next === "asc" ? "\u25B2" : next === "desc" ? "\u25BC" : "\u21C5";
 
         const st = getUnifiedTableState(tableName);
         if (!st.sort) st.sort = { column: null, direction: null };
 
-        if (newState === "none") {
+        if (next === "none") {
             st.sort.column = null;
             st.sort.direction = null;
         } else {
             st.sort.column = column;
-            st.sort.direction = newState === "asc" ? "ASC" : "DESC";
+            st.sort.direction = next === "asc" ? "ASC" : "DESC";
         }
 
         setUnifiedTableState(tableName, st);
         resetOffset();
         refreshTableUnified(tableName, { skipUrlParams: true });
     });
-
-    // Varsinainen filtterikenttä
-    const filterElement = createFilterElement(tableName, column, colType);
-
     row.appendChild(sortButton);
+
+    /* -------- 2) Varsinainen filtterikenttä -------- */
+    const filterElement = createFilterElement(tableName, column, colType);
     row.appendChild(filterElement);
+
     container.appendChild(row);
 }
 
@@ -907,7 +984,6 @@ export function create_filter_bar(tableName, columns, dataTypes, currentView) {
     /* ---------- 9) Alustava leveystarkastus ---------- */
     checkWindowWidth(tableName);
 }
-
 
 // // create_filter_bar.js
 

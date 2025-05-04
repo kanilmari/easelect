@@ -9,7 +9,7 @@
 #   (Oletukset: postgres / my_passwd / localhost / 5432)
 
 set -euo pipefail   # virhe katkaisee skriptin
-
+node ./frontend/check_js_imports2.js ./frontend/main.js --exclude=others/**,frontend/styles/**,node_modules/**,others/**,frontend/check_js_imports*.js --fix-imports
 # --- Perusmuuttujat -----------------------------------------------------------
 current_date=$(date +%F)             # esim. 2025-04-25
 database_name="easelect"
@@ -68,8 +68,6 @@ echo "⚙️  go build ..."
 go build
 
 echo "🚀  Käynnistetään ./easelect"
-# systemctl restart easelect.service
-# ./easelect
 ./easelect
 
 # #!/usr/bin/env bash
