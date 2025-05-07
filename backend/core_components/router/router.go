@@ -4,6 +4,7 @@ package router
 import (
 	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -53,9 +54,30 @@ var routeDefinitions []RouteDefinition
 // registeredFunctions pitää kirjaa funktioista, joita on lopulta rekisteröity
 var registeredFunctions = make(map[string]bool)
 
+//	func tablesHandler(w http.ResponseWriter, r *http.Request) {
+//		log.Printf("tablesHandler: käyttäjä pyysi URL: %s", r.URL.String())
+//		http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
+//	}
 func tablesHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("tablesHandler: käyttäjä pyysi URL: %s", r.URL.String())
-	http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
+
+	// 1) Haetaan nonce, jonka CSP-middleware on laittanut contextiin
+	nonce := middlewares.GetCSPNonce(r)
+
+	// 2) Parsitaan index.html Go-templaatiksi
+	tplPath := filepath.Join(localFrontendDir, "index.html")
+	tpl, err := template.ParseFiles(tplPath)
+	if err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		http.ServeFile(w, r, tplPath) // fallback – ei noncea
+		return
+	}
+
+	// 3) Ajetaan templaatti ja syötetään nonce
+	data := struct{ CSPNonce string }{CSPNonce: nonce}
+	if err := tpl.Execute(w, data); err != nil {
+		fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+	}
 }
 
 // RegisterRoutes tallentaa reittien määritykset
@@ -72,6 +94,7 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 
 	// Käytetään erillistä functionRegisterHandler-kutsua faviconille
 	functionRegisterHandler("/favicon.ico", faviconHandler, "router.faviconHandler")
+	functionRegisterHandler("/robots.txt", robotsHandler, "router.robotsHandler")
 
 	functionRegisterHandler("/tables/", tablesHandler, "router.tablesHandler")
 
@@ -165,6 +188,10 @@ func ServeMedia(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeFile(w, r, fullPath)
+}
+
+func robotsHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join(localFrontendDir, "robots.txt"))
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -264,8 +291,23 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Palvellaan index.html, jos polku on "/"
+	// if r.URL.Path == "/" {
+	// 	http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
+	// 	return
+	// }
 	if r.URL.Path == "/" {
-		http.ServeFile(w, r, filepath.Join(localFrontendDir, "index.html"))
+		nonce := middlewares.GetCSPNonce(r)
+		tplPath := filepath.Join(localFrontendDir, "index.html")
+		tpl, err := template.ParseFiles(tplPath)
+		if err != nil {
+			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+			http.ServeFile(w, r, tplPath)
+			return
+		}
+		data := struct{ CSPNonce string }{CSPNonce: nonce}
+		if err := tpl.Execute(w, data); err != nil {
+			fmt.Printf("\033[31mvirhe: %s\033[0m\n", err.Error())
+		}
 		return
 	}
 
@@ -299,6 +341,7 @@ func RegisterAllRoutesAndUpdateFunctions(db *sql.DB) error {
 	// Reitit, jotka eivät vaadi kirjautumista EIKÄ oikeustarkistusta
 	noAccessControlNeeded := map[string]bool{
 		"router.faviconHandler":          true,
+		"router.robotsHandler":           true,
 		"router.rootHandler":             true,
 		"auth.LoginHandler":              true,
 		"router.handleFrontend":          true,

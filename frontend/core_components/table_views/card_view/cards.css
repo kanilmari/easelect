@@ -245,6 +245,7 @@
 
 .key_value_wrapper>.kv_label {
     font-weight: bold;
+    margin-right: 15px;
 }
 
 /* Scrollattava sisältö */

@@ -76,38 +76,6 @@ export function createKeyValueElement(
 
     return wrapper;
 }
-// export function createKeyValueElement(column_label, raw_value, column, hasLangKey, cssClass = 'big_card_generic_field') {
-//     const wrapper = document.createElement('div');
-//     wrapper.classList.add('key_value_wrapper');
-
-//     // Näytetään avain vain jos column_label ei ole tyhjä
-//     if (column_label) {
-//         const labelDiv = document.createElement('div');
-//         labelDiv.classList.add('kv_label');
-//         labelDiv.textContent = column_label;
-//         wrapper.appendChild(labelDiv);
-//     }
-
-//     // Arvo:
-//     const valueDiv = document.createElement('div');
-//     valueDiv.classList.add(cssClass);
-//     valueDiv.setAttribute('data-column', column);
-
-//     // Tallennetaan raaka arvo data-raw-value -kenttään (editointia varten)
-//     valueDiv.setAttribute('data-raw-value', raw_value);
-
-//     if (hasLangKey) {
-//         // Kieliavain => jätetään textContent tyhjäksi, asetetaan attribuutti
-//         valueDiv.setAttribute('data-lang-key', raw_value);
-//     } else {
-//         valueDiv.textContent = raw_value;
-//         valueDiv.style.whiteSpace = 'pre-wrap';
-//     }
-
-//     wrapper.appendChild(valueDiv);
-
-//     return wrapper;
-// }
 
 /**
  * Palauttaa kentät takaisin tavalliseen tilaan

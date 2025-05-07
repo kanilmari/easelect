@@ -153,6 +153,7 @@ textarea {
 .input-group {
     position: relative;
     display: grid;
+    width: 100%;
 
 }
 

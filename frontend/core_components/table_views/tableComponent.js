@@ -19,6 +19,7 @@ import {
     generateTicketView
 } from './tableView.js';
 import { count_this_function } from '../dev_tools/function_counter.js';
+import { makeColumnClass } from '../../common_components/filterbar/column_visibility.js';
 
 export class TableComponent {
     /**

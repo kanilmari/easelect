@@ -72,7 +72,7 @@ export async function initializeTreeCallAdmin() {
                     draggedNodeDbIdStr === targetFolderDbIdStr &&
                     draggedNodeType === "folder"
                 ) {
-                    alert("Ei voi pudottaa kansiota itseensä!");
+                    // alert("Ei voi pudottaa kansiota itseensä!");
                     return;
                 }
 

@@ -67,6 +67,12 @@ function createGenericViewButton(label, viewKey, tableName, currentView) {
     // Klikattaessa tallennetaan localStorageen ja kutsutaan refresh
     btn.addEventListener("click", () => {
         console.log("createGenericViewButton calls refreshTableUnified");
+
+        /* --- UUSI: lokitus korttinäkymän valinnasta hiirellä ---------- */
+        if (viewKey === "card") {
+            console.log(`[view-log] Korttinäkymä valittu taululle '${tableName}' (click)`);
+        }
+
         localStorage.setItem(`${tableName}_view`, viewKey);
         applyViewStyling(tableName);
         refreshTableUnified(tableName);
@@ -76,17 +82,19 @@ function createGenericViewButton(label, viewKey, tableName, currentView) {
 }
 
 /**
- * applyViewStyling (sama kuin aiemmin, ei koskettu).
+ * applyViewStyling
+ * ----------------
+ * - Päivittää sivun ulkoasun ja lokittaa, jos korttinäkymä on aktiivinen.
+ * - Piilottaa (.hidden) sarake-näytä/piilota-checkboksit korttinäkymässä
+ *        ja näyttää ne muissa näkymissä.
  */
 export function applyViewStyling(table_name) {
     const bodyContent = document.querySelector(".body_content");
     const bodyWrapper = document.querySelector(".body_wrapper");
 
-    if (!bodyContent || !bodyWrapper) {
-        return;
-    }
+    if (!bodyContent || !bodyWrapper) return;
 
-    // Tarkistetaan, onko localStoragen selected_table sama
+    /* --- Selvitä valittu taulu ja näkymäavain ---------------------- */
     const selectedTable = localStorage.getItem("selected_table");
     if (selectedTable !== table_name) {
         bodyContent.style.maxWidth = "unset";
@@ -98,46 +106,28 @@ export function applyViewStyling(table_name) {
 
     const storedViewKey = localStorage.getItem(`${table_name}_view`);
 
-    // // Asetetaan transitionit: voit laajentaa näitä jos haluat animointia myös muihin ominaisuuksiin
-    // bodyContent.style.transition =
-    //     "max-width 0.3s ease-in-out";
+    /* --- PIILOTA / NÄYTÄ sarakkeiden checkboxit ------------------- */
+    document.querySelectorAll(".column-visibility-toggle").forEach((el) => {
+        if (storedViewKey === "card") {
+            el.classList.add("hidden");
+        } else {
+            el.classList.remove("hidden");
+        }
+    });
 
+    /* --- Max-width-asettelu (ennallaan) --------------------------- */
     if (!["table", "normal", "transposed"].includes(storedViewKey)) {
         bodyContent.style.maxWidth = "2560px";
-
-        // const navTabs = document.querySelector(".navtabs");
-        // if (navTabs) {
-        //     navTabs.style.right = "";
-        // }
     } else {
-        // Käytetään "100%" korvaamaan "unset", jotta animaatio toimii
         bodyContent.style.maxWidth = "100%";
-        // bodyContent.style.maxWidth = "max-content";
-        // bodyWrapper.style.display = "";
-
-        // const navTabs = document.querySelector(".navtabs");
-        // if (navTabs) {
-        //     navTabs.style.right = "-15px";
-        // }
     }
-    // const storedViewKey = localStorage.getItem(`${table_name}_view`);
-    // if (storedViewKey === "card") {
-    //     bodyContent.style.maxWidth = "2560px";
-    //     bodyContent.style.margin = "auto";
-    //     bodyWrapper.style.justifyContent = "center";
-    //     const navTabs = document.querySelector(".navtabs");
-    //     if (navTabs) {
-    //         navTabs.style.right = "";
-    //     }
-    // } else {
-    //     bodyContent.style.maxWidth = "unset";
-    //     bodyWrapper.style.display = "unset";
-    //     bodyWrapper.style.justifyContent = "unset";
-    //     const navTabs = document.querySelector(".navtabs");
-    //     if (navTabs) {
-    //         navTabs.style.right = "-15px";
-    //     }
-    // }
 
     updateTabPathsForView(table_name);
+
+    /* --- Lokitus korttinäkymästä ---------------------------------- */
+    if (storedViewKey === "card") {
+        console.log(
+            `[view-log] Korttinäkymä aktiivinen taululle '${table_name}' (page-load/applyViewStyling)`
+        );
+    }
 }

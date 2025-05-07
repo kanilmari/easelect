@@ -5,7 +5,7 @@ import { editCell } from '../../general_tables/gt_1_row_crud/gt_1_3_row_update/e
 import { handleKeyDown } from './add_listeners_to_table_cells.js';
 import { createDataCell, createCheckboxCell } from './create_table_structure_and_data.js';
 
-export function appendDataToTable(table, newData, columns, dataTypes) {
+export function appendDataToTable(table, newData, columns, dataTypes, tableName) {
     const tbody = table.querySelector('tbody');
     const existingRows = tbody.rows.length;
 
@@ -26,7 +26,7 @@ export function appendDataToTable(table, newData, columns, dataTypes) {
 
         // Luodaan data-solut
         columns.forEach((column, colIndex) => {
-            const td = createDataCell(item, column, columns, existingRows + index, colIndex);
+            const td = createDataCell(item, column, columns, existingRows + index, colIndex, tableName);
             row.appendChild(td);
         });
 

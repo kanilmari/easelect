@@ -21,8 +21,11 @@
     <!-- Add to home screen for Chrome on Android -->
     <meta name="mobile-web-app-capable" content="yes" />
 
+    <!-- 🔑 välitetään nonce metaan, jotta JS löytää sen -->
+    <meta name="csp-nonce" content="{{ .CSPNonce }}">
+
     <title>Serlog.com</title>
-    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="/favicon4ER.png" type="image/x-icon" />
     <link rel="stylesheet" href="/styles/imports.css" />
 </head>
 

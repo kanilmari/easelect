@@ -11,7 +11,7 @@
 @import url("../core_components/navigation/navbar.css");
 
 /* filterbar */
-@import url("../core_components/filterbar/filterbar.css");
+@import url("../common_components/filterbar/filterbar.css");
 
 /* chat */
 @import url("../common_components/ai_features/table_chat/chat.css");

@@ -182,5 +182,6 @@
     z-index: 111;
 }
 
-/* column_visibility.css – lisää globaalisti tai taulun tyyleihin */
-.hidden-column { display: none !important; }
+.card-view .column-visibility-toggle {
+    display: none !important;
+}

@@ -5,10 +5,10 @@
 import {
     createDeleteSelectedButton,
     createColumnManagementButton,
-} from "../general_tables/gt_toolbar/button_factory.js";
+} from "../../core_components/general_tables/gt_toolbar/button_factory.js";
 import {
     createGenericViewSelector
-} from "../table_views/draw_view_selector_buttons.js";
+} from "../../core_components/table_views/draw_view_selector_buttons.js";
 import { create_chat_ui } from "../../common_components/ai_features/table_chat/chat.js";
 import { create_collapsible_section } from "../../common_components/collapsible-section/collapsible_section.js";
 
@@ -134,7 +134,8 @@ export function appendChatUIIfAdmin(table_name, filter_bar) {
     const chatContainerDiv = document.createElement("div");
     create_chat_ui(table_name, chatContainerDiv);
     const chatCollapsible = create_collapsible_section(
-        "Chat – " + table_name,
+        // "Chat – " + table_name,
+        "chat_for_table+"+table_name,
         chatContainerDiv,
         false
     );

@@ -4,7 +4,7 @@ import { create_table_element } from './table_view/create_table_structure_and_da
 import { create_card_view } from './card_view/card_view.js';
 // import { applySavedColumnVisibility } from '../general_tables/gt_toolbar/column_visibility_dropdown.js';
 import { initializeInfiniteScroll, updateOffset } from '../infinite_scroll/infinite_scroll.js';
-import { create_filter_bar } from '../filterbar/create_filter_bar.js';
+import { create_filter_bar } from '../../common_components/filterbar/create_filter_bar.js';
 import { create_chat_ui } from '../../common_components/ai_features/table_chat/chat.js';
 import { create_tree_view } from './tree_view/tree_view.js';
 import { TableComponent } from './tableComponent.js';
