@@ -93,7 +93,7 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	localFrontendDir = frontendDir
 
 	// Käytetään erillistä functionRegisterHandler-kutsua faviconille
-	functionRegisterHandler("/favicon.ico", faviconHandler, "router.faviconHandler")
+	functionRegisterHandler("/favicon4S.png", faviconHandler, "router.faviconHandler")
 	functionRegisterHandler("/robots.txt", robotsHandler, "router.robotsHandler")
 
 	functionRegisterHandler("/tables/", tablesHandler, "router.tablesHandler")
@@ -165,9 +165,9 @@ func RegisterRoutes(frontendDir string, mediaPath string) {
 	functionRegisterHandler("/save-usergroup-right", backend.SaveUserGroupRight, "backend.SaveUserGroupRight")
 }
 
-// faviconHandler palvelee tiedoston "/favicon.ico"
+// faviconHandler palvelee tiedoston "/favicon..."
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, filepath.Join(localFrontendDir, "favicon.ico"))
+	http.ServeFile(w, r, filepath.Join(localFrontendDir, "favicon4S.png"))
 }
 
 // ServeMedia palvelee /media/ -pyynnöt, mutta kulkee middlewaresin kautta
@@ -196,8 +196,8 @@ func robotsHandler(w http.ResponseWriter, r *http.Request) {
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	// Jos pyyntö on favicon, palvellaan se suoraan
-	if r.URL.Path == "/favicon.ico" {
-		http.ServeFile(w, r, filepath.Join(localFrontendDir, "favicon.ico"))
+	if r.URL.Path == "/favicon4S.png" {
+		http.ServeFile(w, r, filepath.Join(localFrontendDir, "favicon4S.png"))
 		return
 	}
 

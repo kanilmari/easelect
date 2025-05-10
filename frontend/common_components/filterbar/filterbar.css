@@ -63,10 +63,6 @@
     max-height: calc(100vh - 150px);
 }
 
-.filterBar-search-row {
-    padding: 0.5rem;
-}
-
 .filterBar-tabs-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -184,4 +180,41 @@
 
 .card-view .column-visibility-toggle {
     display: none !important;
+}
+
+/* --- hakupalkin kääre --- */
+.filterBar-wrapper {
+    display: flex;
+    align-items: stretch;      /* <- avain venyvään nappiin */
+    gap: 10px;
+    margin: 10px;
+}
+
+/* --- vasen pino: haku + sijainti --- */
+.filterBar-left {
+    flex: 1 1 auto;            /* vie loput leveydestä */
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- rivit vasemmalla --- */
+.filterBar-search-row,
+.filterBar-location-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filterBar-location-row {
+    padding: 10px 0 0 0;
+}
+
+/* --- oikean reunan hakunappi --- */
+.global-search-button {
+    align-self: stretch;       /* <- täysi korkeus */
+    display: flex;             /* ikonille keskitys */
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;           /* miellyttävä klikkausalue */
+    border-radius: var(--border_radius);
 }

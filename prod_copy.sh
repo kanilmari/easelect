@@ -38,9 +38,14 @@ RSYNC_BASE=(-av --progress -e "$SSH_CMD")
 $DELETE_EXTRAS && RSYNC_BASE+=(--delete)
 
 # --- Apufunktio: rsync & chmod yhdellä rivillä -------------------------------
+# rsync_and_chmod() {
+#   local src="$1" dest="$2" chmod_spec="$3"
+#   rsync "${RSYNC_BASE[@]}" --chmod="$chmod_spec" "$src" \
+#         "${REMOTE_USER}@${REMOTE_HOST}:${dest}"
+# }
 rsync_and_chmod() {
   local src="$1" dest="$2" chmod_spec="$3"
-  rsync "${RSYNC_BASE[@]}" --chmod="$chmod_spec" "$src" \
+  rsync "${RSYNC_BASE[@]}" --chmod="$chmod_spec" -v "$src" \
         "${REMOTE_USER}@${REMOTE_HOST}:${dest}"
 }
 
@@ -64,7 +69,7 @@ echo "🟢 Kopioidaan frontend…"
 rsync_and_chmod ./frontend/ "${PROJECT_ROOT}/frontend/" "D755,F644"
 
 # --- 4) media (dir 755, tiedostot 644) ---------------------------------------
-echo "🟢 Kopioidaan media…"
+echo "🟢 Kopioidaan…"
 rsync_and_chmod ./media/ "${PROJECT_ROOT}/media/" "D755,F644"
 
 # --- 5) Dumpit + restore_skripti (-s) ----------------------------------------
